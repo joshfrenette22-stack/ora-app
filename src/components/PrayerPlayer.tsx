@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LucideIcon } from "./UI";
+import { useVoice } from "./VoiceProvider";
 import {
   ensureVoices,
   isSpeechSupported,
@@ -18,11 +19,14 @@ export interface NarrationSegment {
   text: string;
 }
 
-/** Cloud-TTS audio URL for a segment. The text is the cache key, so identical
- *  passages (every "Hail Mary") are synthesised once and then served from cache. */
-function ttsUrl(text: string, rate?: number): string {
-  const r = rate && rate > 0 ? `&rate=${rate}` : "";
-  return `/api/tts?text=${encodeURIComponent(text)}${r}`;
+/** Cloud-TTS audio URL for a segment. The text + voice form the cache key, so
+ *  identical passages (every "Hail Mary") are synthesised once per voice and
+ *  then served from cache. */
+function ttsUrl(text: string, rate?: number, voice?: string): string {
+  const params = new URLSearchParams({ text });
+  if (rate && rate > 0) params.set("rate", String(rate));
+  if (voice) params.set("voice", voice);
+  return `/api/tts?${params.toString()}`;
 }
 
 type Status = "idle" | "playing" | "paused";
@@ -70,6 +74,7 @@ export function useNarration({
   const [supported, setSupported] = useState(true);
   const [status, setStatus] = useState<Status>("idle");
   const [index, setIndex] = useState(0);
+  const { voice } = useVoice();
 
   const genRef = useRef(0);
   const segmentsRef = useRef(segments);
@@ -120,13 +125,13 @@ export function useNarration({
         const fallback = () => { if (!speak(text, { rate, onEnd, onError })) onError(); };
         a.onended = onEnd;
         a.onerror = fallback;
-        a.src = ttsUrl(text, rate);
+        a.src = ttsUrl(text, rate, voice);
         a.play().catch(fallback);
         return;
       }
       if (!speak(text, { rate, onEnd, onError })) onError();
     },
-    [rate],
+    [rate, voice],
   );
 
   const playIndex = useCallback(
@@ -139,7 +144,7 @@ export function useNarration({
       setStatus("playing");
       // Warm the next segment's audio so auto-advance is gapless.
       if (engineRef.current === "google" && i + 1 < list.length) {
-        void fetch(ttsUrl(list[i + 1].text, rate)).catch(() => {});
+        void fetch(ttsUrl(list[i + 1].text, rate, voice)).catch(() => {});
       }
       playSegment(
         list[i].text,
@@ -153,7 +158,7 @@ export function useNarration({
         () => { if (gen === genRef.current) setStatus("idle"); },
       );
     },
-    [rate, loop, playSegment],
+    [rate, loop, voice, playSegment],
   );
 
   useEffect(() => { playNextRef.current = playIndex; }, [playIndex]);

@@ -9,20 +9,31 @@
 // audio responses are cached hard (immutable), repeated text — every "Hail
 // Mary", every antiphon — is synthesised once and then served from cache.
 
+import { DEFAULT_VOICE, isValidVoice } from "./voices";
+
 const ENDPOINT = "https://texttospeech.googleapis.com/v1/text:synthesize";
 const LANGUAGE = "en-US";
-const DEFAULT_VOICE = "en-US-Neural2-D"; // warm, calm male narrator
 
 export function googleTtsEnabled(): boolean {
   return Boolean(process.env.GOOGLE_TTS_API_KEY);
 }
 
+interface SynthOptions {
+  rate?: number;
+  /** Requested voice from the client — validated against the allowlist. */
+  voice?: string;
+}
+
 /** Synthesise text to MP3 audio bytes, or null if unavailable / failed. */
-export async function synthesize(text: string, rate?: number): Promise<Buffer | null> {
+export async function synthesize(text: string, { rate, voice: requested }: SynthOptions = {}): Promise<Buffer | null> {
   const key = process.env.GOOGLE_TTS_API_KEY;
   if (!key || !text.trim()) return null;
 
-  const voice = process.env.GOOGLE_TTS_VOICE || DEFAULT_VOICE;
+  // User-chosen voice must be on the allowlist; otherwise the admin default.
+  const voice =
+    requested && isValidVoice(requested)
+      ? requested
+      : process.env.GOOGLE_TTS_VOICE || DEFAULT_VOICE;
   try {
     const res = await fetch(`${ENDPOINT}?key=${key}`, {
       method: "POST",

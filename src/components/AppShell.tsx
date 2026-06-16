@@ -22,6 +22,7 @@ const TITLES: Record<string, [string, string | null]> = {
   "/rosary": ["The Holy Rosary", null],
   "/saints": ["Saint of the Day", "June IX"],
   "/calendar": ["Liturgical Calendar", "Anno Domini MMXXVI"],
+  "/settings": ["Settings", "Voice & display"],
   "/pray": ["Pray", "The Office, the Rosary & devotions"],
   "/focus": ["Enter Into Prayer", null],
 };
@@ -104,6 +105,7 @@ function Sidebar({ active, onChange }: { active: string; onChange: (id: string) 
 
 function ContentBar({ title, sub }: { title: string; sub: string | null }) {
   const { night, setNight } = useTheme();
+  const router = useRouter();
   const iconBtn: React.CSSProperties = {
     width: 42, height: 42, borderRadius: 10, border: "1px solid var(--stone-200)",
     background: "var(--bone-raised)", color: "var(--ink-500)", cursor: "pointer",
@@ -131,6 +133,9 @@ function ContentBar({ title, sub }: { title: string; sub: string | null }) {
         </button>
         <button style={iconBtn} aria-label="Notifications">
           <LucideIcon name="bell" size={19} />
+        </button>
+        <button style={iconBtn} aria-label="Settings" onClick={() => router.push("/settings")}>
+          <LucideIcon name="settings" size={19} />
         </button>
       </div>
     </div>
