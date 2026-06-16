@@ -1,20 +1,58 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fleuron, RoseWindow } from "@/components/Sacred";
 import { SeasonBadge, SurfaceCard, FeatureCard } from "@/components/UI";
-import { Sun, BookOpen, Clock, Flame, Bell } from "lucide-react";
+import { Sun } from "lucide-react";
+import { localDateISO } from "@/lib/clientDate";
+
+interface TodayData {
+  liturgical: { label: string; badgeSeason: string };
+  verse: { text: string; cite: string };
+  saint: { name: string; title: string | null; monogram: string };
+  readings: {
+    first: { cite: string; title: string };
+    psalm: { cite: string; title: string };
+    gospel: { cite: string; title: string };
+  };
+}
+
+// Static fallback so the page renders instantly and works without the API.
+const FALLBACK: TodayData = {
+  liturgical: { label: "Ordinary Time", badgeSeason: "green" },
+  verse: { text: "Put on the full armour of God, that you may be able to stand against the wiles of the devil.", cite: "Ephesians 6 · 11" },
+  saint: { name: "St. Ephrem", title: "Doctor of the Church · June 9", monogram: "E" },
+  readings: {
+    first: { cite: "1 Kings 17", title: "Elijah by the Brook" },
+    psalm: { cite: "Psalm 4", title: "In Peace I Will Lie Down" },
+    gospel: { cite: "Matthew 5 · 1–12", title: "The Beatitudes" },
+  },
+};
 
 export default function TodayPage() {
   const router = useRouter();
+  const [data, setData] = useState<TodayData>(FALLBACK);
+
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/today?date=${localDateISO()}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (alive && d) setData(d); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  const { liturgical, verse, saint, readings } = data;
+  const gospelMeta = `${readings.first.cite} · ${readings.psalm.cite} · ${readings.gospel.title}`;
 
   return (
     <div style={{ padding: "44px 44px 64px", maxWidth: 900, margin: "0 auto" }}>
 
       {/* Season badge */}
       <div style={{ marginBottom: 32 }}>
-        <SeasonBadge season="green">Ordinary Time · Week X</SeasonBadge>
+        <SeasonBadge season={liturgical.badgeSeason}>{liturgical.label}</SeasonBadge>
       </div>
 
       {/* Hero verse */}
@@ -30,7 +68,7 @@ export default function TodayPage() {
           maxWidth: 640,
           letterSpacing: ".01em",
         }}>
-          &ldquo;Put on the full armour of God, that you may be able to stand against the wiles of the devil.&rdquo;
+          &ldquo;{verse.text}&rdquo;
         </blockquote>
 
         <Fleuron width={220} style={{ margin: "24px auto" }} />
@@ -43,7 +81,7 @@ export default function TodayPage() {
           color: "var(--gold-deep)",
           fontWeight: 600,
         }}>
-          Ephesians 6 &middot; 11
+          {verse.cite}
         </div>
       </div>
 
@@ -55,7 +93,7 @@ export default function TodayPage() {
           <FeatureCard
             kicker="Today · Holy Mass"
             title="Daily Readings"
-            meta="1 Kings 17 · Psalm 4 · Matthew 5 — The Beatitudes"
+            meta={gospelMeta}
             onClick={() => router.push("/readings")}
             motif={<RoseWindow size={220} />}
           />
@@ -85,8 +123,8 @@ export default function TodayPage() {
         <Link href="/saints" style={{ textDecoration: "none" }}>
           <SurfaceCard
             kicker="Saint of the Day"
-            title="St. Ephrem"
-            meta="Doctor of the Church · June 9"
+            title={saint.name}
+            meta={saint.title ?? ""}
             lucide="flame"
           />
         </Link>

@@ -1,5 +1,6 @@
 "use client";
 import type { ReactNode, CSSProperties } from "react";
+import * as Lucide from "lucide-react";
 import { Cross } from "./Sacred";
 
 const LIT: Record<string, { c: string; label: string }> = {
@@ -118,17 +119,11 @@ export function SurfaceCard({ kicker, title, meta, onClick, lucide }: {
 }
 
 export function LucideIcon({ name, size = 20, stroke = 1.6 }: { name: string; size?: number; stroke?: number }) {
-  // Dynamic import from lucide-react at render — using a lookup
-  const icons: Record<string, React.FC<{ size?: number; strokeWidth?: number }>> = {};
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const lucide = require("lucide-react");
-    const pascal = name.split("-").map((s: string) => s[0].toUpperCase() + s.slice(1)).join("");
-    const Icon = lucide[pascal];
-    if (Icon) return <Icon size={size} strokeWidth={stroke} />;
-  } catch {
-    // fallback
-  }
-  void icons;
+  // Look up the icon from a statically-imported namespace so the bundler can
+  // resolve it; render outside any try/catch so render errors surface normally.
+  const pascal = name.split("-").map((s) => s[0].toUpperCase() + s.slice(1)).join("");
+  const icons = Lucide as unknown as Record<string, React.FC<{ size?: number; strokeWidth?: number }>>;
+  const Icon = icons[pascal];
+  if (Icon) return <Icon size={size} strokeWidth={stroke} />;
   return <span style={{ width: size, height: size, display: "inline-block" }} />;
 }
