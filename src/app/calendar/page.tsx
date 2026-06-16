@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Fleuron } from "@/components/Sacred";
 import { SeasonBadge } from "@/components/UI";
+import { badgeSeason, type LitColor as EngineColor } from "@/lib/liturgical";
 
 // ── Static feast / liturgical data ──────────────────────────────────────────
 // Keyed as "YYYY-M-D" (no zero-padding on month/day for easy lookup)
@@ -87,6 +88,25 @@ export default function CalendarPage() {
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth() + 1); // 1-based
 
+  // Feasts + season come live from /api/calendar; static FEASTS seed the first paint.
+  const [feasts, setFeasts] = useState<Record<string, FeastDay>>(FEASTS);
+  const [seasonColor, setSeasonColor] = useState<EngineColor>(getSeason(today.getFullYear(), today.getMonth() + 1));
+  const [seasonLabel, setSeasonLabel] = useState("Ordinary Time");
+
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/calendar?year=${viewYear}&month=${viewMonth}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d) return;
+        setFeasts((prev) => ({ ...prev, ...(d.feasts as Record<string, FeastDay>) }));
+        setSeasonColor(d.season.color as EngineColor);
+        setSeasonLabel(d.season.label as string);
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [viewYear, viewMonth]);
+
   function prevMonth() {
     if (viewMonth === 1) { setViewMonth(12); setViewYear((y) => y - 1); }
     else setViewMonth((m) => m - 1);
@@ -104,15 +124,12 @@ export default function CalendarPage() {
   // Total cells: fill to complete rows
   const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
 
-  const season = getSeason(viewYear, viewMonth);
-  const seasonLabel = season === "green" ? "Ordinary Time" : season === "violet" ? "Lent / Advent" : "Easter Season";
-
   return (
     <div style={{ padding: "40px 44px 64px", maxWidth: 860, margin: "0 auto" }}>
 
       {/* Season badge */}
       <div style={{ marginBottom: 28 }}>
-        <SeasonBadge season={season}>{seasonLabel}</SeasonBadge>
+        <SeasonBadge season={badgeSeason(seasonColor)}>{seasonLabel}</SeasonBadge>
       </div>
 
       {/* Month header */}
@@ -228,7 +245,7 @@ export default function CalendarPage() {
             viewYear === today.getFullYear();
 
           const feast = isCurrentMonth
-            ? FEASTS[feastKey(viewYear, viewMonth, dayNum)]
+            ? feasts[feastKey(viewYear, viewMonth, dayNum)]
             : undefined;
 
           const isSunday = cellIdx % 7 === 0;

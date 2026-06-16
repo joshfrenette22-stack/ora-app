@@ -1,9 +1,44 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { HaloRays, Fleuron } from "@/components/Sacred";
 import { SeasonBadge, Kicker } from "@/components/UI";
+import { PrayerPlayer, type NarrationSegment } from "@/components/PrayerPlayer";
+import { badgeSeason } from "@/lib/liturgical";
+import type { Saint } from "@/lib/saints";
+import { localDateISO } from "@/lib/clientDate";
+
+const FALLBACK: Saint = {
+  name: "St. Ephrem",
+  title: "the Syrian · Deacon & Doctor · c. 306–373",
+  color: "white",
+  rank: "memorial",
+  monogram: "E",
+  bio: "Deacon, hymnographer, and Doctor of the Church, called the “Harp of the Holy Spirit.” His hymns and metrical homilies defended the faith against the heresies of his day and adorned the liturgy of the Syriac Church with a poetry that is still sung today.",
+  collect: "O God, who didst illumine thy Church with the learning and sanctity of the Deacon Saint Ephrem, grant that we, following his example, may ever seek thee above all things and delight in singing thy praises. Through our Lord Jesus Christ. Amen.",
+};
 
 export default function SaintsPage() {
+  const [saint, setSaint] = useState<Saint>(FALLBACK);
+
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/saints?date=${localDateISO()}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (alive && d) setSaint(d); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  const segments = useMemo<NarrationSegment[]>(() => {
+    const segs: NarrationSegment[] = [];
+    if (saint.bio) segs.push({ id: "life", label: "The Life", text: `${saint.name}. ${saint.bio}` });
+    if (saint.collect) segs.push({ id: "collect", label: "Collect", text: saint.collect });
+    return segs;
+  }, [saint]);
+
+  const rankLabel = saint.rank === "feria" ? "Feria" : saint.rank.charAt(0).toUpperCase() + saint.rank.slice(1);
+
   return (
     <div
       style={{
@@ -18,10 +53,7 @@ export default function SaintsPage() {
     >
       {/* HaloRays monogram */}
       <div style={{ position: "relative", width: 150, height: 150, display: "grid", placeItems: "center", marginBottom: 24 }}>
-        <HaloRays
-          size={150}
-          style={{ color: "var(--gold)", position: "absolute", inset: 0 }}
-        />
+        <HaloRays size={150} style={{ color: "var(--gold)", position: "absolute", inset: 0 }} />
         <span
           style={{
             fontFamily: "var(--font-ornament)",
@@ -34,7 +66,7 @@ export default function SaintsPage() {
             userSelect: "none",
           }}
         >
-          E
+          {saint.monogram ?? saint.name.replace(/^(St\.|Sts\.|Bl\.)\s*/, "").charAt(0)}
         </span>
       </div>
 
@@ -52,28 +84,37 @@ export default function SaintsPage() {
           marginBottom: 10,
         }}
       >
-        St. Ephrem
+        {saint.name}
       </div>
 
       {/* Subtitle */}
-      <div
-        style={{
-          fontFamily: "var(--font-body)",
-          fontStyle: "italic",
-          fontSize: 16,
-          color: "var(--stone-400)",
-          textAlign: "center",
-          lineHeight: 1.5,
-          marginBottom: 16,
-        }}
-      >
-        the Syrian &middot; Deacon &amp; Doctor &middot; c.&thinsp;306&ndash;373
-      </div>
+      {saint.title && (
+        <div
+          style={{
+            fontFamily: "var(--font-body)",
+            fontStyle: "italic",
+            fontSize: 16,
+            color: "var(--stone-400)",
+            textAlign: "center",
+            lineHeight: 1.5,
+            marginBottom: 16,
+          }}
+        >
+          {saint.title}
+        </div>
+      )}
 
       {/* Season badge */}
       <div style={{ marginBottom: 28 }}>
-        <SeasonBadge season="gold">Memorial · White</SeasonBadge>
+        <SeasonBadge season={badgeSeason(saint.color)}>{rankLabel}</SeasonBadge>
       </div>
+
+      {/* Voice player */}
+      {segments.length > 0 && (
+        <div style={{ width: "100%", marginBottom: 28 }}>
+          <PrayerPlayer segments={segments} title={`Listen · ${saint.name}`} />
+        </div>
+      )}
 
       {/* Fleuron divider */}
       <div style={{ marginBottom: 28 }}>
@@ -81,45 +122,49 @@ export default function SaintsPage() {
       </div>
 
       {/* Hagiography paragraph with drop cap */}
-      <p
-        className="pw-dropcap"
-        style={{
-          fontFamily: "var(--font-body)",
-          fontSize: 18,
-          lineHeight: 1.72,
-          color: "var(--ink-700)",
-          textAlign: "left",
-          margin: "0 0 32px",
-          width: "100%",
-        }}
-      >
-        Deacon, hymnographer, and Doctor of the Church, called the &ldquo;Harp of the Holy Spirit.&rdquo; His hymns and metrical homilies defended the faith against the heresies of his day and adorned the liturgy of the Syriac Church with a poetry that is still sung today. He is honoured as a teacher whose theology was sung rather than argued.
-      </p>
-
-      {/* Collect card */}
-      <div
-        style={{
-          width: "100%",
-          background: "var(--gold-faint)",
-          borderRadius: 14,
-          padding: "24px 28px",
-          boxShadow: "var(--shadow-sm)",
-        }}
-      >
-        <Kicker style={{ marginBottom: 12 }}>Collect</Kicker>
+      {saint.bio && (
         <p
+          className="pw-dropcap"
           style={{
             fontFamily: "var(--font-body)",
-            fontStyle: "italic",
-            fontSize: 16.5,
-            lineHeight: 1.7,
+            fontSize: 18,
+            lineHeight: 1.72,
             color: "var(--ink-700)",
-            margin: 0,
+            textAlign: "left",
+            margin: "0 0 32px",
+            width: "100%",
           }}
         >
-          O God, who didst illumine thy Church with the learning and sanctity of the Deacon Saint Ephrem, grant that we, following his example, may ever seek thee above all things and delight in singing thy praises. Through our Lord Jesus Christ, thy Son, who liveth and reigneth with thee in the unity of the Holy Spirit, God, for ever and ever. Amen.
+          {saint.bio}
         </p>
-      </div>
+      )}
+
+      {/* Collect card */}
+      {saint.collect && (
+        <div
+          style={{
+            width: "100%",
+            background: "var(--gold-faint)",
+            borderRadius: 14,
+            padding: "24px 28px",
+            boxShadow: "var(--shadow-sm)",
+          }}
+        >
+          <Kicker style={{ marginBottom: 12 }}>Collect</Kicker>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontStyle: "italic",
+              fontSize: 16.5,
+              lineHeight: 1.7,
+              color: "var(--ink-700)",
+              margin: 0,
+            }}
+          >
+            {saint.collect}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

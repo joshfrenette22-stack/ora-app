@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Sunrise, Sun, Sunset, Moon } from "lucide-react";
 import { Cross } from "@/components/Sacred";
 import { SeasonBadge, Kicker, Btn } from "@/components/UI";
+import { PrayerPlayer } from "@/components/PrayerPlayer";
 import { HOURS } from "@/data/content";
 
 type HourName = typeof HOURS[number]["name"];
@@ -38,6 +39,9 @@ export default function HoursPage() {
   const [currentHour, setCurrentHour] = useState<HourName>("Sext");
 
   useEffect(() => {
+    // Resolve the live hour on the client after mount to avoid a hydration
+    // mismatch (server and client clocks can land in different hours).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentHour(getCurrentHour());
   }, []);
 
@@ -137,6 +141,15 @@ export default function HoursPage() {
           <Btn variant="primary" icon={<Cross size={14} />}>
             Pray {activeHour.name}
           </Btn>
+        </div>
+
+        {/* Voice player — the antiphon read aloud */}
+        <div style={{ position: "relative", marginTop: 6 }}>
+          <PrayerPlayer
+            dark
+            title={`Listen · ${activeHour.name}`}
+            segments={[{ id: currentHour, label: `${activeHour.name} · Antiphon`, text: ANTIPHONS[currentHour] }]}
+          />
         </div>
       </div>
 

@@ -16,7 +16,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [night, setNight] = useState(false);
 
   useEffect(() => {
+    // Read the saved preference on the client after mount; doing this in initial
+    // state would break SSR (localStorage is unavailable on the server).
     const saved = localStorage.getItem("ora-night");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (saved === "true") setNight(true);
   }, []);
 

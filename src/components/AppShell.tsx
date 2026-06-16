@@ -1,9 +1,10 @@
 "use client";
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Cross, Logomark } from "./Sacred";
 import { SeasonBadge, LucideIcon } from "./UI";
 import { useTheme } from "./ThemeProvider";
+import { localDateISO } from "@/lib/clientDate";
 
 const NAV = [
   { id: "/", label: "Today", lucide: "sun" },
@@ -27,6 +28,22 @@ const TITLES: Record<string, [string, string | null]> = {
 
 function Sidebar({ active, onChange }: { active: string; onChange: (id: string) => void }) {
   const { night, setNight } = useTheme();
+  const [lit, setLit] = useState<{ label: string; badgeSeason: string }>({ label: "Ordinary Time", badgeSeason: "green" });
+  const [dayLabel, setDayLabel] = useState("Feria");
+
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/today?date=${localDateISO()}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d) return;
+        setLit(d.liturgical);
+        setDayLabel(d.saint.rank === "feria" ? "Feria" : d.saint.name);
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
   return (
     <div style={{ width: 256, flexShrink: 0, background: "var(--surface-ink)", color: "var(--gold-bright)", display: "flex", flexDirection: "column", padding: "26px 0", borderRight: "1px solid rgba(216,188,118,.12)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "0 24px 26px" }}>
@@ -59,9 +76,9 @@ function Sidebar({ active, onChange }: { active: string; onChange: (id: string) 
       </div>
       <div style={{ marginTop: "auto", padding: "0 24px" }}>
         <div style={{ height: 1, background: "rgba(216,188,118,0.18)", margin: "0 0 18px" }} />
-        <SeasonBadge season="green" dark>Ordinary Time · Week X</SeasonBadge>
+        <SeasonBadge season={lit.badgeSeason} dark>{lit.label}</SeasonBadge>
         <div style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "rgba(236,227,204,0.5)", marginTop: 8 }}>
-          {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · Feria
+          {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · {dayLabel}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 18 }}>
           <button

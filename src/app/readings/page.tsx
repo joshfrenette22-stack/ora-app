@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Fleuron } from "@/components/Sacred";
 import { Kicker } from "@/components/UI";
-import { READINGS } from "@/data/content";
+import { PlayerBar, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
+import type { DailyReadings } from "@/lib/readings";
+import { localDateISO } from "@/lib/clientDate";
 import { Flame, Clock, BookOpen } from "lucide-react";
 
 type Tab = "first" | "psalm" | "gospel";
@@ -15,17 +17,56 @@ const TABS: { key: Tab; label: string }[] = [
 ];
 
 const ALSO_TODAY = [
-  { icon: <Flame size={16} strokeWidth={1.6} />, label: "St. Ephrem", sub: "Doctor of the Church" },
+  { icon: <Flame size={16} strokeWidth={1.6} />, label: "Saint of the Day", sub: "The day’s memorial" },
   { icon: <Clock size={16} strokeWidth={1.6} />, label: "Sext · Midday", sub: "12:00 Prayer" },
   { icon: <BookOpen size={16} strokeWidth={1.6} />, label: "Office of Readings", sub: "Breviary" },
 ];
 
+// Static fallback so the page renders before the API responds.
+const FALLBACK: DailyReadings = {
+  date: "",
+  representative: true,
+  source: "",
+  first: { label: "First Reading", cite: "1 Kings 17 · 1–6", title: "Elijah by the Brook", body: "And Elijah the Thesbite said to Achab: As the Lord liveth, before whom I stand, there shall not be dew nor rain these years, but according to the words of my mouth." },
+  psalm: { label: "Responsorial Psalm", cite: "Psalm 4 · 2–8", title: "In Peace I Will Lie Down", refrain: "Let the light of thy countenance, O Lord, be signed upon us.", body: "In peace in the selfsame I will sleep, and I will rest: for thou, O Lord, singularly hast settled me in hope." },
+  gospel: { label: "Gospel", cite: "Matthew 5 · 1–12", title: "The Beatitudes", body: "Blessed are the poor in spirit: for theirs is the kingdom of heaven. Blessed are the meek: for they shall possess the land." },
+  reflect: {
+    first: "Where is God calling you to trust him with your daily bread?",
+    psalm: "How does resting in God's peace speak to a burden you carry today?",
+    gospel: "Which Beatitude speaks most directly to your heart right now?",
+  },
+};
+
 export default function ReadingsPage() {
   const [active, setActive] = useState<Tab>("first");
+  const [data, setData] = useState<DailyReadings>(FALLBACK);
 
-  const reading = READINGS[active];
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/readings?date=${localDateISO()}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (alive && d) setData(d); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  const reading = data[active];
   const isPsalm = active === "psalm";
-  const psalmReading = active === "psalm" ? READINGS.psalm : null;
+
+  // Narrate the whole Mass in order; follow along by switching tabs.
+  const segments = useMemo<NarrationSegment[]>(() => {
+    const order: Tab[] = ["first", "psalm", "gospel"];
+    return order.map((key) => {
+      const r = data[key];
+      const refrain = key === "psalm" && r.refrain ? `${r.refrain} ` : "";
+      return { id: key, label: r.cite, text: `${r.title}. ${refrain}${r.body}` };
+    });
+  }, [data]);
+
+  const narration = useNarration({
+    segments,
+    onSegmentChange: (i) => setActive((["first", "psalm", "gospel"] as Tab[])[i]),
+  });
 
   return (
     <div style={{ display: "flex", gap: 0, alignItems: "flex-start", minHeight: "100%" }}>
@@ -40,14 +81,14 @@ export default function ReadingsPage() {
           borderRadius: 12,
           padding: 4,
           gap: 2,
-          marginBottom: 44,
+          marginBottom: 24,
         }}>
           {TABS.map((tab) => {
             const on = active === tab.key;
             return (
               <button
                 key={tab.key}
-                onClick={() => setActive(tab.key)}
+                onClick={() => narration.seek(["first", "psalm", "gospel"].indexOf(tab.key))}
                 style={{
                   fontFamily: "var(--font-display)",
                   fontWeight: on ? 600 : 500,
@@ -70,13 +111,16 @@ export default function ReadingsPage() {
           })}
         </div>
 
+        {/* Audio player — listen to the Mass */}
+        <div style={{ maxWidth: 700, marginBottom: 40 }}>
+          <PlayerBar narration={narration} title="Listen to the Readings" />
+        </div>
+
         {/* Reading content — max 700px centered */}
         <div style={{ maxWidth: 700 }}>
 
-          {/* Kicker citation */}
           <Kicker style={{ marginBottom: 10 }}>{reading.cite}</Kicker>
 
-          {/* Title */}
           <h1 style={{
             fontFamily: "var(--font-body)",
             fontWeight: 600,
@@ -90,7 +134,7 @@ export default function ReadingsPage() {
           </h1>
 
           {/* Psalm refrain block */}
-          {isPsalm && psalmReading && (
+          {isPsalm && reading.refrain && (
             <div style={{
               borderLeft: "2px solid var(--gold)",
               paddingLeft: 20,
@@ -113,7 +157,7 @@ export default function ReadingsPage() {
               }}>
                 Refrain
               </div>
-              {psalmReading.refrain}
+              {reading.refrain}
             </div>
           )}
 
@@ -132,7 +176,6 @@ export default function ReadingsPage() {
             {reading.body}
           </p>
 
-          {/* Fleuron divider */}
           <Fleuron width={200} style={{ marginBottom: 32 }} />
 
           {/* Acclamation footer */}
@@ -210,21 +253,10 @@ export default function ReadingsPage() {
                   {item.icon}
                 </span>
                 <div>
-                  <div style={{
-                    fontFamily: "var(--font-body)",
-                    fontWeight: 600,
-                    fontSize: 15,
-                    color: "var(--ink)",
-                    lineHeight: 1.2,
-                  }}>
+                  <div style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 15, color: "var(--ink)", lineHeight: 1.2 }}>
                     {item.label}
                   </div>
-                  <div style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: 13,
-                    color: "var(--stone-400)",
-                    marginTop: 2,
-                  }}>
+                  <div style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--stone-400)", marginTop: 2 }}>
                     {item.sub}
                   </div>
                 </div>
@@ -233,7 +265,6 @@ export default function ReadingsPage() {
           </div>
         </div>
 
-        {/* Divider */}
         <div style={{ height: 1, background: "var(--stone-200)", margin: "28px 0" }} />
 
         {/* Reflect section */}
@@ -257,13 +288,10 @@ export default function ReadingsPage() {
             lineHeight: 1.62,
             color: "var(--ink-700)",
           }}>
-            {active === "first" && "Where in your life do you feel God is calling you to trust him with your daily bread, as he provided for Elijah?"}
-            {active === "psalm" && "How does resting in God's peace — \"in peace I will sleep\" — speak to a worry or burden you carry today?"}
-            {active === "gospel" && "Which Beatitude speaks most directly to the condition of your heart right now? What would it look like to live it today?"}
+            {data.reflect[active]}
           </div>
         </div>
 
-        {/* Divider */}
         <div style={{ height: 1, background: "var(--stone-200)", margin: "28px 0" }} />
 
         {/* Lectionary note */}
@@ -285,8 +313,8 @@ export default function ReadingsPage() {
             color: "var(--stone-400)",
             lineHeight: 1.6,
           }}>
-            Year C · Ordinary Time<br />
             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+            {data.source && <><br /><span style={{ fontStyle: "italic", fontSize: 12 }}>{data.source}</span></>}
           </div>
         </div>
 

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { HaloRays, Cross, Fleuron } from "@/components/Sacred";
 import { Btn } from "@/components/UI";
+import { PlayerBar, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { MYSTERY_SETS, ROSARY_PRAYERS } from "@/data/content";
 
 type SetKey = keyof typeof MYSTERY_SETS;
@@ -84,32 +85,44 @@ export default function RosaryPage() {
   const beadLabel = getBeadLabel(bead);
   const prayer = getBeadPrayer(bead);
 
-  function advance() {
-    if (bead < TOTAL_BEADS - 1) {
-      setBead((b) => b + 1);
-    } else {
-      // move to next mystery
-      const nextIdx = mysteryIdx + 1;
-      if (nextIdx < 5) {
-        setMysteryIdx(nextIdx);
-        setBead(0);
-      } else {
-        // rosary complete — wrap around
-        setMysteryIdx(0);
-        setBead(0);
+  // Full hands-free sequence: 5 mysteries × 12 beads, narrated in order.
+  const segments = useMemo<NarrationSegment[]>(() => {
+    const segs: NarrationSegment[] = [];
+    (mysteries as readonly (readonly [string, string])[]).forEach(([name], mi) => {
+      for (let b = 0; b < TOTAL_BEADS; b++) {
+        let text: string;
+        if (b === 0) text = `The ${ORDINALS[mi]} ${activeSet} Mystery. ${name}. ${ROSARY_PRAYERS.our}`;
+        else if (b <= 10) text = ROSARY_PRAYERS.hail;
+        else text = `${ROSARY_PRAYERS.glory} ${ROSARY_PRAYERS.fatima}`;
+        segs.push({ id: `${mi}-${b}`, label: `${ORDINALS[mi]} · ${getBeadLabel(b)}`, text });
       }
-    }
+    });
+    return segs;
+  }, [mysteries, activeSet]);
+
+  // Narration is the single source of truth for position; the visible mystery
+  // and bead are derived from it via onSegmentChange.
+  const narration = useNarration({
+    segments,
+    rate: 0.9,
+    onSegmentChange: (i) => {
+      setMysteryIdx(Math.floor(i / TOTAL_BEADS));
+      setBead(i % TOTAL_BEADS);
+    },
+  });
+
+  function advance() {
+    const g = mysteryIdx * TOTAL_BEADS + bead;
+    narration.seek(g + 1 >= segments.length ? 0 : g + 1);
   }
 
   function jumpToMystery(idx: number) {
-    setMysteryIdx(idx);
-    setBead(0);
+    narration.seek(idx * TOTAL_BEADS);
   }
 
   function changeSet(key: SetKey) {
     setActiveSet(key);
-    setMysteryIdx(0);
-    setBead(0);
+    narration.reset(0);
   }
 
   return (
@@ -350,7 +363,7 @@ export default function RosaryPage() {
         {/* Fleuron */}
         <Fleuron width={180} style={{ marginBottom: 36 }} />
 
-        {/* Continue button */}
+        {/* Continue button (silent tap-through) */}
         <Btn
           variant="primary"
           onClick={advance}
@@ -377,6 +390,11 @@ export default function RosaryPage() {
               ? `Hail Mary ${bead} of 10`
               : "Closing Prayer"}
           </div>
+        </div>
+
+        {/* Hands-free voice player */}
+        <div style={{ marginTop: 36, width: "100%", maxWidth: 460 }}>
+          <PlayerBar narration={narration} dark title="Pray hands-free" />
         </div>
 
       </main>
