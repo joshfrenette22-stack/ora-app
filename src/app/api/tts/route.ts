@@ -16,8 +16,9 @@ export async function GET(request: NextRequest) {
   const text = params.get("text")?.trim();
   if (!text) return new Response("Missing text", { status: 400 });
   const rate = Number(params.get("rate")) || undefined;
+  const voice = params.get("voice") ?? undefined;
 
-  const audio = await synthesize(text, rate);
+  const audio = await synthesize(text, { rate, voice });
   if (!audio) return new Response("Synthesis failed", { status: 502 });
 
   return new Response(new Uint8Array(audio), {
