@@ -75,10 +75,10 @@ export default function ReadingsPage() {
   });
 
   return (
-    <div style={{ display: "flex", gap: 0, alignItems: "flex-start", minHeight: "100%" }}>
+    <div className="pw-readings" style={{ display: "flex", gap: 0, alignItems: "flex-start", minHeight: "100%" }}>
 
       {/* Main reading column */}
-      <div style={{ flex: 1, padding: "40px 48px 72px", minWidth: 0 }}>
+      <div className="pw-readings-main" style={{ flex: 1, padding: "40px 48px 72px", minWidth: 0 }}>
 
         {/* Segmented control */}
         <div style={{
@@ -202,7 +202,7 @@ export default function ReadingsPage() {
       </div>
 
       {/* Right sidebar */}
-      <div style={{
+      <div className="pw-readings-aside" style={{
         width: 300,
         flexShrink: 0,
         borderLeft: "1px solid var(--stone-200)",

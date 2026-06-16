@@ -125,7 +125,7 @@ export default function CalendarPage() {
   const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
 
   return (
-    <div style={{ padding: "40px 44px 64px", maxWidth: 860, margin: "0 auto" }}>
+    <div className="pw-calendar-pad" style={{ padding: "40px 44px 64px", maxWidth: 860, margin: "0 auto" }}>
 
       {/* Season badge */}
       <div style={{ marginBottom: 28 }}>

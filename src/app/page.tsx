@@ -48,7 +48,7 @@ export default function TodayPage() {
   const gospelMeta = `${readings.first.cite} · ${readings.psalm.cite} · ${readings.gospel.title}`;
 
   return (
-    <div style={{ padding: "44px 44px 64px", maxWidth: 900, margin: "0 auto" }}>
+    <div className="pw-today-pad" style={{ padding: "44px 44px 64px", maxWidth: 900, margin: "0 auto" }}>
 
       {/* Season badge */}
       <div style={{ marginBottom: 32 }}>
@@ -86,7 +86,7 @@ export default function TodayPage() {
       </div>
 
       {/* Card grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 48 }}>
+      <div className="pw-card-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 48 }}>
 
         {/* Feature card — full width */}
         <div style={{ gridColumn: "1 / -1" }}>
