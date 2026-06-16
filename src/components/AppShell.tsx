@@ -7,12 +7,12 @@ import { useTheme } from "./ThemeProvider";
 import { localDateISO } from "@/lib/clientDate";
 
 const NAV = [
-  { id: "/", label: "Today", lucide: "sun" },
-  { id: "/readings", label: "Daily Mass", lucide: "book-open" },
-  { id: "/hours", label: "Liturgy of the Hours", lucide: "clock" },
-  { id: "/rosary", label: "The Holy Rosary", cross: true },
-  { id: "/saints", label: "Saints", lucide: "flame" },
-  { id: "/calendar", label: "Calendar", lucide: "calendar" },
+  { id: "/", label: "Today", short: "Today", lucide: "sun" },
+  { id: "/readings", label: "Daily Mass", short: "Mass", lucide: "book-open" },
+  { id: "/hours", label: "Liturgy of the Hours", short: "Hours", lucide: "clock" },
+  { id: "/rosary", label: "The Holy Rosary", short: "Rosary", cross: true },
+  { id: "/saints", label: "Saints", short: "Saints", lucide: "flame" },
+  { id: "/calendar", label: "Calendar", short: "Calendar", lucide: "calendar" },
 ];
 
 const TITLES: Record<string, [string, string | null]> = {
@@ -45,7 +45,7 @@ function Sidebar({ active, onChange }: { active: string; onChange: (id: string) 
   }, []);
 
   return (
-    <div style={{ width: 256, flexShrink: 0, background: "var(--surface-ink)", color: "var(--gold-bright)", display: "flex", flexDirection: "column", padding: "26px 0", borderRight: "1px solid rgba(216,188,118,.12)" }}>
+    <div className="pw-sidebar" style={{ width: 256, flexShrink: 0, background: "var(--surface-ink)", color: "var(--gold-bright)", display: "flex", flexDirection: "column", padding: "26px 0", borderRight: "1px solid rgba(216,188,118,.12)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "0 24px 26px" }}>
         <span style={{ color: "var(--gold)" }}><Logomark size={34} /></span>
         <div>
@@ -103,6 +103,12 @@ function Sidebar({ active, onChange }: { active: string; onChange: (id: string) 
 }
 
 function ContentBar({ title, sub }: { title: string; sub: string | null }) {
+  const { night, setNight } = useTheme();
+  const iconBtn: React.CSSProperties = {
+    width: 42, height: 42, borderRadius: 10, border: "1px solid var(--stone-200)",
+    background: "var(--bone-raised)", color: "var(--ink-500)", cursor: "pointer",
+    display: "grid", placeItems: "center",
+  };
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px 44px", borderBottom: "1px solid var(--stone-200)" }}>
       <div>
@@ -116,14 +122,55 @@ function ContentBar({ title, sub }: { title: string; sub: string | null }) {
         </div>
       </div>
       <div style={{ display: "flex", gap: 10 }}>
-        <button style={{ width: 42, height: 42, borderRadius: 10, border: "1px solid var(--stone-200)", background: "var(--bone-raised)", color: "var(--ink-500)", cursor: "pointer", display: "grid", placeItems: "center" }}>
+        {/* Night toggle — the sidebar's copy is hidden on phones, so surface it here. */}
+        <button className="pw-mobile-only" onClick={() => setNight(!night)} aria-label="Toggle night mode" style={{ ...iconBtn, placeItems: "center" }}>
+          <LucideIcon name={night ? "sun" : "moon"} size={19} />
+        </button>
+        <button style={iconBtn} aria-label="Search">
           <LucideIcon name="search" size={19} />
         </button>
-        <button style={{ width: 42, height: 42, borderRadius: 10, border: "1px solid var(--stone-200)", background: "var(--bone-raised)", color: "var(--ink-500)", cursor: "pointer", display: "grid", placeItems: "center" }}>
+        <button style={iconBtn} aria-label="Notifications">
           <LucideIcon name="bell" size={19} />
         </button>
       </div>
     </div>
+  );
+}
+
+function BottomNav({ active, onChange }: { active: string; onChange: (id: string) => void }) {
+  return (
+    <nav
+      className="pw-bottomnav"
+      style={{
+        position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50,
+        background: "var(--surface-ink)", borderTop: "1px solid rgba(216,188,118,.18)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        alignItems: "stretch", justifyContent: "space-around",
+      }}
+    >
+      {NAV.map((n) => {
+        const on = active === n.id;
+        return (
+          <button
+            key={n.id}
+            onClick={() => onChange(n.id)}
+            aria-label={n.label}
+            style={{
+              flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+              padding: "9px 2px 7px", border: "none", background: "transparent", cursor: "pointer",
+              color: on ? "var(--gold-bright)" : "rgba(216,188,118,0.55)",
+            }}
+          >
+            <span style={{ display: "grid", placeItems: "center", height: 22 }}>
+              {n.cross ? <Cross size={18} /> : <LucideIcon name={n.lucide!} size={20} stroke={on ? 2 : 1.7} />}
+            </span>
+            <span style={{ fontFamily: "var(--font-display)", fontSize: 9.5, letterSpacing: ".06em", textTransform: "uppercase", fontWeight: on ? 600 : 500 }}>
+              {n.short}
+            </span>
+          </button>
+        );
+      })}
+    </nav>
   );
 }
 
@@ -138,10 +185,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Sidebar active={pathname} onChange={(id) => router.push(id)} />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", background: immersive ? "var(--surface-ink)" : "var(--bone)", minWidth: 0 }}>
         {!immersive && <ContentBar title={titleEntry[0]} sub={titleEntry[1]} />}
-        <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+        <div className="pw-scroll" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
           {children}
         </div>
       </div>
+      <BottomNav active={pathname} onChange={(id) => router.push(id)} />
     </div>
   );
 }
