@@ -44,7 +44,3 @@ export const TIER_NOTE: Record<VoiceTier, string> = {
 export function isValidVoice(id: string): boolean {
   return VOICES.some((v) => v.id === id);
 }
-
-export function voiceById(id: string): Voice | undefined {
-  return VOICES.find((v) => v.id === id);
-}

@@ -23,10 +23,6 @@ const DEUTEROCANON = new Set([
 export const ESV_ATTRIBUTION =
   "Scripture quotations from the ESV® Bible, © Crossway. Used by permission.";
 
-export function esvEnabled(): boolean {
-  return Boolean(process.env.ESV_API_KEY);
-}
-
 /** Render a USCCB citation as ESV text, or null (no key / deuterocanon / failure). */
 export async function renderEsv(cite: string): Promise<string | null> {
   const key = process.env.ESV_API_KEY;

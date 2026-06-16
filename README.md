@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ORA — Prayer Warrior
 
-## Getting Started
+A reverent Catholic prayer companion: daily Mass readings, the Liturgy of the
+Hours, the Holy Rosary, the saint of the day, and the liturgical calendar — with
+optional human-voice narration.
 
-First, run the development server:
+Built with Next.js 16 (App Router), React 19, and TypeScript.
+
+## Features
+
+- **Today** — liturgical season/colour, a daily verse, and quick links.
+- **Daily Mass** — the day's readings with a follow-along audio player.
+- **Liturgy of the Hours** — the current hour's antiphon, read aloud.
+- **The Holy Rosary** — hands-free narration that auto-advances the beads.
+- **Saints** — the day's celebration with life and collect.
+- **Calendar** — the month's feasts and seasons.
+- **Settings** — pick a narration voice (with live previews) and night mode.
+- Installable PWA with an app icon; responsive (sidebar on desktop, bottom bar on phones).
+
+## Data sources
+
+- **Liturgical calendar** — [`romcal`](https://github.com/romcal/romcal) (General Roman Calendar, US).
+- **Mass readings** — the day's *citations* are read from the USCCB lectionary,
+  then the scripture text is rendered from a chosen translation:
+  **ESV** (if configured) → **Douay–Rheims 1899** (public domain, bundled) →
+  the scraped text as a last resort. Using only the citations plus a
+  public-domain translation keeps the default fully license-clean.
+- **Narration** — Google Cloud Text-to-Speech (natural voices) when configured,
+  otherwise the browser's Web Speech API.
+
+## Configuration
+
+All environment variables are **optional** — the app runs without them and
+degrades gracefully. See [`.env.example`](./.env.example).
+
+| Variable | Purpose |
+| --- | --- |
+| `ESV_API_KEY` | Crossway ESV API key. Renders the protocanon in the ESV. Non-commercial free tier; a public app needs a Crossway licence. |
+| `GOOGLE_TTS_API_KEY` | Google Cloud TTS key (enable "Cloud Text-to-Speech API"). Switches narration to a human voice. |
+| `GOOGLE_TTS_VOICE` | Optional default voice, e.g. `en-US-Neural2-D`. Users can override it in Settings. |
+
+Copy `.env.example` to `.env.local` and fill in what you need.
+
+## Development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3000
+npm run build      # production build
+npm run lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Regenerating the bundled bible
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The Douay–Rheims text in `src/data/dra.json` is generated from public-domain
+sources:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+node scripts/build-dra.mjs
+```
 
-## Learn More
+## Licensing notes
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- The bundled **Douay–Rheims 1899** is public domain.
+- The **ESV** is © Crossway and the **NABRE** (USCCB) is © CCD — both are used
+  only when configured, with attribution shown in the readings source line.
+  Confirm you hold the appropriate rights before deploying publicly.

@@ -122,8 +122,18 @@ export function useNarration({
     (text: string, onEnd: () => void, onError: () => void) => {
       if (engineRef.current === "google" && audioRef.current) {
         const a = audioRef.current;
-        const fallback = () => { if (!speak(text, { rate, onEnd, onError })) onError(); };
-        a.onended = onEnd;
+        // Guard so this segment resolves exactly once even if the element
+        // fires both `error` and a stale `ended`.
+        let settled = false;
+        const finish = () => { if (!settled) { settled = true; onEnd(); } };
+        const fallback = () => {
+          if (settled) return;
+          settled = true;
+          a.onended = null;
+          a.onerror = null;
+          if (!speak(text, { rate, onEnd, onError })) onError();
+        };
+        a.onended = finish;
         a.onerror = fallback;
         a.src = ttsUrl(text, rate, voice);
         a.play().catch(fallback);
