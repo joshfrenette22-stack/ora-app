@@ -134,6 +134,18 @@ body {
   .ora-pulse { animation: none; }
 }
 
+/* Responsive navigation: sidebar on desktop, bottom tab bar on phones */
+.pw-bottomnav { display: none; }
+.pw-mobile-only { display: none; }
+
+@media (max-width: 768px) {
+  .pw-sidebar { display: none !important; }
+  .pw-bottomnav { display: flex; }
+  .pw-mobile-only { display: grid; }
+  /* Keep content clear of the fixed bottom bar (incl. iOS safe area). */
+  .pw-scroll { padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)); }
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
