@@ -135,7 +135,7 @@ export default function RosaryPage() {
     }}>
 
       {/* ── LEFT PANEL ── */}
-      <aside style={{
+      <aside className="pw-rosary-aside" style={{
         width: 300,
         flexShrink: 0,
         borderRight: "1px solid rgba(216,188,118,.15)",
@@ -264,7 +264,7 @@ export default function RosaryPage() {
       </aside>
 
       {/* ── CENTER ── */}
-      <main style={{
+      <main className="pw-rosary-main" style={{
         flex: 1,
         display: "flex",
         flexDirection: "column",
@@ -276,6 +276,27 @@ export default function RosaryPage() {
         position: "relative",
         overflowY: "auto",
       }}>
+
+        {/* Mystery-set switcher (phones only — the side panel is hidden) */}
+        <div className="pw-rosary-sets" style={{ width: "100%", flexWrap: "wrap", gap: 7, justifyContent: "center", marginBottom: 26 }}>
+          {SET_KEYS.map((key) => {
+            const on = key === activeSet;
+            return (
+              <button
+                key={key}
+                onClick={() => changeSet(key)}
+                style={{
+                  fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 10, letterSpacing: ".16em",
+                  textTransform: "uppercase", padding: "8px 14px", borderRadius: 999,
+                  border: on ? "none" : "1px solid rgba(216,188,118,.22)", cursor: "pointer",
+                  background: on ? "var(--gilt)" : "rgba(216,188,118,0.08)", color: on ? "#2A2008" : "var(--gold-bright)",
+                }}
+              >
+                {key}
+              </button>
+            );
+          })}
+        </div>
 
         {/* Mystery ordinal */}
         <div style={{

@@ -137,13 +137,41 @@ body {
 /* Responsive navigation: sidebar on desktop, bottom tab bar on phones */
 .pw-bottomnav { display: none; }
 .pw-mobile-only { display: none; }
+.pw-rosary-sets { display: none; }
 
 @media (max-width: 768px) {
+  /* Navigation */
   .pw-sidebar { display: none !important; }
   .pw-bottomnav { display: flex; }
   .pw-mobile-only { display: grid; }
+  .pw-desktop-only { display: none !important; }
   /* Keep content clear of the fixed bottom bar (incl. iOS safe area). */
   .pw-scroll { padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)); }
+
+  /* Top bar: tighter padding so the title + actions fit. */
+  .pw-contentbar { padding: 16px 16px !important; }
+
+  /* Page paddings shrink on phones. */
+  .pw-today-pad { padding: 24px 18px 48px !important; }
+  .pw-calendar-pad { padding: 20px 10px 56px !important; }
+
+  /* Today: cards stack to one column. */
+  .pw-card-grid { grid-template-columns: 1fr !important; }
+
+  /* Readings: the side column drops below the reading. */
+  .pw-readings { flex-direction: column !important; }
+  .pw-readings-main { padding: 24px 18px 32px !important; }
+  .pw-readings-aside {
+    width: 100% !important;
+    border-left: none !important;
+    border-top: 1px solid var(--stone-200);
+    padding: 26px 18px 40px !important;
+  }
+
+  /* Rosary: hide the desktop side panel; show compact set pills instead. */
+  .pw-rosary-aside { display: none !important; }
+  .pw-rosary-sets { display: flex; }
+  .pw-rosary-main { padding: 28px 18px 32px !important; justify-content: flex-start !important; }
 }
 
 /* Scrollbar styling */

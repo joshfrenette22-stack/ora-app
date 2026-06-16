@@ -112,7 +112,7 @@ function ContentBar({ title, sub }: { title: string; sub: string | null }) {
     display: "grid", placeItems: "center",
   };
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px 44px", borderBottom: "1px solid var(--stone-200)" }}>
+    <div className="pw-contentbar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px 44px", borderBottom: "1px solid var(--stone-200)" }}>
       <div>
         {sub && (
           <div style={{ fontFamily: "var(--font-display)", fontWeight: 500, fontSize: 10.5, letterSpacing: ".22em", textTransform: "uppercase", color: "var(--stone-400)" }}>
@@ -128,10 +128,10 @@ function ContentBar({ title, sub }: { title: string; sub: string | null }) {
         <button className="pw-mobile-only" onClick={() => setNight(!night)} aria-label="Toggle night mode" style={{ ...iconBtn, placeItems: "center" }}>
           <LucideIcon name={night ? "sun" : "moon"} size={19} />
         </button>
-        <button style={iconBtn} aria-label="Search">
+        <button className="pw-desktop-only" style={iconBtn} aria-label="Search">
           <LucideIcon name="search" size={19} />
         </button>
-        <button style={iconBtn} aria-label="Notifications">
+        <button className="pw-desktop-only" style={iconBtn} aria-label="Notifications">
           <LucideIcon name="bell" size={19} />
         </button>
         <button style={iconBtn} aria-label="Settings" onClick={() => router.push("/settings")}>
