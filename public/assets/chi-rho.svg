@@ -1,0 +1,9 @@
+<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" role="img" aria-label="Chi-Rho">
+  
+  <line x1="60" y1="14" x2="60" y2="128"></line>
+  <path d="M60 16 C84 16 88 50 60 52" stroke-width="6"></path>
+  
+  <line x1="22" y1="40" x2="98" y2="120"></line>
+  <line x1="98" y1="40" x2="22" y2="120"></line>
+  
+</svg>

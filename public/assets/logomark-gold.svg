@@ -1,0 +1,17 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Prayer Warrior">
+
+  <defs>
+    <linearGradient id="gld" x1="0" y1="0" x2="0.7" y2="1">
+      <stop offset="0" stop-color="#ECD79A"></stop>
+      <stop offset=".4" stop-color="#C9A84C"></stop>
+      <stop offset=".65" stop-color="#B5912F"></stop>
+      <stop offset="1" stop-color="#8A6B22"></stop>
+    </linearGradient>
+  </defs>
+  <circle cx="60" cy="60" r="53" fill="none" stroke="#B5912F" stroke-width="2.2" opacity=".9"></circle>
+  <circle cx="60" cy="60" r="46" fill="none" stroke="#B5912F" stroke-width="1" opacity=".45"></circle>
+  
+  <path d="M55.4 26 L64.6 26 L64.6 88 L60 104 L55.4 88 Z" fill="url(#gld)"></path>
+  <rect x="38" y="46.5" width="44" height="9.2" rx="1" fill="url(#gld)"></rect>
+  <circle cx="60" cy="23.5" r="3.6" fill="url(#gld)"></circle>
+</svg>
