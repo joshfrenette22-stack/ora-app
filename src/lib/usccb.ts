@@ -13,11 +13,13 @@
 
 import { parse } from "node-html-parser";
 import { readingsForDate, type DailyReadings, type Reading } from "./readings";
+import { renderPassage, renderVerse } from "./dra";
 
 const UA =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 
-const SOURCE = "USCCB Lectionary for Mass · NABRE © Confraternity of Christian Doctrine, USCCB";
+const SOURCE_DRA = "Douay–Rheims 1899 (public domain) · citations from the USCCB Lectionary for Mass";
+const SOURCE_MIXED = "Douay–Rheims where available; remaining text USCCB/NABRE © CCD · citations from the USCCB Lectionary";
 
 const GENERIC_REFLECT: Record<string, string> = {
   first: "What word or phrase in this reading stays with you? Sit with it before God.",
@@ -92,6 +94,8 @@ export function parseUsccbHtml(html: string, date: string): DailyReadings | null
   const root = parse(html);
   const blocks = root.querySelectorAll(".innerblock");
   const found: Partial<Record<Exclude<Section, null>, Reading>> = {};
+  let draCount = 0; // readings rendered from Douay–Rheims
+  let total = 0; // readings with a usable citation
 
   for (const block of blocks) {
     const nameEl = block.querySelector(".content-header h3.name") || block.querySelector("h3.name");
@@ -106,22 +110,45 @@ export function parseUsccbHtml(html: string, date: string): DailyReadings | null
     if (!body) continue;
 
     const reading: Reading = { label: TITLES[section], cite, title: TITLES[section], body };
+
+    // Refrain verse number + sentence from the scraped "R. (21a) ..." marker.
+    let refrainVerse = 0;
     if (section === "psalm") {
-      // The refrain is the single sentence after the first "R. (verse)" marker.
       const flat = body.replace(/\s+/g, " ");
-      const m = flat.match(/R\.?\s*(?:\([^)]*\)\s*)?([^.]*\.)/);
-      if (m) reading.refrain = m[1].trim();
+      const m = flat.match(/R\.?\s*(?:\((\d+)[a-z]*\)\s*)?([^.]*\.)/);
+      if (m) {
+        if (m[1]) refrainVerse = Number(m[1]);
+        reading.refrain = m[2].trim();
+      }
     }
+
+    // Replace the NABRE text with the Douay–Rheims rendering of the same
+    // citation. Falls back to the scraped text per reading when DRA can't
+    // resolve the passage (e.g. Sirach / 1 Maccabees, absent from this edition).
+    const rendered = renderPassage(cite);
+    if (rendered) {
+      reading.body = rendered.text;
+      total++;
+      draCount++;
+      if (section === "psalm") {
+        const draRefrain = refrainVerse ? renderVerse(rendered.book, rendered.chapter, refrainVerse) : null;
+        reading.refrain = draRefrain ?? undefined; // never mix NABRE refrain with DRA body
+      }
+    } else if (cite) {
+      total++;
+    }
+
     found[section] = reading;
   }
 
   if (!found.first || !found.gospel) return null; // not a readings page we understand
 
   const psalm = found.psalm ?? { label: "Responsorial Psalm", cite: "", title: "Responsorial Psalm", body: found.first.body };
+  const allDra = total > 0 && draCount === total;
   return {
     date,
     representative: false,
-    source: SOURCE,
+    source: allDra ? SOURCE_DRA : SOURCE_MIXED,
     first: found.first,
     psalm,
     second: found.second,
