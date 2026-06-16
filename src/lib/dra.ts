@@ -11,7 +11,6 @@ type Bible = Record<string, Record<string, Record<string, string>>>;
 const DRA = draData as Bible;
 
 // Normalised USCCB/NAB abbreviation → Douay–Rheims book name used in the data.
-// (Sirach and 1 Maccabees are intentionally absent — not in this edition.)
 const BOOK_MAP: Record<string, string> = {
   gn: "Genesis", gen: "Genesis",
   ex: "Exodus", exod: "Exodus",
@@ -30,6 +29,7 @@ const BOOK_MAP: Record<string, string> = {
   tb: "Tobit", tob: "Tobit",
   jdt: "Judith",
   est: "Esther", esth: "Esther",
+  "1mc": "1 Maccabees", "1macc": "1 Maccabees", "1mac": "1 Maccabees",
   "2mc": "2 Maccabees", "2macc": "2 Maccabees",
   jb: "Job", job: "Job",
   ps: "Psalm", pss: "Psalm", psalm: "Psalm", psalms: "Psalm",
@@ -37,10 +37,11 @@ const BOOK_MAP: Record<string, string> = {
   eccl: "Ecclesiastes", qoh: "Ecclesiastes",
   sg: "Song of Solomon", song: "Song of Solomon", ct: "Song of Solomon",
   wis: "Wisdom",
+  sir: "Sirach", ecclus: "Sirach",
   is: "Isaiah", isa: "Isaiah",
   jer: "Jeremiah",
   lam: "Lamentations",
-  bar: "Baruch",
+  // Baruch is absent from both public-domain DRA sources — Bar citations fall back.
   ez: "Ezekiel", ezek: "Ezekiel",
   dn: "Daniel", dan: "Daniel",
   hos: "Hosea",

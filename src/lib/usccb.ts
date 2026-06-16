@@ -123,8 +123,8 @@ export function parseUsccbHtml(html: string, date: string): DailyReadings | null
     }
 
     // Replace the NABRE text with the Douay–Rheims rendering of the same
-    // citation. Falls back to the scraped text per reading when DRA can't
-    // resolve the passage (e.g. Sirach / 1 Maccabees, absent from this edition).
+    // citation. Falls back to the scraped text per reading on the rare occasion
+    // a citation can't be resolved (an unmapped book or an unusual reference).
     const rendered = renderPassage(cite);
     if (rendered) {
       reading.body = rendered.text;
