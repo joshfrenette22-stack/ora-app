@@ -12,6 +12,8 @@ export interface Reading {
   title: string;
   body: string;
   refrain?: string;
+  /** Internal: psalm refrain verse number, used to re-render the refrain in the chosen translation. */
+  refrainVerse?: number;
 }
 
 export interface ReadingSet {

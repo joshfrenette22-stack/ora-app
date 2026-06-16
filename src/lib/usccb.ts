@@ -4,22 +4,24 @@
 // no headless browser needed. The page lives at:
 //   https://bible.usccb.org/bible/readings/MMDDYY.cfm
 //
-// COPYRIGHT: the scripture text is the New American Bible, Revised Edition
-// (NABRE), © Confraternity of Christian Doctrine, USCCB. It is reproduced here
-// at the app owner's direction. Every response carries an attribution `source`.
+// We use USCCB only for the day's structure and citations (which passages are
+// read), then render the text from a chosen translation:
+//   ESV (api.esv.org, if ESV_API_KEY is set) → Douay–Rheims → scraped NABRE.
+// The ESV is © Crossway and the NABRE © CCD/USCCB; each response carries the
+// appropriate attribution in `source`.
 //
 // This module never throws: on any network/parse failure it returns null and
 // the caller falls back to the public-domain representative readings.
 
 import { parse } from "node-html-parser";
 import { readingsForDate, type DailyReadings, type Reading } from "./readings";
-import { renderPassage, renderVerse } from "./dra";
+import { renderPassage, parseRefs } from "./dra";
+import { renderEsv, ESV_ATTRIBUTION } from "./esv";
 
 const UA =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 
-const SOURCE_DRA = "Douay–Rheims 1899 (public domain) · citations from the USCCB Lectionary for Mass";
-const SOURCE_MIXED = "Douay–Rheims where available; remaining text USCCB/NABRE © CCD · citations from the USCCB Lectionary";
+const SOURCE_NABRE = "USCCB Lectionary for Mass · NABRE © Confraternity of Christian Doctrine, USCCB";
 
 const GENERIC_REFLECT: Record<string, string> = {
   first: "What word or phrase in this reading stays with you? Sit with it before God.",
@@ -94,8 +96,6 @@ export function parseUsccbHtml(html: string, date: string): DailyReadings | null
   const root = parse(html);
   const blocks = root.querySelectorAll(".innerblock");
   const found: Partial<Record<Exclude<Section, null>, Reading>> = {};
-  let draCount = 0; // readings rendered from Douay–Rheims
-  let total = 0; // readings with a usable citation
 
   for (const block of blocks) {
     const nameEl = block.querySelector(".content-header h3.name") || block.querySelector("h3.name");
@@ -111,31 +111,15 @@ export function parseUsccbHtml(html: string, date: string): DailyReadings | null
 
     const reading: Reading = { label: TITLES[section], cite, title: TITLES[section], body };
 
-    // Refrain verse number + sentence from the scraped "R. (21a) ..." marker.
-    let refrainVerse = 0;
+    // Capture the psalm refrain sentence + verse number from the "R. (21a) ..."
+    // marker; the refrain is re-rendered in the chosen translation later.
     if (section === "psalm") {
       const flat = body.replace(/\s+/g, " ");
       const m = flat.match(/R\.?\s*(?:\((\d+)[a-z]*\)\s*)?([^.]*\.)/);
       if (m) {
-        if (m[1]) refrainVerse = Number(m[1]);
+        if (m[1]) reading.refrainVerse = Number(m[1]);
         reading.refrain = m[2].trim();
       }
-    }
-
-    // Replace the NABRE text with the Douay–Rheims rendering of the same
-    // citation. Falls back to the scraped text per reading on the rare occasion
-    // a citation can't be resolved (an unmapped book or an unusual reference).
-    const rendered = renderPassage(cite);
-    if (rendered) {
-      reading.body = rendered.text;
-      total++;
-      draCount++;
-      if (section === "psalm") {
-        const draRefrain = refrainVerse ? renderVerse(rendered.book, rendered.chapter, refrainVerse) : null;
-        reading.refrain = draRefrain ?? undefined; // never mix NABRE refrain with DRA body
-      }
-    } else if (cite) {
-      total++;
     }
 
     found[section] = reading;
@@ -144,11 +128,10 @@ export function parseUsccbHtml(html: string, date: string): DailyReadings | null
   if (!found.first || !found.gospel) return null; // not a readings page we understand
 
   const psalm = found.psalm ?? { label: "Responsorial Psalm", cite: "", title: "Responsorial Psalm", body: found.first.body };
-  const allDra = total > 0 && draCount === total;
   return {
     date,
     representative: false,
-    source: allDra ? SOURCE_DRA : SOURCE_MIXED,
+    source: SOURCE_NABRE, // replaced by translateReadings() with the rendered translation
     first: found.first,
     psalm,
     second: found.second,
@@ -160,6 +143,57 @@ export function parseUsccbHtml(html: string, date: string): DailyReadings | null
       gospel: GENERIC_REFLECT.gospel,
     },
   };
+}
+
+// ── Translation pipeline: ESV (protocanon) → Douay–Rheims → scraped NABRE ─────
+
+type Provider = "esv" | "dra";
+interface Translated { text: string; provider: Provider; book: string; chapter: number }
+
+async function translateCitation(cite: string): Promise<Translated | null> {
+  const esv = await renderEsv(cite);
+  if (esv) {
+    const refs = parseRefs(cite);
+    return { text: esv, provider: "esv", book: refs?.book ?? "", chapter: refs?.refs[0]?.chapter ?? 0 };
+  }
+  const dra = renderPassage(cite);
+  if (dra) return { text: dra.text, provider: "dra", book: dra.book, chapter: dra.chapter };
+  return null;
+}
+
+const SECTIONS: Exclude<Section, null>[] = ["first", "psalm", "second", "gospel"];
+
+/** Replace each scraped reading's text with the best available translation. */
+export async function translateReadings(readings: DailyReadings): Promise<DailyReadings> {
+  let esv = 0, dra = 0, nabre = 0;
+  for (const key of SECTIONS) {
+    const r = readings[key];
+    if (!r || !r.cite) continue;
+    const t = await translateCitation(r.cite);
+    if (!t) {
+      nabre++; // keep the scraped NABRE text for this reading
+      delete r.refrainVerse;
+      continue;
+    }
+    r.body = t.text;
+    if (t.provider === "esv") esv++; else dra++;
+    if (key === "psalm" && r.refrainVerse && t.book && t.chapter) {
+      const rf = await translateCitation(`${t.book} ${t.chapter}:${r.refrainVerse}`);
+      r.refrain = rf?.text ?? undefined; // refrain in the same translation as the body
+    }
+    delete r.refrainVerse;
+  }
+  readings.source = buildSource(esv, dra, nabre);
+  return readings;
+}
+
+function buildSource(esv: number, dra: number, nabre: number): string {
+  const parts: string[] = [];
+  if (esv) parts.push("English Standard Version © Crossway");
+  if (dra) parts.push("Douay–Rheims (public domain)");
+  if (nabre) parts.push("USCCB/NABRE © CCD");
+  const tail = esv ? ` ${ESV_ATTRIBUTION}` : "";
+  return `${parts.join(" · ")} · citations from the USCCB Lectionary.${tail}`;
 }
 
 /** Fetch + parse the USCCB readings for a date. Returns null on any failure. */
@@ -178,7 +212,9 @@ export async function fetchUsccbReadings(date: Date): Promise<DailyReadings | nu
   }
 }
 
-/** Authentic USCCB readings when reachable, else the public-domain fallback. */
+/** Authentic USCCB readings (translated), else the public-domain fallback. */
 export async function getDailyReadings(date: Date): Promise<DailyReadings> {
-  return (await fetchUsccbReadings(date)) ?? readingsForDate(date);
+  const scraped = await fetchUsccbReadings(date);
+  if (scraped) return translateReadings(scraped);
+  return readingsForDate(date);
 }
