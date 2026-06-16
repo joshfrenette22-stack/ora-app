@@ -15,8 +15,8 @@ const NAV = [
 ];
 
 const TITLES: Record<string, [string, string | null]> = {
-  "/": ["Today", "Monday \u00b7 Ordinary Time"],
-  "/readings": ["Daily Mass", "Lectionary \u00b7 Year C"],
+  "/": ["Today", "Monday · Ordinary Time"],
+  "/readings": ["Daily Mass", "Lectionary · Year C"],
   "/hours": ["Liturgy of the Hours", "The Divine Office"],
   "/rosary": ["The Holy Rosary", null],
   "/saints": ["Saint of the Day", "June IX"],
@@ -59,9 +59,9 @@ function Sidebar({ active, onChange }: { active: string; onChange: (id: string) 
       </div>
       <div style={{ marginTop: "auto", padding: "0 24px" }}>
         <div style={{ height: 1, background: "rgba(216,188,118,0.18)", margin: "0 0 18px" }} />
-        <SeasonBadge season="green" dark>Ordinary Time \u00b7 Week X</SeasonBadge>
+        <SeasonBadge season="green" dark>Ordinary Time · Week X</SeasonBadge>
         <div style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "rgba(236,227,204,0.5)", marginTop: 8 }}>
-          {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} \u00b7 Feria
+          {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · Feria
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 18 }}>
           <button

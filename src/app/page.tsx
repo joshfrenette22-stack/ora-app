@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fleuron, RoseWindow } from "@/components/Sacred";
 import { SeasonBadge, SurfaceCard, FeatureCard } from "@/components/UI";
-import { Sun, BookOpen, Clock, Flame, Bell } from "lucide-react";
+import { Sun } from "lucide-react";
 
 export default function TodayPage() {
   const router = useRouter();
