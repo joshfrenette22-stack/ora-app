@@ -8,13 +8,17 @@ import type { DailyReadings } from "@/lib/readings";
 import { localDateISO } from "@/lib/clientDate";
 import { Flame, Clock, BookOpen } from "lucide-react";
 
-type Tab = "first" | "psalm" | "gospel";
+type Tab = "first" | "psalm" | "second" | "gospel";
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: "first", label: "First Reading" },
-  { key: "psalm", label: "Psalm" },
-  { key: "gospel", label: "Gospel" },
-];
+const TAB_LABEL: Record<Tab, string> = {
+  first: "First Reading",
+  psalm: "Psalm",
+  second: "Second Reading",
+  gospel: "Gospel",
+};
+
+// Canonical proclamation order; the second reading only appears on Sundays/solemnities.
+const TAB_ORDER: Tab[] = ["first", "psalm", "second", "gospel"];
 
 const ALSO_TODAY = [
   { icon: <Flame size={16} strokeWidth={1.6} />, label: "Saint of the Day", sub: "The day’s memorial" },
@@ -50,22 +54,24 @@ export default function ReadingsPage() {
     return () => { alive = false; };
   }, []);
 
-  const reading = data[active];
-  const isPsalm = active === "psalm";
+  // Tabs present today (second reading is omitted on weekdays).
+  const order = useMemo<Tab[]>(() => TAB_ORDER.filter((k) => data[k]), [data]);
+  const activeTab = order.includes(active) ? active : "first";
+  const reading = data[activeTab]!;
+  const isPsalm = activeTab === "psalm";
 
   // Narrate the whole Mass in order; follow along by switching tabs.
   const segments = useMemo<NarrationSegment[]>(() => {
-    const order: Tab[] = ["first", "psalm", "gospel"];
     return order.map((key) => {
-      const r = data[key];
+      const r = data[key]!;
       const refrain = key === "psalm" && r.refrain ? `${r.refrain} ` : "";
-      return { id: key, label: r.cite, text: `${r.title}. ${refrain}${r.body}` };
+      return { id: key, label: r.cite || TAB_LABEL[key], text: `${r.title}. ${refrain}${r.body}` };
     });
-  }, [data]);
+  }, [data, order]);
 
   const narration = useNarration({
     segments,
-    onSegmentChange: (i) => setActive((["first", "psalm", "gospel"] as Tab[])[i]),
+    onSegmentChange: (i) => setActive(order[i]),
   });
 
   return (
@@ -83,12 +89,12 @@ export default function ReadingsPage() {
           gap: 2,
           marginBottom: 24,
         }}>
-          {TABS.map((tab) => {
-            const on = active === tab.key;
+          {order.map((key) => {
+            const on = activeTab === key;
             return (
               <button
-                key={tab.key}
-                onClick={() => narration.seek(["first", "psalm", "gospel"].indexOf(tab.key))}
+                key={key}
+                onClick={() => narration.seek(order.indexOf(key))}
                 style={{
                   fontFamily: "var(--font-display)",
                   fontWeight: on ? 600 : 500,
@@ -105,7 +111,7 @@ export default function ReadingsPage() {
                   whiteSpace: "nowrap",
                 }}
               >
-                {tab.label}
+                {TAB_LABEL[key]}
               </button>
             );
           })}
@@ -186,7 +192,7 @@ export default function ReadingsPage() {
             color: "var(--stone-400)",
             lineHeight: 1.7,
           }}>
-            {active === "gospel"
+            {activeTab === "gospel"
               ? <>The Gospel of the Lord. <span style={{ color: "var(--gold-deep)", fontStyle: "normal", fontWeight: 600 }}>— Praise to you, Lord Jesus Christ.</span></>
               : <>The Word of the Lord. <span style={{ color: "var(--gold-deep)", fontStyle: "normal", fontWeight: 600 }}>— Thanks be to God.</span></>
             }
@@ -288,7 +294,7 @@ export default function ReadingsPage() {
             lineHeight: 1.62,
             color: "var(--ink-700)",
           }}>
-            {data.reflect[active]}
+            {data.reflect[activeTab]}
           </div>
         </div>
 

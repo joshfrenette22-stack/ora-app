@@ -1,6 +1,5 @@
 import { type NextRequest } from "next/server";
-import { liturgicalDay } from "@/lib/liturgical";
-import { feastsForMonth } from "@/lib/saints";
+import { liturgicalForDate, feastsForMonth } from "@/lib/calendar";
 
 export const dynamic = "force-dynamic";
 
@@ -10,9 +9,10 @@ export async function GET(request: NextRequest) {
   const year = Number(params.get("year")) || now.getUTCFullYear();
   const month = Number(params.get("month")) || now.getUTCMonth() + 1;
 
-  const feasts = feastsForMonth(year, month);
-  // Season for the middle of the month (a stable label for the header band).
-  const mid = liturgicalDay(new Date(Date.UTC(year, month - 1, 15)));
+  const [feasts, mid] = await Promise.all([
+    feastsForMonth(year, month),
+    liturgicalForDate(new Date(Date.UTC(year, month - 1, 15))),
+  ]);
 
   return Response.json({
     year,

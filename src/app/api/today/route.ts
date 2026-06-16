@@ -1,7 +1,8 @@
 import { type NextRequest } from "next/server";
-import { parseDate, liturgicalDay, badgeSeason } from "@/lib/liturgical";
-import { saintForDate } from "@/lib/saints";
-import { readingsForDate } from "@/lib/readings";
+import { parseDate, badgeSeason } from "@/lib/liturgical";
+import { liturgicalForDate } from "@/lib/calendar";
+import { saintExtras, monogramFor } from "@/lib/saints";
+import { getDailyReadings } from "@/lib/usccb";
 
 export const dynamic = "force-dynamic";
 
@@ -16,21 +17,31 @@ const VERSES = [
 
 export async function GET(request: NextRequest) {
   const date = parseDate(request.nextUrl.searchParams.get("date"));
-  const lit = liturgicalDay(date);
-  const saint = saintForDate(date);
-  const readings = readingsForDate(date);
+  const [lit, readings] = await Promise.all([liturgicalForDate(date), getDailyReadings(date)]);
+  const extras = saintExtras(date);
   const verse = VERSES[date.getUTCDate() % VERSES.length];
+
+  const isFeria = lit.rank === "feria";
+  const saintName = isFeria ? "Feria" : lit.name;
 
   return Response.json({
     date: lit.date,
-    liturgical: { ...lit, badgeSeason: badgeSeason(lit.color) },
+    liturgical: { season: lit.season, color: lit.color, label: lit.label, name: lit.name, rank: lit.rank, badgeSeason: badgeSeason(lit.color) },
     verse,
-    saint: { name: saint.name, title: saint.title ?? null, rank: saint.rank, monogram: saint.monogram ?? "✝", color: saint.color },
+    saint: {
+      name: saintName,
+      title: extras.title ?? null,
+      rank: lit.rank,
+      monogram: extras.monogram ?? monogramFor(saintName),
+      color: lit.color,
+    },
     readings: {
       first: { cite: readings.first.cite, title: readings.first.title },
       psalm: { cite: readings.psalm.cite, title: readings.psalm.title },
+      ...(readings.second ? { second: { cite: readings.second.cite, title: readings.second.title } } : {}),
       gospel: { cite: readings.gospel.cite, title: readings.gospel.title },
       representative: readings.representative,
+      source: readings.source,
     },
   });
 }

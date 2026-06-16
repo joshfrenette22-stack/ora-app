@@ -74,6 +74,22 @@ export function saintKey(month: number, day: number): string {
   return `${month}-${day}`;
 }
 
+export const FERIA_BIO =
+  "No obligatory memorial falls today. The Church keeps a feria — an ordinary weekday — on which the Mass and Office of the season are prayed. A fitting day to take up a votive Mass or a saint of personal devotion.";
+
+/** Derive a single-letter crest from a celebration name. */
+export function monogramFor(name: string): string {
+  const core = name.replace(/^(Sts?\.|Bl\.|Saints?|Blessed|The)\s+/i, "").trim();
+  return core.charAt(0).toUpperCase() || "✝";
+}
+
+/** Supplementary content (bio/collect/monogram/title) for a date, if curated. */
+export function saintExtras(date: Date): Pick<Saint, "bio" | "collect" | "monogram" | "title"> {
+  const found = SAINTS[saintKey(date.getUTCMonth() + 1, date.getUTCDate())];
+  if (!found) return {};
+  return { bio: found.bio, collect: found.collect, monogram: found.monogram, title: found.title };
+}
+
 /** Returns the saint/feast for a date, or a feria placeholder if none. */
 export function saintForDate(date: Date): Saint {
   const month = date.getUTCMonth() + 1;
@@ -86,7 +102,7 @@ export function saintForDate(date: Date): Saint {
     color: "green",
     rank: "feria",
     monogram: "✝",
-    bio: "No obligatory memorial falls today. The Church keeps a feria — an ordinary weekday — on which the Mass and Office of the season are prayed. A fitting day to take up a votive Mass or a saint of personal devotion.",
+    bio: FERIA_BIO,
   };
 }
 

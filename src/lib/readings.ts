@@ -109,10 +109,17 @@ function dayOfYear(date: Date): number {
   return Math.floor((date.getTime() - start) / 86_400_000);
 }
 
-export interface DailyReadings extends ReadingSet {
+export interface DailyReadings {
   date: string;
-  representative: true;
+  /** true = public-domain fallback selection; false = authentic scraped readings. */
+  representative: boolean;
   source: string;
+  first: Reading;
+  psalm: Reading;
+  /** Present on Sundays and solemnities. */
+  second?: Reading;
+  gospel: Reading;
+  reflect: { first: string; psalm: string; second?: string; gospel: string };
 }
 
 export function readingsForDate(date: Date): DailyReadings {
