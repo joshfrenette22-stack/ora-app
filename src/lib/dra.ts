@@ -89,6 +89,11 @@ function resolveBook(token: string): string | null {
   return BOOK_MAP[key] ?? null;
 }
 
+/** Resolve a USCCB book abbreviation to a full book name (shared with the ESV layer). */
+export function bookName(token: string): string | null {
+  return resolveBook(token);
+}
+
 function lastVerse(book: string, chapter: number): number {
   const ch = DRA[book]?.[String(chapter)];
   if (!ch) return 0;
