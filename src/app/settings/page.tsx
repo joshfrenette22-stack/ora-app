@@ -72,7 +72,12 @@ export default function SettingsPage() {
                 return (
                   <div
                     key={v.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={on}
+                    aria-label={`${v.gender} ${v.short} voice`}
                     onClick={() => setVoice(v.id)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setVoice(v.id); } }}
                     style={{
                       display: "flex", alignItems: "center", gap: 14, cursor: "pointer",
                       padding: "13px 16px", borderRadius: 12,
@@ -142,7 +147,9 @@ export default function SettingsPage() {
         </div>
         <button
           onClick={() => setNight(!night)}
-          aria-label="Toggle night mode"
+          role="switch"
+          aria-checked={night}
+          aria-label="Night mode"
           style={{
             width: 52, height: 30, borderRadius: 999, border: "none", cursor: "pointer", position: "relative",
             background: night ? "var(--gilt)" : "var(--stone-200)", transition: "background .18s",
