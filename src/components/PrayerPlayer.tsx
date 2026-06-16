@@ -18,6 +18,13 @@ export interface NarrationSegment {
   text: string;
 }
 
+/** Cloud-TTS audio URL for a segment. The text is the cache key, so identical
+ *  passages (every "Hail Mary") are synthesised once and then served from cache. */
+function ttsUrl(text: string, rate?: number): string {
+  const r = rate && rate > 0 ? `&rate=${rate}` : "";
+  return `/api/tts?text=${encodeURIComponent(text)}${r}`;
+}
+
 type Status = "idle" | "playing" | "paused";
 
 export interface UseNarrationOptions {
@@ -70,6 +77,10 @@ export function useNarration({
   const completeRef = useRef(onComplete);
   // Holds the latest playIndex so onEnd can recurse without a render-time self-reference.
   const playNextRef = useRef<(i: number) => void>(() => {});
+  // Audio engine: "google" = human cloud voice (when configured), else the
+  // browser's Web Speech API.
+  const engineRef = useRef<"browser" | "google">("browser");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Keep mutable refs in sync via effects (writing refs during render is disallowed).
   useEffect(() => { segmentsRef.current = segments; }, [segments]);
@@ -78,12 +89,45 @@ export function useNarration({
 
   useEffect(() => {
     // Capability detection runs on the client only, after mount, to avoid a
-    // hydration mismatch between the server (no speech API) and the browser.
+    // hydration mismatch between the server and the browser.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSupported(isSpeechSupported());
     ensureVoices();
-    return () => stopSpeaking();
+    audioRef.current = typeof Audio !== "undefined" ? new Audio() : null;
+    let alive = true;
+    // Prefer the cloud voice when the server reports it's configured.
+    fetch("/api/tts?probe=1")
+      .then((r) => {
+        if (alive && r.status === 204) {
+          engineRef.current = "google";
+          setSupported(true);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+      stopSpeaking();
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
+    };
   }, []);
+
+  // Speak one segment through the active engine, falling back to the browser
+  // voice if the cloud audio can't play.
+  const playSegment = useCallback(
+    (text: string, onEnd: () => void, onError: () => void) => {
+      if (engineRef.current === "google" && audioRef.current) {
+        const a = audioRef.current;
+        const fallback = () => { if (!speak(text, { rate, onEnd, onError })) onError(); };
+        a.onended = onEnd;
+        a.onerror = fallback;
+        a.src = ttsUrl(text, rate);
+        a.play().catch(fallback);
+        return;
+      }
+      if (!speak(text, { rate, onEnd, onError })) onError();
+    },
+    [rate],
+  );
 
   const playIndex = useCallback(
     (i: number) => {
@@ -93,27 +137,23 @@ export function useNarration({
       setIndex(i);
       changeRef.current?.(i);
       setStatus("playing");
-      speak(list[i].text, {
-        rate,
-        onEnd: () => {
+      // Warm the next segment's audio so auto-advance is gapless.
+      if (engineRef.current === "google" && i + 1 < list.length) {
+        void fetch(ttsUrl(list[i + 1].text, rate)).catch(() => {});
+      }
+      playSegment(
+        list[i].text,
+        () => {
           if (gen !== genRef.current) return; // superseded by a manual action
           const nextIdx = i + 1;
-          if (nextIdx < segmentsRef.current.length) {
-            playNextRef.current(nextIdx);
-          } else if (loop) {
-            playNextRef.current(0);
-          } else {
-            setStatus("idle");
-            completeRef.current?.();
-          }
+          if (nextIdx < segmentsRef.current.length) playNextRef.current(nextIdx);
+          else if (loop) playNextRef.current(0);
+          else { setStatus("idle"); completeRef.current?.(); }
         },
-        onError: () => {
-          if (gen !== genRef.current) return;
-          setStatus("idle");
-        },
-      });
+        () => { if (gen === genRef.current) setStatus("idle"); },
+      );
     },
-    [rate, loop],
+    [rate, loop, playSegment],
   );
 
   useEffect(() => { playNextRef.current = playIndex; }, [playIndex]);
@@ -121,17 +161,20 @@ export function useNarration({
   const play = useCallback((from?: number) => playIndex(from ?? index), [playIndex, index]);
 
   const pause = useCallback(() => {
-    pauseSpeaking();
+    if (engineRef.current === "google") audioRef.current?.pause();
+    else pauseSpeaking();
     setStatus("paused");
   }, []);
 
   const resume = useCallback(() => {
-    resumeSpeaking();
+    if (engineRef.current === "google") audioRef.current?.play().catch(() => {});
+    else resumeSpeaking();
     setStatus("playing");
   }, []);
 
   const stop = useCallback(() => {
     genRef.current++;
+    if (audioRef.current) audioRef.current.pause();
     stopSpeaking();
     setStatus("idle");
   }, []);
@@ -161,6 +204,7 @@ export function useNarration({
 
   const reset = useCallback((i = 0) => {
     genRef.current++;
+    if (audioRef.current) audioRef.current.pause();
     stopSpeaking();
     setStatus("idle");
     const clamped = Math.max(0, Math.min(segmentsRef.current.length - 1, i));
