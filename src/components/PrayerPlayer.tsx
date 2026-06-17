@@ -793,7 +793,7 @@ export function FloatingPlayer() {
         position: "fixed",
         left: 8,
         right: 8,
-        bottom: "calc(56px + env(safe-area-inset-bottom, 0px))",
+        bottom: "calc(68px + env(safe-area-inset-bottom, 0px))",
         zIndex: 45,
         borderRadius: 16,
         background: "var(--bone-raised)",
