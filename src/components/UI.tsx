@@ -15,7 +15,7 @@ export function SeasonBadge({ season = "green", children, dark = false }: { seas
   const s = LIT[season] || LIT.green;
   const c = dark ? "var(--gold-bright)" : s.c;
   return (
-    <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase", color: c, display: "inline-flex", alignItems: "center", gap: 7 }}>
+    <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 11.5, letterSpacing: ".02em", color: c, display: "inline-flex", alignItems: "center", gap: 7 }}>
       <span style={{ width: 7, height: 7, borderRadius: "50%", background: dark ? "var(--gold-bright)" : s.c }} />
       {children || s.label}
     </span>
@@ -41,11 +41,10 @@ export function Btn({ variant = "primary", children, onClick, icon, style = {}, 
   const base: CSSProperties = {
     fontFamily: "var(--font-display)",
     fontWeight: 600,
-    fontSize: 12,
-    letterSpacing: ".16em",
-    textTransform: "uppercase",
+    fontSize: 14,
+    letterSpacing: ".005em",
     border: "none",
-    borderRadius: 9,
+    borderRadius: 11,
     padding: "13px 24px",
     cursor: "pointer",
     display: "inline-flex",

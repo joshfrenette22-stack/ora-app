@@ -8,6 +8,24 @@ import { VOICES, VOICE_TIERS, TIER_NOTE, type Voice } from "@/lib/voices";
 
 const PREVIEW_TEXT = "The Lord be with you, and with your spirit.";
 
+// Decorative coral "voice track" shown while a voice is previewing.
+const WAVE = Array.from({ length: 38 }, (_, i) => {
+  const t = i / 37;
+  const taper = 0.35 + 0.65 * Math.sin(Math.PI * t);
+  const w = Math.abs(Math.sin(i * 1.7) * 0.6 + Math.sin(i * 0.7) * 0.4 + Math.cos(i * 2.3) * 0.25);
+  return Math.max(0.2, Math.min(1, taper * (0.45 + w)));
+});
+
+function MiniWave() {
+  return (
+    <div className="ora-wave-live" style={{ display: "flex", alignItems: "center", gap: 2, height: 24 }}>
+      {WAVE.map((h, i) => (
+        <span key={i} style={{ flex: 1, minWidth: 2, height: `${Math.round(h * 100)}%`, borderRadius: 2, background: "var(--gold)" }} />
+      ))}
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { voice, setVoice } = useVoice();
   const { night, setNight } = useTheme();
@@ -58,7 +76,7 @@ export default function SettingsPage() {
         return (
           <div key={tier} style={{ marginBottom: 26 }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 10 }}>
-              <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 12, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--ink)" }}>
+              <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 12, letterSpacing: ".02em", color: "var(--ink)" }}>
                 {tier}
               </span>
               <span style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--stone-400)", fontStyle: "italic" }}>
@@ -75,53 +93,58 @@ export default function SettingsPage() {
                     role="button"
                     tabIndex={0}
                     aria-pressed={on}
-                    aria-label={`${v.gender} ${v.short} voice`}
+                    aria-label={`${v.gender} voice, ${v.desc}`}
                     onClick={() => setVoice(v.id)}
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setVoice(v.id); } }}
                     style={{
-                      display: "flex", alignItems: "center", gap: 14, cursor: "pointer",
-                      padding: "13px 16px", borderRadius: 12,
+                      display: "flex", flexDirection: "column", gap: 11, cursor: "pointer",
+                      padding: "13px 16px", borderRadius: 14,
                       background: on ? "var(--gold-faint)" : "var(--bone-raised)",
                       border: on ? "1.5px solid var(--gold)" : "1px solid var(--stone-200)",
                       transition: "background .14s, border-color .14s",
                     }}
                   >
-                    {/* Preview button */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); preview(v); }}
-                      aria-label={`Preview ${v.short}`}
-                      disabled={!cloud}
-                      style={{
-                        width: 40, height: 40, borderRadius: "50%", flexShrink: 0, border: "none",
-                        cursor: cloud ? "pointer" : "not-allowed",
-                        background: cloud ? "var(--gilt)" : "var(--stone-200)",
-                        color: cloud ? "#2A2008" : "var(--stone-400)",
-                        display: "grid", placeItems: "center",
-                      }}
-                    >
-                      <LucideIcon name={previewing === v.id ? "pause" : "play"} size={17} />
-                    </button>
+                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                      {/* Preview button */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); preview(v); }}
+                        aria-label={`Preview ${v.gender} ${v.desc}`}
+                        disabled={!cloud}
+                        style={{
+                          width: 40, height: 40, borderRadius: "50%", flexShrink: 0, border: "none",
+                          cursor: cloud ? "pointer" : "not-allowed",
+                          background: cloud ? "var(--gilt)" : "var(--stone-200)",
+                          color: cloud ? "#2A2008" : "var(--stone-400)",
+                          display: "grid", placeItems: "center",
+                        }}
+                      >
+                        <LucideIcon name={previewing === v.id ? "pause" : "play"} size={17} />
+                      </button>
 
-                    {/* Name + meta */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 17, color: "var(--ink)" }}>
-                        {v.gender} &middot; {v.short}
+                      {/* Name + meta */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 17, color: "var(--ink)" }}>
+                          {v.gender} &middot; {v.desc}
+                        </div>
+                        <div style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--stone-400)", marginTop: 1 }}>
+                          {v.tier} &middot; {v.free ? "Free" : "Premium"}
+                        </div>
                       </div>
-                      <div style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--stone-400)", marginTop: 1 }}>
-                        {v.free ? "Free" : "Premium"}
-                      </div>
+
+                      {/* Selected check */}
+                      <span style={{
+                        width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
+                        display: "grid", placeItems: "center",
+                        background: on ? "var(--gold)" : "transparent",
+                        color: on ? "#2A2008" : "var(--stone-300)",
+                        border: on ? "none" : "1.5px solid var(--stone-200)",
+                      }}>
+                        {on && <LucideIcon name="check" size={15} stroke={2.4} />}
+                      </span>
                     </div>
 
-                    {/* Selected check */}
-                    <span style={{
-                      width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
-                      display: "grid", placeItems: "center",
-                      background: on ? "var(--gold)" : "transparent",
-                      color: on ? "#2A2008" : "var(--stone-300)",
-                      border: on ? "none" : "1.5px solid var(--stone-200)",
-                    }}>
-                      {on && <LucideIcon name="check" size={15} stroke={2.4} />}
-                    </span>
+                    {/* Voice track — appears while previewing */}
+                    {previewing === v.id && <MiniWave />}
                   </div>
                 );
               })}

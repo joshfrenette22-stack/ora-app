@@ -113,8 +113,7 @@ export default function TodayPage() {
         <div style={{
           fontFamily: "var(--font-display)",
           fontSize: 11.5,
-          letterSpacing: ".26em",
-          textTransform: "uppercase",
+          letterSpacing: ".02em",
           color: "var(--gold-deep)",
           fontWeight: 600,
         }}>
@@ -190,8 +189,7 @@ export default function TodayPage() {
         <span style={{
           fontFamily: "var(--font-display)",
           fontSize: 11,
-          letterSpacing: ".2em",
-          textTransform: "uppercase",
+          letterSpacing: ".02em",
         }}>
           {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
         </span>
