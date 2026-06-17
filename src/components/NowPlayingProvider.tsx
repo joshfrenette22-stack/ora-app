@@ -71,30 +71,43 @@ export function useNowPlaying() {
 /**
  * Hook for the FloatingPlayer — re-renders on every animation frame while
  * audio is playing so the waveform tracks progress in real time.
+ *
+ * When idle it polls at a slower cadence (every 500 ms) so it can detect
+ * when playback begins. When playing it polls every animation frame.
  */
 export function useNowPlayingLive(): NowPlaying {
   const { get, subscribe } = useContext(Ctx);
   const [, bump] = useState(0);
-  const rafRef = useRef(0);
 
   // Re-render when register/unregister happens.
   useEffect(() => subscribe(() => bump((n) => n + 1)), [subscribe]);
 
-  // While playing, poll on animation frames so progress/wordIndex stay live.
+  // Continuous polling — fast while playing, slow while idle.
   useEffect(() => {
     let active = true;
+    let raf = 0;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
     function tick() {
       if (!active) return;
       const np = get();
-      if (np.narration && np.narration.status !== "idle") {
-        bump((n) => n + 1);
-        rafRef.current = requestAnimationFrame(tick);
+      const playing = np.narration && np.narration.status !== "idle";
+      bump((n) => n + 1);
+      if (playing) {
+        // Full-speed polling for waveform progress.
+        raf = requestAnimationFrame(tick);
+      } else {
+        // Slow poll to detect when playback starts.
+        timer = setTimeout(tick, 500);
       }
     }
-    // Start polling
-    rafRef.current = requestAnimationFrame(tick);
-    return () => { active = false; cancelAnimationFrame(rafRef.current); };
-  });
+    raf = requestAnimationFrame(tick);
+    return () => {
+      active = false;
+      cancelAnimationFrame(raf);
+      if (timer) clearTimeout(timer);
+    };
+  }, [get]);
 
   return get();
 }

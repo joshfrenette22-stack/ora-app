@@ -703,12 +703,28 @@ export function ListenButton({
   const active = narration.status !== "idle";
   const accent = dark ? "var(--gold)" : "var(--gold-deep)";
 
+  // Loading state: true between clicking play and audio actually starting.
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (narration.status === "playing") setLoading(false);
+  }, [narration.status]);
+
   if (!narration.supported) return null;
+
+  const handleClick = () => {
+    if (active) {
+      narration.toggle();
+    } else {
+      setLoading(true);
+      narration.play(0);
+    }
+  };
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <button
-        onClick={() => active ? narration.toggle() : narration.play(0)}
+        onClick={handleClick}
+        disabled={loading}
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -720,13 +736,14 @@ export function ListenButton({
             ? (dark ? "rgba(239,230,214,0.14)" : "var(--gold-faint)")
             : (dark ? "var(--gilt)" : "var(--gilt)"),
           color: active ? accent : "#FFF8ED",
-          cursor: "pointer",
+          cursor: loading ? "wait" : "pointer",
           fontFamily: "var(--font-display)",
           fontSize: 14,
           fontWeight: 700,
           letterSpacing: ".01em",
           transition: "transform .12s, box-shadow .12s",
           boxShadow: active ? "none" : (dark ? "0 4px 16px rgba(200,90,44,0.35)" : "var(--shadow-gold)"),
+          opacity: loading ? 0.8 : 1,
         }}
       >
         <span style={{
@@ -734,13 +751,20 @@ export function ListenButton({
           height: 28,
           borderRadius: "50%",
           background: active ? accent : "rgba(255,255,255,0.2)",
+          color: active ? "#fff" : "inherit",
           display: "grid",
           placeItems: "center",
           flexShrink: 0,
         }}>
-          <LucideIcon name={narration.status === "playing" ? "pause" : "play"} size={14} />
+          {loading ? (
+            <span style={{ animation: "oraSpin 1s linear infinite", display: "grid", placeItems: "center" }}>
+              <LucideIcon name="loader" size={14} />
+            </span>
+          ) : (
+            <LucideIcon name={narration.status === "playing" ? "pause" : "play"} size={14} />
+          )}
         </span>
-        {active ? (narration.status === "playing" ? "Pause" : "Resume") : label}
+        {loading ? "Loading..." : active ? (narration.status === "playing" ? "Pause" : "Resume") : label}
       </button>
       {active && (
         <button

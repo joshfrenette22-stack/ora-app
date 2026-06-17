@@ -9,7 +9,7 @@ import { FloatingPlayer } from "./PrayerPlayer";
 
 const NAV = [
   { id: "/", label: "Today", short: "Today", lucide: "sun" },
-  { id: "/readings", label: "Daily Mass", short: "Mass", lucide: "book-open" },
+  { id: "/readings", label: "Daily Mass Readings", short: "Readings", lucide: "book-open" },
   { id: "/hours", label: "Liturgy of the Hours", short: "Hours", lucide: "clock" },
   { id: "/rosary", label: "The Holy Rosary", short: "Rosary", cross: true },
   { id: "/playlist", label: "My Playlist", short: "Playlist", lucide: "list-music" },
@@ -19,7 +19,7 @@ const NAV = [
 
 const TITLES: Record<string, [string, string | null]> = {
   "/": ["Today", "Monday · Ordinary Time"],
-  "/readings": ["Daily Mass", "Lectionary · Year C"],
+  "/readings": ["Daily Mass Readings", "Lectionary · Year C"],
   "/hours": ["Liturgy of the Hours", "The Divine Office"],
   "/rosary": ["The Holy Rosary", null],
   "/saints": ["Saint of the Day", "June IX"],
