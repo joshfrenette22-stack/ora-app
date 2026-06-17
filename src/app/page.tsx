@@ -82,7 +82,11 @@ export default function TodayPage() {
 
       {/* Greeting card */}
       <div style={{ position: "relative", overflow: "hidden", background: "var(--surface-ink)", borderRadius: 22, padding: "26px 26px 24px", marginBottom: 30, boxShadow: "var(--shadow-lg)" }}>
+        {/* Layered texture: illustration band + altar watermark + warm gradient */}
         <Illustration name="today-greeting-band" alt="" width={520} height={130} invertOnDark style={{ position: "absolute", right: -30, top: -20, opacity: 0.22, pointerEvents: "none", maskImage: "linear-gradient(to left, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.15) 70%, transparent 100%)", WebkitMaskImage: "linear-gradient(to left, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.15) 70%, transparent 100%)" }} />
+        <div style={{ position: "absolute", right: -40, bottom: -50, pointerEvents: "none", maskImage: "radial-gradient(ellipse at 80% 80%, rgba(0,0,0,0.2) 0%, transparent 50%)", WebkitMaskImage: "radial-gradient(ellipse at 80% 80%, rgba(0,0,0,0.2) 0%, transparent 50%)" }}>
+          <Illustration name="splash-altar" alt="" size={200} invertOnDark opacity={0.2} />
+        </div>
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 88% 0%, rgba(210,107,67,0.18) 0%, transparent 58%)", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, color: "rgba(239,230,214,0.6)" }}>{greeting ?? "Welcome"}</div>
@@ -161,6 +165,7 @@ export default function TodayPage() {
             title={hour ? hour.name : "The Divine Office"}
             meta={hour ? `${hour.en} · ${hour.time}` : "Pray the hours"}
             lucide="clock"
+            motif={<Illustration name="section-hours" alt="" size={160} invertOnDark opacity={0.35} />}
           />
         </Link>
 
@@ -171,6 +176,7 @@ export default function TodayPage() {
             title={rosarySet ? `${rosarySet} Mysteries` : "The Holy Rosary"}
             meta={rosarySet ? `${SET_DAYS[rosarySet]} · today` : "Pray the Rosary"}
             lucide="circle-dot"
+            motif={<Illustration name="section-rosary" alt="" size={160} invertOnDark opacity={0.35} />}
           />
         </Link>
 
@@ -181,6 +187,7 @@ export default function TodayPage() {
             title={saint.name}
             meta={saint.title ?? ""}
             lucide="flame"
+            motif={<Illustration name="splash-altar" alt="" size={160} invertOnDark opacity={0.3} />}
           />
         </Link>
 
@@ -191,6 +198,7 @@ export default function TodayPage() {
             title="The Angelus"
             meta="Recited at noon"
             lucide="bell"
+            motif={<Illustration name="section-devotions" alt="" size={160} invertOnDark opacity={0.35} />}
           />
         </Link>
 

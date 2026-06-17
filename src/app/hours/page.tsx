@@ -59,7 +59,7 @@ export default function HoursPage() {
   }
 
   return (
-    <div style={{ maxWidth: 560, margin: "0 auto", padding: "24px 16px 64px", display: "flex", flexDirection: "column", gap: 24 }}>
+    <div style={{ maxWidth: 560, margin: "0 auto", padding: "24px 16px 64px", display: "flex", flexDirection: "column", gap: 24, position: "relative" }}>
 
       {/* Feature card — selected hour */}
       <div style={{ position: "relative", overflow: "hidden", background: "var(--surface-ink)", borderRadius: 20, padding: "30px 28px 28px", boxShadow: "var(--shadow-lg)", display: "flex", flexDirection: "column", gap: 14 }}>

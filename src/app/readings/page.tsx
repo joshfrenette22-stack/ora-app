@@ -8,6 +8,7 @@ import { countWords } from "@/lib/words";
 import type { DailyReadings } from "@/lib/readings";
 import { localDateISO } from "@/lib/clientDate";
 import { Flame, Clock, BookOpen } from "lucide-react";
+import { Illustration } from "@/components/Illustration";
 
 type Tab = "first" | "psalm" | "second" | "gospel";
 
@@ -221,7 +222,13 @@ export default function ReadingsPage() {
         gap: 0,
         minHeight: "100%",
         background: "var(--bone-raised)",
+        position: "relative",
+        overflow: "hidden",
       }}>
+        {/* Ambient texture */}
+        <div style={{ position: "absolute", bottom: -30, right: -30, pointerEvents: "none", maskImage: "radial-gradient(ellipse at 80% 80%, rgba(0,0,0,0.25) 0%, transparent 55%)", WebkitMaskImage: "radial-gradient(ellipse at 80% 80%, rgba(0,0,0,0.25) 0%, transparent 55%)" }}>
+          <Illustration name="section-daily-mass" size={240} invertOnDark opacity={0.25} />
+        </div>
 
         {/* Also Today */}
         <div>

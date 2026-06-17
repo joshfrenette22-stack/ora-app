@@ -96,19 +96,21 @@ export function FeatureCard({ kicker, title, meta, onClick, motif }: {
   );
 }
 
-export function SurfaceCard({ kicker, title, meta, onClick, lucide }: {
+export function SurfaceCard({ kicker, title, meta, onClick, lucide, motif }: {
   kicker: string;
   title: string;
   meta: string;
   onClick?: () => void;
   lucide?: string;
+  motif?: ReactNode;
 }) {
   return (
-    <button className="pw-card" onClick={onClick} style={{ textAlign: "left", cursor: "pointer", background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 18, padding: "24px 26px", boxShadow: "var(--shadow-sm)", display: "flex", flexDirection: "column", gap: 14, width: "100%" }}>
-      <span style={{ width: 50, height: 50, borderRadius: "50%", background: "var(--gold-faint)", color: "var(--gold-deep)", display: "grid", placeItems: "center" }}>
+    <button className="pw-card" onClick={onClick} style={{ textAlign: "left", cursor: "pointer", background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 18, padding: "24px 26px", boxShadow: "var(--shadow-sm)", display: "flex", flexDirection: "column", gap: 14, width: "100%", position: "relative", overflow: "hidden" }}>
+      {motif && <div style={{ position: "absolute", right: -15, bottom: -15, pointerEvents: "none", maskImage: "radial-gradient(ellipse at 85% 80%, rgba(0,0,0,0.4) 0%, transparent 55%)", WebkitMaskImage: "radial-gradient(ellipse at 85% 80%, rgba(0,0,0,0.4) 0%, transparent 55%)" }}>{motif}</div>}
+      <span style={{ width: 50, height: 50, borderRadius: "50%", background: "var(--gold-faint)", color: "var(--gold-deep)", display: "grid", placeItems: "center", position: "relative" }}>
         {lucide ? <LucideIcon name={lucide} size={24} /> : <Cross size={22} />}
       </span>
-      <div>
+      <div style={{ position: "relative" }}>
         <Kicker>{kicker}</Kicker>
         <div style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 22, color: "var(--ink)", marginTop: 3 }}>{title}</div>
         <div style={{ fontFamily: "var(--font-body)", fontSize: 14, color: "var(--stone-400)", marginTop: 2 }}>{meta}</div>
