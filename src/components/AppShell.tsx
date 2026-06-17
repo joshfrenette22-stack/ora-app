@@ -115,11 +115,11 @@ function ContentBar({ title, sub }: { title: string; sub: string | null }) {
     <div className="pw-contentbar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px 44px", borderBottom: "1px solid var(--stone-200)" }}>
       <div>
         {sub && (
-          <div style={{ fontFamily: "var(--font-display)", fontWeight: 500, fontSize: 10.5, letterSpacing: ".22em", textTransform: "uppercase", color: "var(--stone-400)" }}>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 12, letterSpacing: ".02em", color: "var(--stone-400)" }}>
             {sub}
           </div>
         )}
-        <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 22, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ink)", marginTop: sub ? 4 : 0 }}>
+        <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 23, letterSpacing: "-.01em", color: "var(--ink)", marginTop: sub ? 3 : 0 }}>
           {title}
         </div>
       </div>
