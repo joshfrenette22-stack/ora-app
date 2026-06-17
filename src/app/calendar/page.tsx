@@ -70,7 +70,7 @@ const LIT_COLOR_MAP: Record<LitColor, string> = {
   red:    "var(--lit-red)",
   gold:   "var(--gold)",
   rose:   "var(--lit-rose)",
-  white:  "var(--gold-bright)",
+  white:  "var(--lit-festal)",
 };
 
 const MONTH_NAMES = [
@@ -192,8 +192,8 @@ export default function CalendarPage() {
       {/* Day headers */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: "repeat(7, 1fr)",
-        gap: 0,
+        gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+        gap: 3,
         marginBottom: 6,
       }}>
         {DAY_HEADERS.map((d) => (
@@ -214,7 +214,7 @@ export default function CalendarPage() {
       {/* Calendar grid */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: "repeat(7, 1fr)",
+        gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
         gap: 3,
       }}>
         {Array.from({ length: totalCells }).map((_, cellIdx) => {
@@ -324,6 +324,8 @@ function DayCell({
       onMouseLeave={() => setHovered(false)}
       style={{
         minHeight: 82,
+        minWidth: 0,
+        overflow: "hidden",
         borderRadius: 10,
         padding: "10px 10px 8px",
         background: isToday
@@ -370,7 +372,7 @@ function DayCell({
               flexShrink: 0,
               boxShadow: isSolemnity ? `0 0 6px ${feastColor}` : "none",
             }} />
-            <span style={{
+            <span className="pw-cal-name" style={{
               fontFamily: "var(--font-body)",
               fontSize: 11,
               lineHeight: 1.3,
@@ -384,7 +386,7 @@ function DayCell({
             </span>
           </div>
           {isSolemnity && (
-            <span style={{
+            <span className="pw-cal-name" style={{
               fontFamily: "var(--font-display)",
               fontSize: 9,
               letterSpacing: ".02em",

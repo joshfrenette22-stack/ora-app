@@ -35,6 +35,7 @@
   --lit-red: #B0432E;
   --lit-rose: #C98AA0;
   --lit-white: var(--gold);
+  --lit-festal: #C0982F;    /* white/festal days — a dignified, legible gold */
   --lit-black: #2C2823;
 
   /* Functional */
@@ -179,6 +180,10 @@ html { scroll-behavior: smooth; }
   .pw-rosary-aside { display: none !important; }
   .pw-rosary-sets { display: flex; }
   .pw-rosary-main { padding: 28px 18px 32px !important; justify-content: flex-start !important; }
+
+  /* Calendar: columns are too narrow for feast names on phones — show the
+     liturgical-colour dot only; full names remain on desktop. */
+  .pw-cal-name { display: none !important; }
 }
 
 /* Waveform breathing while audio plays */
