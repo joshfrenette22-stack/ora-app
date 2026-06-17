@@ -23,6 +23,9 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#1B1916",
+  // Required for env(safe-area-inset-*) to resolve on iOS standalone (home-screen
+  // app), so the bottom nav clears the home indicator and the header clears the notch.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

@@ -158,11 +158,17 @@ h1, h2, h3, p, blockquote, div, span { overflow-wrap: break-word; word-break: br
   .pw-mobile-only { display: grid; }
   .pw-desktop-only { display: none !important; }
   /* Keep content clear of the fixed bottom bar (incl. iOS safe area). */
-  .pw-scroll { padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)); }
+  .pw-scroll { padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
 
-  /* Top bar: tighter padding so the title + actions fit. */
-  .pw-contentbar { padding: 14px 16px !important; }
+  /* Top bar: tighter padding; clear the status bar / notch when installed. */
+  .pw-contentbar {
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 14px !important;
+  }
   .pw-contentbar-title { font-size: 20px !important; }
+
+  /* Bottom nav: with 7 tabs, keep each item tight so labels don't crowd. */
+  .pw-bottomnav button { padding: 8px 1px 6px !important; }
+  .pw-bottomnav span:last-child { font-size: 9.5px !important; letter-spacing: 0 !important; }
 
   /* Page paddings shrink on phones. */
   .pw-today-pad { padding: 20px 16px 48px !important; }
