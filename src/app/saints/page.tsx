@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { SaintMedallion, Fleuron } from "@/components/Sacred";
+import { Fleuron } from "@/components/Sacred";
 import { Illustration } from "@/components/Illustration";
 import { SeasonBadge, Kicker } from "@/components/UI";
 import { PlayerBar, SpokenText, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
@@ -64,16 +64,8 @@ export default function SaintsPage() {
       }}
     >
       {/* Decorative background watermark */}
-      <div style={{ position: "absolute", top: -30, right: -40, pointerEvents: "none", maskImage: "radial-gradient(ellipse at 75% 25%, rgba(0,0,0,0.5) 0%, transparent 55%)", WebkitMaskImage: "radial-gradient(ellipse at 75% 25%, rgba(0,0,0,0.5) 0%, transparent 55%)" }}>
+      <div style={{ position: "absolute", top: -30, right: -40, pointerEvents: "none" }}>
         <Illustration name="splash-altar" size={360} invertOnDark opacity={0.35} />
-      </div>
-
-      {/* Devotional medallion */}
-      <div className="pw-reveal" style={{ marginBottom: 24 }}>
-        <SaintMedallion
-          size={150}
-          monogram={saint.monogram ?? saint.name.replace(/^(St\.|Sts\.|Bl\.)\s*/, "").charAt(0)}
-        />
       </div>
 
       {/* Saint name */}

@@ -63,7 +63,7 @@ function DevotionCard({ dkey, lucide }: { dkey: DevotionKey; lucide: string }) {
   return (
     <section id={dkey} className="pw-devotion-card" style={{ scrollMarginTop: 24, position: "relative", overflow: "hidden", background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 20, padding: "28px 28px 30px", boxShadow: "var(--shadow-sm)" }}>
       {DEVOTION_ART[dkey] && (
-        <div style={{ position: "absolute", right: -10, top: -10, pointerEvents: "none", maskImage: "radial-gradient(ellipse at 75% 30%, rgba(0,0,0,0.7) 0%, transparent 55%)", WebkitMaskImage: "radial-gradient(ellipse at 75% 30%, rgba(0,0,0,0.7) 0%, transparent 55%)" }}>
+        <div style={{ position: "absolute", right: -10, top: -10, pointerEvents: "none" }}>
           <Illustration name={DEVOTION_ART[dkey]} size={200} invertOnDark opacity={0.5} />
         </div>
       )}
@@ -97,7 +97,7 @@ export default function DevotionsPage() {
   return (
     <div className="pw-devotions-pad" style={{ maxWidth: 600, margin: "0 auto", padding: "32px 18px 64px", display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ textAlign: "center", marginBottom: 4 }}>
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 16, maskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 30%, transparent 65%)", WebkitMaskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 30%, transparent 65%)" }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
           <Illustration name="section-devotions" size={160} invertOnDark opacity={0.6} />
         </div>
         <h1 className="pw-reveal" style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 34, color: "var(--ink)", margin: 0, letterSpacing: "-.015em" }}>

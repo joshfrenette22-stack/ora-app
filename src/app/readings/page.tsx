@@ -84,10 +84,10 @@ export default function ReadingsPage() {
   const bodyOffset = titleWords + refrainWords;
 
   return (
-    <div className="pw-readings" style={{ display: "flex", gap: 0, alignItems: "flex-start", minHeight: "100%" }}>
+    <div className="pw-readings" style={{ display: "flex", gap: 0, alignItems: "flex-start", minHeight: "100%", overflowX: "hidden" }}>
 
       {/* Main reading column */}
-      <div className="pw-readings-main" style={{ flex: 1, padding: "40px 48px 72px", minWidth: 0 }}>
+      <div className="pw-readings-main" style={{ flex: 1, padding: "40px 48px 72px", minWidth: 0, maxWidth: "100%", overflowX: "hidden" }}>
 
         {/* Segmented control */}
         <div className="pw-reading-tabs" style={{
@@ -227,7 +227,7 @@ export default function ReadingsPage() {
         overflow: "hidden",
       }}>
         {/* Ambient texture */}
-        <div style={{ position: "absolute", bottom: -20, right: -20, pointerEvents: "none", maskImage: "radial-gradient(ellipse at 75% 75%, rgba(0,0,0,0.5) 0%, transparent 55%)", WebkitMaskImage: "radial-gradient(ellipse at 75% 75%, rgba(0,0,0,0.5) 0%, transparent 55%)" }}>
+        <div style={{ position: "absolute", bottom: -20, right: -20, pointerEvents: "none" }}>
           <Illustration name="section-daily-mass" size={260} invertOnDark opacity={0.45} />
         </div>
 

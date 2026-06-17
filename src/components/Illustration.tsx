@@ -29,6 +29,13 @@ interface IllustrationProps {
   invertOnDark?: boolean;
   /** Opacity override (0–1). */
   opacity?: number;
+  /**
+   * Soft-edge feathering. Dissolves all edges so there are never hard lines.
+   * - true (default): radial vignette that fades edges to transparent
+   * - false: no mask (useful for hero/centered images that need full visibility)
+   * - custom string: pass your own CSS mask-image value
+   */
+  feather?: boolean | string;
 }
 
 /**
@@ -41,6 +48,12 @@ interface IllustrationProps {
  */
 const DARK_FILTER = "invert(1) brightness(1.05) sepia(0.08)";
 
+/**
+ * Default edge-feathering mask: a radial vignette that dissolves all edges
+ * so illustrations never show hard rectangular boundaries.
+ */
+const FEATHER_MASK = "radial-gradient(ellipse at center, rgba(0,0,0,1) 10%, rgba(0,0,0,0.6) 30%, rgba(0,0,0,0.25) 50%, transparent 65%)";
+
 export function Illustration({
   name,
   alt: altOverride,
@@ -52,6 +65,7 @@ export function Illustration({
   style,
   invertOnDark = true,
   opacity,
+  feather = true,
 }: IllustrationProps) {
   const { night } = useTheme();
   const entry = ILLUSTRATIONS[name];
@@ -60,10 +74,14 @@ export function Illustration({
   const h = size ?? heightOverride ?? entry.defaultHeight;
   const isDecorative = resolvedAlt === "";
 
+  const maskValue = feather === true ? FEATHER_MASK : typeof feather === "string" ? feather : undefined;
+
   const filterStyle: React.CSSProperties = {
     filter: invertOnDark && night ? DARK_FILTER : undefined,
     transition: "filter var(--dur-base) var(--ease-sacred)",
     opacity: opacity ?? undefined,
+    maskImage: maskValue,
+    WebkitMaskImage: maskValue,
     ...style,
   };
 

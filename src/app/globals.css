@@ -186,8 +186,8 @@ h1, h2, h3, p, blockquote, div, span { overflow-wrap: break-word; word-break: br
   .pw-feature-card .pw-feature-btn { display: none !important; }
 
   /* Readings: the side column drops below the reading. */
-  .pw-readings { flex-direction: column !important; }
-  .pw-readings-main { padding: 20px 16px 32px !important; }
+  .pw-readings { flex-direction: column !important; overflow-x: hidden !important; }
+  .pw-readings-main { padding: 20px 16px 32px !important; max-width: 100% !important; }
   .pw-readings-aside {
     width: 100% !important;
     border-left: none !important;

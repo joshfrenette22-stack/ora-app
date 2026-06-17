@@ -5,9 +5,7 @@ import { Illustration } from "@/components/Illustration";
 export default function NotFound() {
   return (
     <div style={{ minHeight: "70vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "48px 24px", gap: 14 }}>
-      <div style={{ maskImage: "radial-gradient(circle at center, rgba(0,0,0,0.9) 30%, transparent 65%)", WebkitMaskImage: "radial-gradient(circle at center, rgba(0,0,0,0.9) 30%, transparent 65%)" }}>
-        <Illustration name="splash-altar" size={200} invertOnDark opacity={0.55} />
-      </div>
+      <Illustration name="splash-altar" size={200} invertOnDark opacity={0.55} />
       <div style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 62, letterSpacing: "-.01em", color: "var(--gold-deep)", lineHeight: 1 }}>
         404
       </div>

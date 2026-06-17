@@ -293,34 +293,52 @@ export function useNarration({
 
 // ── Waveform "voice track" ────────────────────────────────────────────────────
 
-const WAVE_BARS = 42;
-// Deterministic, organic-looking bar heights (0.18–1), tapered toward the ends.
+const WAVE_BARS = 64;
+// Seeded pseudo-random for deterministic but natural-looking amplitudes.
+function seededRand(seed: number): number {
+  const x = Math.sin(seed * 127.1 + seed * 311.7) * 43758.5453;
+  return x - Math.floor(x);
+}
+// Realistic waveform: layered noise + envelope taper + micro-variation.
 const WAVE_HEIGHTS = Array.from({ length: WAVE_BARS }, (_, i) => {
   const t = i / (WAVE_BARS - 1);
-  const taper = 0.35 + 0.65 * Math.sin(Math.PI * t);
-  const wobble = Math.abs(Math.sin(i * 1.7) * 0.6 + Math.sin(i * 0.7) * 0.4 + Math.cos(i * 2.3) * 0.25);
-  return Math.max(0.18, Math.min(1, taper * (0.45 + wobble)));
+  // Smooth envelope — fuller in the middle, tapered at edges
+  const env = Math.sin(Math.PI * t) ** 0.6;
+  // Multiple noise octaves for organic feel
+  const n1 = seededRand(i * 3 + 7) * 0.5;
+  const n2 = seededRand(i * 7 + 13) * 0.3;
+  const n3 = seededRand(i * 11 + 31) * 0.2;
+  // Occasional peaks (like real speech amplitude spikes)
+  const spike = seededRand(i * 17 + 5) > 0.82 ? 0.3 : 0;
+  const raw = 0.22 + env * (n1 + n2 + n3 + spike);
+  return Math.max(0.08, Math.min(1, raw));
 });
 
 function Waveform({ progress, dark, playing }: { progress: number; dark?: boolean; playing?: boolean }) {
-  const rest = dark ? "rgba(239,230,214,0.22)" : "var(--stone-200)";
+  const rest = dark ? "rgba(239,230,214,0.15)" : "var(--stone-200)";
+  const played = dark ? "var(--gold)" : "var(--gold-deep)";
+  const activeColor = "var(--gold)";
   return (
     <div
-      className={playing ? "ora-wave-live" : undefined}
-      style={{ display: "flex", alignItems: "center", gap: 2, height: 26, marginTop: 6 }}
+      style={{ display: "flex", alignItems: "center", gap: 1.5, height: 32, marginTop: 4 }}
     >
       {WAVE_HEIGHTS.map((h, i) => {
-        const played = i / (WAVE_BARS - 1) <= progress;
+        const frac = i / (WAVE_BARS - 1);
+        const isPlayed = frac <= progress;
+        const isHead = playing && Math.abs(frac - progress) < 1 / WAVE_BARS;
         return (
           <span
             key={i}
             style={{
               flex: 1,
-              minWidth: 2,
+              minWidth: 1.5,
+              maxWidth: 4,
               height: `${Math.round(h * 100)}%`,
-              borderRadius: 2,
-              background: played ? "var(--gold)" : rest,
-              transition: "background .15s",
+              borderRadius: 1,
+              background: isHead ? activeColor : isPlayed ? played : rest,
+              opacity: isHead ? 1 : isPlayed ? 0.85 : 0.5,
+              transition: "background .12s, opacity .12s",
+              transform: playing && isHead ? "scaleY(1.15)" : undefined,
             }}
           />
         );
