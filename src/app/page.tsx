@@ -5,11 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Illustration } from "@/components/Illustration";
 import { SurfaceCard, FeatureCard } from "@/components/UI";
-import { Sun } from "lucide-react";
+import { Sun, Sparkles } from "lucide-react";
 import { localDateISO } from "@/lib/clientDate";
 import { HOURS, currentHourName, WEEKDAY_SET } from "@/data/content";
 
 type Hour = typeof HOURS[number];
+
+interface ChurchItem { label: string; text: string }
 
 // Which weekdays each set of mysteries is traditionally prayed.
 const SET_DAYS: Record<string, string> = {
@@ -54,12 +56,17 @@ export default function TodayPage() {
   const [greeting, setGreeting] = useState<string | null>(null);
   const [hour, setHour] = useState<Hour | null>(null);
   const [rosarySet, setRosarySet] = useState<string | null>(null);
+  const [church, setChurch] = useState<ChurchItem[] | null>(null);
 
   useEffect(() => {
     let alive = true;
     fetch(`/api/today?date=${localDateISO()}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (alive && d) setData(d); })
+      .catch(() => {});
+    fetch(`/api/today-in-church?date=${localDateISO()}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (alive && d?.items) setChurch(d.items as ChurchItem[]); })
       .catch(() => {});
     return () => { alive = false; };
   }, []);
@@ -111,6 +118,38 @@ export default function TodayPage() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Today in the Church */}
+      <div className="pw-card" style={{ background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 18, padding: "22px 24px", marginBottom: 30, boxShadow: "var(--shadow-sm)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: church ? 16 : 0 }}>
+          <span style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--gold-faint)", color: "var(--gold-deep)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+            <Sparkles size={17} strokeWidth={1.7} />
+          </span>
+          <div style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 19, color: "var(--ink)", letterSpacing: "-.01em" }}>
+            Today in the Church
+          </div>
+        </div>
+        {church ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {church.map((it, i) => (
+              <div key={i} style={{ borderLeft: "2px solid var(--gold-faint)", paddingLeft: 14 }}>
+                <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 11.5, letterSpacing: ".02em", color: "var(--gold-deep)", marginBottom: 3 }}>
+                  {it.label}
+                </div>
+                <div style={{ fontFamily: "var(--font-body)", fontSize: 15, lineHeight: 1.6, color: "var(--ink-700)" }}>
+                  {it.text}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
+            {[0, 1, 2].map((i) => (
+              <div key={i} style={{ height: 12, borderRadius: 6, background: "var(--stone-100)", width: i === 1 ? "92%" : i === 2 ? "78%" : "100%" }} />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Hero verse */}
