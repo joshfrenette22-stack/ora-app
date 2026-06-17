@@ -118,7 +118,6 @@ export default function RosaryPage() {
 
   const narration = useNarration({
     segments,
-    rate: 0.9,
     onSegmentChange: (i) => { setMysteryIdx(Math.floor(i / TOTAL_BEADS)); setBead(i % TOTAL_BEADS); },
   });
 

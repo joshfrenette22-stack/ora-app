@@ -21,7 +21,25 @@ const GLORY =
   "Glory be to the Father, and to the Son, and to the Holy Spirit: as it was in the beginning, is now, and ever shall be, world without end. Amen.";
 const OPEN_DEFAULT = "O God, come to my assistance. O Lord, make haste to help me.";
 
+const TE_DEUM =
+  "We praise thee, O God: we acknowledge thee to be the Lord. All the earth doth worship thee, the Father everlasting. To thee all Angels cry aloud, the Heavens and all the Powers therein. To thee Cherubim and Seraphim continually do cry: Holy, Holy, Holy, Lord God of Sabaoth; Heaven and earth are full of the majesty of thy glory. The glorious company of the Apostles praise thee. The goodly fellowship of the Prophets praise thee. The noble army of Martyrs praise thee. The holy Church throughout all the world doth acknowledge thee: the Father, of an infinite majesty; thine adorable, true, and only Son; also the Holy Ghost, the Comforter. Thou art the King of Glory, O Christ. Thou art the everlasting Son of the Father. When thou tookest upon thee to deliver man, thou didst not abhor the Virgin's womb. When thou hadst overcome the sharpness of death, thou didst open the kingdom of heaven to all believers. We therefore pray thee, help thy servants, whom thou hast redeemed with thy precious blood. O Lord, save thy people, and bless thine heritage. Govern them, and lift them up for ever. Day by day we magnify thee; and we worship thy name, ever world without end. O Lord, in thee have I trusted: let me never be confounded.";
+
 const CFG = {
+  "Office of Readings": {
+    open: "O Lord, open thou my lips, and my mouth shall declare thy praise.",
+    psalms: [
+      { label: "Invitatory · Psalm 95", ref: "Psalm 95", antiphon: "Come, let us worship the Lord, the great King above all gods.", book: "Psalm", ch: 95, a: 1, b: 7 },
+      { label: "Psalm 1", ref: "Psalm 1", antiphon: "Blessed is the man whose delight is in the law of the Lord.", book: "Psalm", ch: 1, a: 1, b: 6 },
+      { label: "Psalm 103", ref: "Psalm 103 · 1–5", antiphon: "Bless the Lord, O my soul, and forget not all his benefits.", book: "Psalm", ch: 103, a: 1, b: 5 },
+    ],
+    readingLabel: "First Reading",
+    reading: { ref: "Romans 8 · 28–32", text: "We know that to them that love God all things work together unto good, to such as, according to his purpose, are called to be saints. For whom he foreknew, he also predestinated to be made conformable to the image of his Son, that he might be the firstborn amongst many brethren. What shall we then say to these things? If God be for us, who is against us? He that spared not even his own Son, but delivered him up for us all, how hath he not also, with him, given us all things?" },
+    responsory: "If God be for us, who is against us? In him who loved us we are more than conquerors.",
+    reading2: { label: "Second Reading", ref: "From the Confessions of Saint Augustine", text: "Great art thou, O Lord, and greatly to be praised; great is thy power, and of thy wisdom there is no end. And man, being a part of thy creation, desires to praise thee. Thou awakest us to delight in thy praise; for thou madest us for thyself, and our heart is restless, until it rest in thee. Grant me, Lord, to know and understand which is first, to call on thee, or to praise thee; and, again, to know thee, or to call on thee." },
+    responsory2: "Thou madest us for thyself, O Lord, and our heart is restless until it rest in thee.",
+    canticle: { label: "Te Deum", sub: "A Hymn of Praise", text: TE_DEUM },
+    prayer: "O God, who hast taught the hearts of thy faithful people by sending to them the light of thy Holy Spirit: grant us by the same Spirit to have a right judgment in all things, and evermore to rejoice in his holy comfort. Through Christ our Lord. Amen.",
+  },
   Lauds: {
     open: "O Lord, open thou my lips, and my mouth shall declare thy praise.",
     psalms: [
@@ -90,11 +108,16 @@ function build(name, cfg) {
   for (const p of cfg.psalms) {
     parts.push({ type: "psalm", label: p.label, ref: p.ref, antiphon: p.antiphon, text: passage(p.book, p.ch, p.a, p.b) });
   }
-  parts.push({ type: "reading", label: "Reading", ref: cfg.reading.ref, text: cfg.reading.text });
+  parts.push({ type: "reading", label: cfg.readingLabel ?? "Reading", ref: cfg.reading.ref, text: cfg.reading.text });
   parts.push({ type: "responsory", label: "Responsory", text: cfg.responsory });
+  if (cfg.reading2) {
+    parts.push({ type: "reading", label: cfg.reading2.label ?? "Second Reading", ref: cfg.reading2.ref, text: cfg.reading2.text });
+    if (cfg.responsory2) parts.push({ type: "responsory", label: "Responsory", text: cfg.responsory2 });
+  }
   if (cfg.canticle) {
     const c = cfg.canticle;
-    parts.push({ type: "canticle", label: c.label, sub: c.sub, ref: c.ref, antiphon: c.antiphon, text: passage(c.book, c.ch, c.a, c.b) });
+    // A canticle is either pulled from the DRA (book/ch) or supplied literally (Te Deum).
+    parts.push({ type: "canticle", label: c.label, sub: c.sub, ref: c.ref, antiphon: c.antiphon, text: c.text ?? passage(c.book, c.ch, c.a, c.b) });
   }
   parts.push({ type: "prayer", label: "Concluding Prayer", text: cfg.prayer });
   parts.push({ type: "versicle", text: DISMISSAL });

@@ -31,7 +31,27 @@ export default function SettingsPage() {
   const { night, setNight } = useTheme();
   const [cloud, setCloud] = useState(true);
   const [previewing, setPreviewing] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Force the freshest deployed build: drop any cached service worker / caches,
+  // then reload so the latest version comes down from the server.
+  async function refreshApp() {
+    setRefreshing(true);
+    try {
+      if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+      }
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+    } catch {
+      /* best effort — reload regardless */
+    }
+    window.location.reload();
+  }
 
   useEffect(() => {
     audioRef.current = typeof Audio !== "undefined" ? new Audio() : null;
@@ -182,6 +202,39 @@ export default function SettingsPage() {
             position: "absolute", top: 3, left: night ? 25 : 3, width: 24, height: 24, borderRadius: "50%",
             background: "#fff", boxShadow: "var(--shadow-sm)", transition: "left .18s",
           }} />
+        </button>
+      </div>
+
+      {/* App section */}
+      <div style={{ height: 1, background: "var(--stone-200)", margin: "26px 0" }} />
+      <Kicker style={{ marginBottom: 14 }}>App</Kicker>
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "14px 16px", borderRadius: 12, background: "var(--bone-raised)", border: "1px solid var(--stone-200)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ width: 38, height: 38, borderRadius: "50%", background: "var(--gold-faint)", color: "var(--gold-deep)", display: "grid", placeItems: "center" }}>
+            <LucideIcon name="refresh-cw" size={18} />
+          </span>
+          <div>
+            <div style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 17, color: "var(--ink)" }}>
+              Refresh app
+            </div>
+            <div style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--stone-400)", marginTop: 1 }}>
+              Load the latest version
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={refreshApp}
+          disabled={refreshing}
+          style={{
+            fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 13,
+            border: "none", borderRadius: 10, padding: "10px 18px", cursor: refreshing ? "default" : "pointer",
+            background: "var(--gilt)", color: "#2A2008", boxShadow: "var(--shadow-gold)", opacity: refreshing ? 0.7 : 1,
+          }}
+        >
+          {refreshing ? "Refreshing…" : "Refresh"}
         </button>
       </div>
     </div>

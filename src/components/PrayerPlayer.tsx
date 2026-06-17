@@ -69,7 +69,7 @@ export interface Narration {
  */
 export function useNarration({
   segments,
-  rate,
+  rate: rateOption,
   loop = false,
   onSegmentChange,
   onComplete,
@@ -81,7 +81,9 @@ export function useNarration({
   const [index, setIndex] = useState(0);
   const [frac, setFrac] = useState(0); // playback fraction within the current segment
   const [wordIndex, setWordIndex] = useState(-1); // word being spoken within the segment
-  const { voice } = useVoice();
+  const { voice, speed } = useVoice();
+  // The chosen reading speed wins; a page may still pass an explicit rate.
+  const rate = rateOption ?? speed;
 
   const genRef = useRef(0);
   const segmentsRef = useRef(segments);
@@ -193,6 +195,18 @@ export function useNarration({
   );
 
   useEffect(() => { playNextRef.current = playIndex; }, [playIndex]);
+
+  // Re-speak the current segment at the new speed when it changes mid-prayer.
+  const statusRef = useRef(status);
+  const indexRef = useRef(index);
+  const speedRef = useRef(speed);
+  useEffect(() => { statusRef.current = status; }, [status]);
+  useEffect(() => { indexRef.current = index; }, [index]);
+  useEffect(() => {
+    if (speedRef.current === speed) return;
+    speedRef.current = speed;
+    if (statusRef.current === "playing") playIndex(indexRef.current);
+  }, [speed, playIndex]);
 
   const play = useCallback((from?: number) => playIndex(from ?? index), [playIndex, index]);
 
@@ -327,6 +341,13 @@ export function PlayerBar({
   title?: string;
 }) {
   const { supported, status, index, count, current } = narration;
+  const { speed, setSpeed } = useVoice();
+  const SPEEDS = [0.75, 1, 1.25, 1.5];
+  const cycleSpeed = () => {
+    const i = SPEEDS.indexOf(speed);
+    setSpeed(SPEEDS[(i + 1) % SPEEDS.length] ?? 1);
+  };
+  const speedLabel = `${Number.isInteger(speed) ? speed : speed.toString().replace(/0+$/, "")}×`;
 
   if (!supported) {
     return (
@@ -403,6 +424,28 @@ export function PlayerBar({
         {/* Waveform "voice track" */}
         <Waveform progress={narration.progress} dark={dark} playing={playing} />
       </div>
+
+      <button
+        onClick={cycleSpeed}
+        aria-label={`Reading speed ${speedLabel}`}
+        title="Reading speed"
+        style={{
+          fontFamily: "var(--font-display)",
+          fontSize: 12,
+          fontWeight: 700,
+          letterSpacing: ".01em",
+          color: fg,
+          flexShrink: 0,
+          cursor: "pointer",
+          border,
+          background: surface,
+          borderRadius: 999,
+          padding: "5px 10px",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {speedLabel}
+      </button>
 
       <div
         style={{

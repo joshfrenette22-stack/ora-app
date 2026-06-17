@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sunrise, Sun, Sunset, Moon } from "lucide-react";
+import { Sunrise, Sun, Sunset, Moon, BookOpen } from "lucide-react";
 import { Cross, Fleuron } from "@/components/Sacred";
 import { SeasonBadge, Kicker, Btn } from "@/components/UI";
 import { PlayerBar, SpokenText, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
@@ -11,7 +11,7 @@ import { OFFICE, type OfficePart } from "@/data/office";
 
 type HourName = typeof HOURS[number]["name"];
 
-const HOUR_ICONS: Record<string, typeof Sun> = { sunrise: Sunrise, sun: Sun, sunset: Sunset, moon: Moon };
+const HOUR_ICONS: Record<string, typeof Sun> = { sunrise: Sunrise, sun: Sun, sunset: Sunset, moon: Moon, "book-open": BookOpen };
 
 export default function HoursPage() {
   const [selected, setSelected] = useState<HourName>("Sext");
