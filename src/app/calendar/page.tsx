@@ -92,6 +92,9 @@ export default function CalendarPage() {
   const [feasts, setFeasts] = useState<Record<string, FeastDay>>(FEASTS);
   const [seasonColor, setSeasonColor] = useState<EngineColor>(getSeason(today.getFullYear(), today.getMonth() + 1));
   const [seasonLabel, setSeasonLabel] = useState("Ordinary Time");
+  // Selected day-of-month within the viewed month (null = nothing selected).
+  const viewingThisMonth = viewMonth === today.getMonth() + 1 && viewYear === today.getFullYear();
+  const [selected, setSelected] = useState<number | null>(viewingThisMonth ? today.getDate() : null);
 
   useEffect(() => {
     let alive = true;
@@ -108,13 +111,29 @@ export default function CalendarPage() {
   }, [viewYear, viewMonth]);
 
   function prevMonth() {
+    setSelected(null);
     if (viewMonth === 1) { setViewMonth(12); setViewYear((y) => y - 1); }
     else setViewMonth((m) => m - 1);
   }
   function nextMonth() {
+    setSelected(null);
     if (viewMonth === 12) { setViewMonth(1); setViewYear((y) => y + 1); }
     else setViewMonth((m) => m + 1);
   }
+
+  // Upcoming feasts: every loaded feast on/after today, soonest first.
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const upcoming = Object.entries(feasts)
+    .map(([k, f]) => {
+      const [y, m, d] = k.split("-").map(Number);
+      return { date: new Date(y, m - 1, d), feast: f };
+    })
+    .filter((e) => !Number.isNaN(e.date.getTime()) && e.date >= startOfToday)
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
+    .slice(0, 6);
+
+  const selectedFeast = selected ? feasts[feastKey(viewYear, viewMonth, selected)] : undefined;
+  const selectedDate = selected ? new Date(viewYear, viewMonth - 1, selected) : null;
 
   // Build calendar grid
   const firstDay = new Date(viewYear, viewMonth - 1, 1).getDay(); // 0=Sun
@@ -254,15 +273,77 @@ export default function CalendarPage() {
               isCurrentMonth={isCurrentMonth}
               isToday={isToday}
               isSunday={isSunday}
+              isSelected={isCurrentMonth && dayNum === selected}
               feast={feast}
+              onSelect={isCurrentMonth ? () => setSelected(dayNum) : undefined}
             />
           );
         })}
       </div>
 
+      {/* Selected day detail */}
+      {selectedDate && (
+        <div style={{ marginTop: 22, background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 14, padding: "18px 20px", boxShadow: "var(--shadow-sm)" }}>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 11.5, letterSpacing: ".02em", color: "var(--gold-deep)", marginBottom: 4 }}>
+            {selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+          </div>
+          {selectedFeast ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ width: 10, height: 10, borderRadius: "50%", background: LIT_COLOR_MAP[selectedFeast.color], flexShrink: 0 }} />
+              <span style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 19, color: "var(--ink)" }}>{selectedFeast.name}</span>
+              {selectedFeast.rank && selectedFeast.rank !== "feria" && (
+                <span style={{ fontFamily: "var(--font-display)", fontSize: 10.5, letterSpacing: ".02em", color: "var(--stone-400)", textTransform: "capitalize" }}>· {selectedFeast.rank}</span>
+              )}
+            </div>
+          ) : (
+            <div style={{ fontFamily: "var(--font-body)", fontSize: 15, color: "var(--stone-400)", fontStyle: "italic" }}>
+              A weekday (feria) — the Mass and Office of the season are prayed.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Upcoming feasts */}
+      {upcoming.length > 0 && (
+        <div style={{ marginTop: 22 }}>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 12.5, letterSpacing: ".01em", color: "var(--ink-700)", marginBottom: 12 }}>
+            Upcoming feast days
+          </div>
+          <div style={{ background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 14, overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+            {upcoming.map((e, i) => {
+              const inView = e.date.getMonth() + 1 === viewMonth && e.date.getFullYear() === viewYear;
+              return (
+                <button
+                  key={i}
+                  onClick={() => {
+                    setViewYear(e.date.getFullYear());
+                    setViewMonth(e.date.getMonth() + 1);
+                    setSelected(e.date.getDate());
+                  }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 12, width: "100%", textAlign: "left",
+                    padding: "13px 18px", border: "none", cursor: "pointer", background: "transparent",
+                    borderTop: i === 0 ? "none" : "1px solid var(--stone-100)",
+                  }}
+                >
+                  <span style={{ width: 9, height: 9, borderRadius: "50%", background: LIT_COLOR_MAP[e.feast.color], flexShrink: 0 }} />
+                  <span style={{ fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 600, color: "var(--gold-deep)", width: 58, flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
+                    {e.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </span>
+                  <span style={{ fontFamily: "var(--font-body)", fontSize: 15, color: "var(--ink)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {e.feast.name}
+                  </span>
+                  {inView && <ChevronRight size={15} strokeWidth={1.6} style={{ color: "var(--stone-300)", flexShrink: 0 }} />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Legend */}
       <div style={{
-        marginTop: 40,
+        marginTop: 30,
         display: "flex",
         flexWrap: "wrap",
         gap: "12px 24px",
@@ -305,13 +386,17 @@ function DayCell({
   isCurrentMonth,
   isToday,
   isSunday,
+  isSelected,
   feast,
+  onSelect,
 }: {
   label: string;
   isCurrentMonth: boolean;
   isToday: boolean;
   isSunday: boolean;
+  isSelected: boolean;
   feast?: FeastDay;
+  onSelect?: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
 
@@ -319,7 +404,10 @@ function DayCell({
   const isSolemnity = feast?.rank === "solemnity";
 
   return (
-    <div
+    <button
+      onClick={onSelect}
+      disabled={!isCurrentMonth}
+      aria-label={isCurrentMonth ? `${label}${feast ? ` — ${feast.name}` : ""}` : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -328,13 +416,19 @@ function DayCell({
         overflow: "hidden",
         borderRadius: 10,
         padding: "10px 10px 8px",
+        textAlign: "left",
+        font: "inherit",
         background: isToday
+          ? "var(--gold-faint)"
+          : isSelected
           ? "var(--gold-faint)"
           : hovered && isCurrentMonth
           ? "var(--stone-100)"
           : "transparent",
         border: isToday
           ? "1.5px solid var(--gold)"
+          : isSelected
+          ? "1.5px solid var(--gold-deep)"
           : "1.5px solid transparent",
         cursor: isCurrentMonth ? "pointer" : "default",
         transition: "background .12s, border-color .12s",
@@ -398,6 +492,6 @@ function DayCell({
           )}
         </div>
       )}
-    </div>
+    </button>
   );
 }
