@@ -7,6 +7,9 @@ import { Fleuron, RoseWindow } from "@/components/Sacred";
 import { SurfaceCard, FeatureCard } from "@/components/UI";
 import { Sun } from "lucide-react";
 import { localDateISO } from "@/lib/clientDate";
+import { HOURS, currentHourName } from "@/data/content";
+
+type Hour = typeof HOURS[number];
 
 interface TodayData {
   liturgical: { label: string; badgeSeason: string };
@@ -41,6 +44,7 @@ export default function TodayPage() {
   const router = useRouter();
   const [data, setData] = useState<TodayData>(FALLBACK);
   const [greeting, setGreeting] = useState<string | null>(null);
+  const [hour, setHour] = useState<Hour | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -52,10 +56,12 @@ export default function TodayPage() {
   }, []);
 
   useEffect(() => {
-    // Time-of-day greeting, resolved on the client to avoid a hydration mismatch.
+    // Time-of-day greeting + nearest hour, resolved on the client to avoid a
+    // hydration mismatch.
     const h = new Date().getHours();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setGreeting(h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening");
+    setHour(HOURS.find((x) => x.name === currentHourName()) ?? null);
   }, []);
 
   const { liturgical, verse, saint, readings } = data;
@@ -139,8 +145,8 @@ export default function TodayPage() {
         <Link href="/hours" style={{ textDecoration: "none" }}>
           <SurfaceCard
             kicker="Liturgy of the Hours"
-            title="Sext · Midday"
-            meta="Midday Prayer · 12:00"
+            title={hour ? hour.name : "The Divine Office"}
+            meta={hour ? `${hour.en} · ${hour.time}` : "Pray the hours"}
             lucide="clock"
           />
         </Link>

@@ -73,6 +73,17 @@ export const HOURS = [
 
 export const WEEKDAY_SET = ["Glorious", "Joyful", "Sorrowful", "Glorious", "Luminous", "Sorrowful", "Joyful"] as const;
 
+/** The hour of the Divine Office closest to the given time of day. */
+export function currentHourName(date: Date = new Date()): typeof HOURS[number]["name"] {
+  const h = date.getHours();
+  if (h >= 5 && h < 8) return "Lauds";
+  if (h >= 8 && h < 11) return "Terce";
+  if (h >= 11 && h < 14) return "Sext";
+  if (h >= 14 && h < 17) return "None";
+  if (h >= 17 && h < 21) return "Vespers";
+  return "Compline";
+}
+
 export const ROSARY_INTENTIONS = [
   "The Holy Souls",
   "My Family",

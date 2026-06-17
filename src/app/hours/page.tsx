@@ -5,20 +5,10 @@ import { Sunrise, Sun, Sunset, Moon } from "lucide-react";
 import { Cross, Fleuron } from "@/components/Sacred";
 import { SeasonBadge, Kicker, Btn } from "@/components/UI";
 import { PlayerBar, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
-import { HOURS } from "@/data/content";
+import { HOURS, currentHourName as getCurrentHour } from "@/data/content";
 import { OFFICE, type OfficePart } from "@/data/office";
 
 type HourName = typeof HOURS[number]["name"];
-
-function getCurrentHour(): HourName {
-  const h = new Date().getHours();
-  if (h >= 5 && h < 8) return "Lauds";
-  if (h >= 8 && h < 11) return "Terce";
-  if (h >= 11 && h < 14) return "Sext";
-  if (h >= 14 && h < 17) return "None";
-  if (h >= 17 && h < 21) return "Vespers";
-  return "Compline";
-}
 
 const HOUR_ICONS: Record<string, typeof Sun> = { sunrise: Sunrise, sun: Sun, sunset: Sunset, moon: Moon };
 
