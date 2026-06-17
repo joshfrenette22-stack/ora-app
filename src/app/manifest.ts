@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "ORA — Prayer Warrior",
-    short_name: "ORA",
+    name: "Prayer Warrior",
+    short_name: "Prayer Warrior",
     description:
       "A reverent Catholic prayer companion. Daily Mass readings, Liturgy of the Hours, the Holy Rosary, and more.",
     start_url: "/",

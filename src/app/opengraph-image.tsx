@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { readFile } from "fs/promises";
 import { join } from "path";
 
-export const alt = "ORA — A Catholic Prayer Companion";
+export const alt = "Prayer Warrior — A Catholic Prayer Companion";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -93,15 +93,15 @@ export default async function OGImage() {
           {/* App name */}
           <div
             style={{
-              fontSize: 96,
+              fontSize: 82,
               fontWeight: 400,
               color: "#F2EBDF",
-              letterSpacing: "0.06em",
+              letterSpacing: "-0.01em",
               lineHeight: 1,
               marginBottom: 16,
             }}
           >
-            ORA
+            Prayer Warrior
           </div>
 
           {/* Tagline */}

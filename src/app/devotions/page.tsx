@@ -63,7 +63,7 @@ function DevotionCard({ dkey, lucide }: { dkey: DevotionKey; lucide: string }) {
   return (
     <section id={dkey} className="pw-devotion-card" style={{ scrollMarginTop: 24, position: "relative", overflow: "hidden", background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 20, padding: "28px 28px 30px", boxShadow: "var(--shadow-sm)" }}>
       {DEVOTION_ART[dkey] && (
-        <div style={{ position: "absolute", right: -10, top: -10, pointerEvents: "none" }}>
+        <div style={{ position: "absolute", right: -10, top: -10, pointerEvents: "none", zIndex: 0 }}>
           <Illustration name={DEVOTION_ART[dkey]} size={200} invertOnDark opacity={0.5} />
         </div>
       )}

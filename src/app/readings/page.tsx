@@ -227,7 +227,7 @@ export default function ReadingsPage() {
         overflow: "hidden",
       }}>
         {/* Ambient texture */}
-        <div style={{ position: "absolute", bottom: -20, right: -20, pointerEvents: "none" }}>
+        <div style={{ position: "absolute", bottom: -20, right: -20, pointerEvents: "none", zIndex: 0 }}>
           <Illustration name="section-daily-mass" size={260} invertOnDark opacity={0.45} />
         </div>
 

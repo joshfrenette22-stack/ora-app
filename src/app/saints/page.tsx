@@ -64,7 +64,7 @@ export default function SaintsPage() {
       }}
     >
       {/* Decorative background watermark */}
-      <div style={{ position: "absolute", top: -30, right: -40, pointerEvents: "none" }}>
+      <div style={{ position: "absolute", top: -30, right: -40, pointerEvents: "none", zIndex: 0 }}>
         <Illustration name="splash-altar" size={360} invertOnDark opacity={0.35} />
       </div>
 
@@ -80,6 +80,8 @@ export default function SaintsPage() {
           textAlign: "center",
           lineHeight: 1.08,
           marginBottom: 10,
+          position: "relative",
+          zIndex: 1,
         }}
       >
         {saint.name}
@@ -96,6 +98,7 @@ export default function SaintsPage() {
             textAlign: "center",
             lineHeight: 1.5,
             marginBottom: 16,
+            position: "relative", zIndex: 1,
           }}
         >
           {saint.title}
@@ -103,19 +106,19 @@ export default function SaintsPage() {
       )}
 
       {/* Season badge */}
-      <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 28, position: "relative", zIndex: 1 }}>
         <SeasonBadge season={badgeSeason(saint.color)}>{rankLabel}</SeasonBadge>
       </div>
 
       {/* Voice player */}
       {segments.length > 0 && (
-        <div style={{ width: "100%", marginBottom: 28 }}>
+        <div style={{ width: "100%", marginBottom: 28, position: "relative", zIndex: 1 }}>
           <PlayerBar narration={narration} title={`Listen · ${saint.name}`} />
         </div>
       )}
 
       {/* Fleuron divider */}
-      <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 28, position: "relative", zIndex: 1 }}>
         <Fleuron width={220} />
       </div>
 
@@ -136,6 +139,7 @@ export default function SaintsPage() {
             textAlign: "left",
             margin: "0 0 32px",
             width: "100%",
+            position: "relative", zIndex: 1,
           }}
         />
       )}
@@ -149,6 +153,7 @@ export default function SaintsPage() {
             borderRadius: 14,
             padding: "24px 28px",
             boxShadow: "var(--shadow-sm)",
+            position: "relative", zIndex: 1,
           }}
         >
           <Kicker style={{ marginBottom: 12 }}>Collect</Kicker>
