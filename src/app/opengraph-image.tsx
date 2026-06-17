@@ -1,16 +1,10 @@
 import { ImageResponse } from "next/og";
-import { readFile } from "fs/promises";
-import { join } from "path";
 
 export const alt = "Prayer Warrior — A Catholic Prayer Companion";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function OGImage() {
-  const buf = await readFile(join(process.cwd(), "public/illustrations/app-icon-crucifix.png"));
-  const base64 = buf.toString("base64");
-  const dataUri = `data:image/png;base64,${base64}`;
-
   return new ImageResponse(
     (
       <div
@@ -25,7 +19,7 @@ export default async function OGImage() {
           overflow: "hidden",
         }}
       >
-        {/* Warm radial glow */}
+        {/* Warm radial glows */}
         <div
           style={{
             position: "absolute",
@@ -33,7 +27,8 @@ export default async function OGImage() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: "radial-gradient(ellipse at 70% 50%, rgba(210,107,67,0.15) 0%, transparent 60%)",
+            background:
+              "radial-gradient(ellipse 80% 70% at 25% 50%, rgba(210,107,67,0.14) 0%, transparent 70%)",
           }}
         />
         <div
@@ -43,27 +38,44 @@ export default async function OGImage() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: "radial-gradient(ellipse at 30% 80%, rgba(210,107,67,0.08) 0%, transparent 50%)",
+            background:
+              "radial-gradient(ellipse 60% 80% at 80% 70%, rgba(210,107,67,0.08) 0%, transparent 60%)",
           }}
         />
 
-        {/* Crucifix — right side, large, faded */}
+        {/* Decorative cross — simple, geometric, subtle */}
         <div
           style={{
             position: "absolute",
-            right: 40,
+            right: 160,
             top: "50%",
             transform: "translateY(-50%)",
             display: "flex",
-            opacity: 0.12,
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: 0.06,
           }}
         >
-          <img
-            src={dataUri}
-            width={520}
-            height={520}
-            alt=""
-            style={{ filter: "invert(1) brightness(1.05) sepia(0.08)" }}
+          {/* Vertical bar */}
+          <div
+            style={{
+              width: 28,
+              height: 320,
+              background: "#F2EBDF",
+              borderRadius: 4,
+              position: "absolute",
+            }}
+          />
+          {/* Horizontal bar */}
+          <div
+            style={{
+              width: 200,
+              height: 28,
+              background: "#F2EBDF",
+              borderRadius: 4,
+              position: "absolute",
+              marginTop: -80,
+            }}
           />
         </div>
 
@@ -86,19 +98,19 @@ export default async function OGImage() {
               height: 3,
               borderRadius: 2,
               background: "linear-gradient(90deg, #E68A5E, #D8703F)",
-              marginBottom: 32,
+              marginBottom: 36,
             }}
           />
 
           {/* App name */}
           <div
             style={{
-              fontSize: 82,
-              fontWeight: 400,
+              fontSize: 78,
+              fontWeight: 600,
               color: "#F2EBDF",
-              letterSpacing: "-0.01em",
+              letterSpacing: "-0.02em",
               lineHeight: 1,
-              marginBottom: 16,
+              marginBottom: 18,
             }}
           >
             Prayer Warrior
@@ -107,11 +119,11 @@ export default async function OGImage() {
           {/* Tagline */}
           <div
             style={{
-              fontSize: 28,
+              fontSize: 26,
               fontWeight: 400,
-              color: "rgba(239,230,214,0.6)",
+              color: "rgba(239,230,214,0.55)",
               lineHeight: 1.4,
-              maxWidth: 500,
+              maxWidth: 480,
             }}
           >
             A reverent Catholic prayer companion
@@ -121,27 +133,29 @@ export default async function OGImage() {
           <div
             style={{
               display: "flex",
-              gap: 24,
-              marginTop: 40,
+              gap: 16,
+              marginTop: 44,
             }}
           >
-            {["Daily Mass", "The Hours", "Holy Rosary", "Devotions"].map((label) => (
-              <div
-                key={label}
-                style={{
-                  fontSize: 14,
-                  fontWeight: 600,
-                  letterSpacing: "0.04em",
-                  color: "#D26B43",
-                  padding: "8px 16px",
-                  borderRadius: 999,
-                  border: "1px solid rgba(210,107,67,0.35)",
-                  background: "rgba(210,107,67,0.08)",
-                }}
-              >
-                {label}
-              </div>
-            ))}
+            {["Daily Mass", "The Hours", "Holy Rosary", "Devotions"].map(
+              (label) => (
+                <div
+                  key={label}
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    letterSpacing: "0.05em",
+                    color: "#D26B43",
+                    padding: "8px 18px",
+                    borderRadius: 999,
+                    border: "1px solid rgba(210,107,67,0.3)",
+                    background: "rgba(210,107,67,0.06)",
+                  }}
+                >
+                  {label}
+                </div>
+              ),
+            )}
           </div>
         </div>
 
