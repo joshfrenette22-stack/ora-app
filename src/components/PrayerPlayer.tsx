@@ -291,58 +291,30 @@ export function useNarration({
   };
 }
 
-// ── Waveform "voice track" ────────────────────────────────────────────────────
+// ── Progress bar ──────────────────────────────────────────────────────────────
 
-const WAVE_BARS = 64;
-// Seeded pseudo-random for deterministic but natural-looking amplitudes.
-function seededRand(seed: number): number {
-  const x = Math.sin(seed * 127.1 + seed * 311.7) * 43758.5453;
-  return x - Math.floor(x);
-}
-// Realistic waveform: layered noise + envelope taper + micro-variation.
-const WAVE_HEIGHTS = Array.from({ length: WAVE_BARS }, (_, i) => {
-  const t = i / (WAVE_BARS - 1);
-  // Smooth envelope — fuller in the middle, tapered at edges
-  const env = Math.sin(Math.PI * t) ** 0.6;
-  // Multiple noise octaves for organic feel
-  const n1 = seededRand(i * 3 + 7) * 0.5;
-  const n2 = seededRand(i * 7 + 13) * 0.3;
-  const n3 = seededRand(i * 11 + 31) * 0.2;
-  // Occasional peaks (like real speech amplitude spikes)
-  const spike = seededRand(i * 17 + 5) > 0.82 ? 0.3 : 0;
-  const raw = 0.22 + env * (n1 + n2 + n3 + spike);
-  return Math.max(0.08, Math.min(1, raw));
-});
-
-function Waveform({ progress, dark, playing }: { progress: number; dark?: boolean; playing?: boolean }) {
-  const rest = dark ? "rgba(239,230,214,0.15)" : "var(--stone-200)";
-  const played = dark ? "var(--gold)" : "var(--gold-deep)";
-  const activeColor = "var(--gold)";
+function ProgressTrack({ progress, dark, playing }: { progress: number; dark?: boolean; playing?: boolean }) {
+  const trackBg = dark ? "rgba(239,230,214,0.1)" : "var(--stone-200)";
+  const fillBg = dark ? "var(--gold)" : "var(--gold-deep)";
+  const pct = `${Math.min(100, Math.max(0, progress * 100))}%`;
   return (
-    <div
-      style={{ display: "flex", alignItems: "center", gap: 1.5, height: 32, marginTop: 4 }}
-    >
-      {WAVE_HEIGHTS.map((h, i) => {
-        const frac = i / (WAVE_BARS - 1);
-        const isPlayed = frac <= progress;
-        const isHead = playing && Math.abs(frac - progress) < 1 / WAVE_BARS;
-        return (
-          <span
-            key={i}
-            style={{
-              flex: 1,
-              minWidth: 1.5,
-              maxWidth: 4,
-              height: `${Math.round(h * 100)}%`,
-              borderRadius: 1,
-              background: isHead ? activeColor : isPlayed ? played : rest,
-              opacity: isHead ? 1 : isPlayed ? 0.85 : 0.5,
-              transition: "background .12s, opacity .12s",
-              transform: playing && isHead ? "scaleY(1.15)" : undefined,
-            }}
-          />
-        );
-      })}
+    <div style={{
+      position: "relative",
+      height: 4,
+      borderRadius: 2,
+      background: trackBg,
+      overflow: "hidden",
+    }}>
+      <div style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        height: "100%",
+        width: pct,
+        borderRadius: 2,
+        background: fillBg,
+        transition: playing ? "width .3s linear" : "width .15s ease",
+      }} />
     </div>
   );
 }
@@ -382,100 +354,147 @@ export function PlayerBar({
     );
   }
 
-  const fg = dark ? "var(--gold-bright)" : "var(--gold-deep)";
-  const subtle = dark ? "rgba(236,227,204,0.55)" : "var(--stone-400)";
-  const border = dark ? "1px solid rgba(239,230,214,.2)" : "1px solid var(--stone-200)";
-  const surface = dark ? "rgba(239,230,214,0.06)" : "var(--bone-raised)";
+  const fg = dark ? "var(--gold-bright)" : "var(--ink)";
+  const accent = dark ? "var(--gold)" : "var(--gold-deep)";
+  const subtle = dark ? "rgba(236,227,204,0.45)" : "var(--stone-400)";
+  const border = dark ? "1px solid rgba(239,230,214,.12)" : "1px solid var(--stone-200)";
+  const surface = dark ? "rgba(239,230,214,0.05)" : "var(--bone-raised)";
   const playing = status === "playing";
 
-  const ctrlStyle = (primary = false): React.CSSProperties => ({
-    width: primary ? 46 : 38,
-    height: primary ? 46 : 38,
-    borderRadius: "50%",
-    border: primary ? "none" : border,
-    background: primary ? "var(--gilt)" : surface,
-    color: primary ? "#2A2008" : fg,
-    cursor: "pointer",
-    display: "grid",
-    placeItems: "center",
-    flexShrink: 0,
-  });
-
   return (
-    <div
-      style={{
+    <div style={{
+      borderRadius: 16,
+      border,
+      background: surface,
+      boxShadow: dark ? "none" : "var(--shadow-sm)",
+      overflow: "hidden",
+    }}>
+      {/* Progress track — full width at top of card */}
+      <ProgressTrack progress={narration.progress} dark={dark} playing={playing} />
+
+      {/* Controls row */}
+      <div style={{
         display: "flex",
         alignItems: "center",
-        gap: 14,
-        padding: "12px 16px",
-        borderRadius: 14,
-        border,
-        background: surface,
-        boxShadow: dark ? "none" : "var(--shadow-sm)",
-      }}
-    >
-      <button onClick={narration.prev} aria-label="Previous" style={ctrlStyle()} disabled={index === 0}>
-        <LucideIcon name="skip-back" size={16} />
-      </button>
-      <button onClick={narration.toggle} aria-label={playing ? "Pause" : "Play"} style={ctrlStyle(true)}>
-        <LucideIcon name={playing ? "pause" : "play"} size={20} />
-      </button>
-      <button onClick={narration.next} aria-label="Next" style={ctrlStyle()} disabled={index >= count - 1}>
-        <LucideIcon name="skip-forward" size={16} />
-      </button>
-
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
+        gap: 6,
+        padding: "10px 14px 12px",
+      }}>
+        {/* Play/pause — primary action */}
+        <button
+          onClick={narration.toggle}
+          aria-label={playing ? "Pause" : "Play"}
           style={{
+            width: 40,
+            height: 40,
+            borderRadius: "50%",
+            border: "none",
+            background: dark ? "rgba(239,230,214,0.12)" : "var(--gold-faint)",
+            color: accent,
+            cursor: "pointer",
+            display: "grid",
+            placeItems: "center",
+            flexShrink: 0,
+            transition: "background .15s, transform .1s",
+          }}
+        >
+          <LucideIcon name={playing ? "pause" : "play"} size={18} />
+        </button>
+
+        {/* Title + segment info */}
+        <div style={{ flex: 1, minWidth: 0, padding: "0 6px" }}>
+          <div style={{
             fontFamily: "var(--font-display)",
-            fontSize: 12.5,
-            letterSpacing: "0",
+            fontSize: 13,
+            fontWeight: 600,
             color: fg,
-            fontWeight: 700,
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
+            lineHeight: 1.3,
+          }}>
+            {current?.label ?? title ?? "Listen"}
+          </div>
+          {count > 1 && (
+            <div style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 11,
+              color: subtle,
+              marginTop: 1,
+              fontVariantNumeric: "tabular-nums",
+            }}>
+              {index + 1} of {count}
+            </div>
+          )}
+        </div>
+
+        {/* Skip controls */}
+        {count > 1 && (
+          <>
+            <button
+              onClick={narration.prev}
+              aria-label="Previous"
+              disabled={index === 0}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                border: "none",
+                background: "transparent",
+                color: index === 0 ? (dark ? "rgba(239,230,214,0.15)" : "var(--stone-300)") : (dark ? "rgba(239,230,214,0.6)" : "var(--ink-500)"),
+                cursor: index === 0 ? "default" : "pointer",
+                display: "grid",
+                placeItems: "center",
+                flexShrink: 0,
+              }}
+            >
+              <LucideIcon name="skip-back" size={15} />
+            </button>
+            <button
+              onClick={narration.next}
+              aria-label="Next"
+              disabled={index >= count - 1}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                border: "none",
+                background: "transparent",
+                color: index >= count - 1 ? (dark ? "rgba(239,230,214,0.15)" : "var(--stone-300)") : (dark ? "rgba(239,230,214,0.6)" : "var(--ink-500)"),
+                cursor: index >= count - 1 ? "default" : "pointer",
+                display: "grid",
+                placeItems: "center",
+                flexShrink: 0,
+              }}
+            >
+              <LucideIcon name="skip-forward" size={15} />
+            </button>
+          </>
+        )}
+
+        {/* Speed button */}
+        <button
+          onClick={cycleSpeed}
+          aria-label={`Reading speed ${speedLabel}`}
+          title="Reading speed"
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: 11.5,
+            fontWeight: 700,
+            letterSpacing: ".02em",
+            color: accent,
+            flexShrink: 0,
+            cursor: "pointer",
+            border: "none",
+            background: dark ? "rgba(239,230,214,0.08)" : "var(--gold-faint)",
+            borderRadius: 999,
+            padding: "5px 10px",
+            fontVariantNumeric: "tabular-nums",
+            lineHeight: 1,
+            transition: "background .15s",
           }}
         >
-          {current?.label ?? title ?? "Listen"}
-        </div>
-        {/* Waveform "voice track" */}
-        <Waveform progress={narration.progress} dark={dark} playing={playing} />
-      </div>
-
-      <button
-        onClick={cycleSpeed}
-        aria-label={`Reading speed ${speedLabel}`}
-        title="Reading speed"
-        style={{
-          fontFamily: "var(--font-display)",
-          fontSize: 12,
-          fontWeight: 700,
-          letterSpacing: ".01em",
-          color: fg,
-          flexShrink: 0,
-          cursor: "pointer",
-          border,
-          background: surface,
-          borderRadius: 999,
-          padding: "5px 10px",
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        {speedLabel}
-      </button>
-
-      <div
-        style={{
-          fontFamily: "var(--font-display)",
-          fontSize: 12,
-          letterSpacing: ".08em",
-          color: subtle,
-          flexShrink: 0,
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        {index + 1} / {count}
+          {speedLabel}
+        </button>
       </div>
     </div>
   );
