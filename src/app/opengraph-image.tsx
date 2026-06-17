@@ -49,21 +49,20 @@ export default async function OGImage() {
           }}
         />
 
-        {/* Crucifix — right side, large, subtle */}
+        {/* Crucifix — right side, fully visible within the card */}
         <div
           style={{
             position: "absolute",
-            right: 40,
-            top: "50%",
-            transform: "translateY(-50%)",
+            right: 80,
+            top: 65,
             display: "flex",
-            opacity: 0.12,
+            opacity: 0.14,
           }}
         >
           <img
             src={dataUri}
-            width={520}
-            height={520}
+            width={400}
+            height={400}
             alt=""
             style={{ filter: "invert(1) brightness(1.05) sepia(0.08)" }}
           />
