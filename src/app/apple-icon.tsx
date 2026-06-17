@@ -1,11 +1,15 @@
 import { ImageResponse } from "next/og";
-import { ORA_MARK_DATA_URI, ORA_ICON_BG } from "@/lib/oraMark";
+import { readFile } from "fs/promises";
+import { join } from "path";
 
-// iOS "Add to Home Screen" icon.
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 
-export default function AppleIcon() {
+export default async function AppleIcon() {
+  const buf = await readFile(join(process.cwd(), "public/illustrations/app-icon-crucifix.png"));
+  const base64 = buf.toString("base64");
+  const dataUri = `data:image/png;base64,${base64}`;
+
   return new ImageResponse(
     (
       <div
@@ -15,10 +19,17 @@ export default function AppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: ORA_ICON_BG,
+          background: "radial-gradient(circle at 50% 40%, #2A2410 0%, #1B1916 72%)",
+          borderRadius: 36,
         }}
       >
-        <img src={ORA_MARK_DATA_URI} width={132} height={132} alt="ORA" />
+        <img
+          src={dataUri}
+          width={140}
+          height={140}
+          alt="ORA"
+          style={{ filter: "invert(1) brightness(1.05) sepia(0.08)" }}
+        />
       </div>
     ),
     { ...size },

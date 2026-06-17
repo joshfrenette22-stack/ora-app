@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { Fleuron } from "@/components/Sacred";
+import { Illustration } from "@/components/Illustration";
 
 export default function NotFound() {
   return (
     <div style={{ minHeight: "70vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "48px 24px", gap: 14 }}>
+      <div style={{ opacity: 0.15 }}>
+        <Illustration name="splash-altar" size={160} invertOnDark />
+      </div>
       <div style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 62, letterSpacing: "-.01em", color: "var(--gold-deep)", lineHeight: 1 }}>
         404
       </div>

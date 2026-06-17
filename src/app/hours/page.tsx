@@ -6,8 +6,10 @@ import { Cross, Fleuron } from "@/components/Sacred";
 import { SeasonBadge, Kicker, Btn } from "@/components/UI";
 import { PlayerBar, SpokenText, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { countWords } from "@/lib/words";
+import { Illustration } from "@/components/Illustration";
 import { HOURS, currentHourName as getCurrentHour } from "@/data/content";
 import { OFFICE, type OfficePart } from "@/data/office";
+import { HOUR_ART } from "@/lib/illustrations";
 
 type HourName = typeof HOURS[number]["name"];
 
@@ -62,6 +64,9 @@ export default function HoursPage() {
       {/* Feature card — selected hour */}
       <div style={{ position: "relative", overflow: "hidden", background: "var(--surface-ink)", borderRadius: 20, padding: "30px 28px 28px", boxShadow: "var(--shadow-lg)", display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 70% 30%, rgba(210,107,67,0.14) 0%, transparent 65%)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", right: -20, top: -20, opacity: 0.1, pointerEvents: "none" }}>
+          <Illustration name={HOUR_ART[selected] ?? "hours-sext"} size={200} invertOnDark={false} />
+        </div>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative" }}>
           <SeasonBadge season="gold" dark>{selected === getCurrentHour() ? `Now · ${hour.time}` : hour.time}</SeasonBadge>

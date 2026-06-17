@@ -1,11 +1,15 @@
 import { ImageResponse } from "next/og";
-import { ORA_MARK_DATA_URI, ORA_ICON_BG } from "@/lib/oraMark";
+import { readFile } from "fs/promises";
+import { join } from "path";
 
-// General-purpose app icon (browsers, PWA manifest, Android).
 export const size = { width: 512, height: 512 };
 export const contentType = "image/png";
 
-export default function Icon() {
+export default async function Icon() {
+  const buf = await readFile(join(process.cwd(), "public/illustrations/app-icon-crucifix.png"));
+  const base64 = buf.toString("base64");
+  const dataUri = `data:image/png;base64,${base64}`;
+
   return new ImageResponse(
     (
       <div
@@ -15,10 +19,16 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: ORA_ICON_BG,
+          background: "radial-gradient(circle at 50% 40%, #2A2410 0%, #1B1916 72%)",
         }}
       >
-        <img src={ORA_MARK_DATA_URI} width={368} height={368} alt="ORA" />
+        <img
+          src={dataUri}
+          width={400}
+          height={400}
+          alt="ORA"
+          style={{ filter: "invert(1) brightness(1.05) sepia(0.08)" }}
+        />
       </div>
     ),
     { ...size },

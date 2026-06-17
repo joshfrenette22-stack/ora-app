@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { SaintMedallion, Fleuron } from "@/components/Sacred";
+import { Illustration } from "@/components/Illustration";
 import { SeasonBadge, Kicker } from "@/components/UI";
 import { PlayerBar, SpokenText, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { countWords } from "@/lib/words";
@@ -57,8 +58,15 @@ export default function SaintsPage() {
         flexDirection: "column",
         alignItems: "center",
         gap: 0,
+        position: "relative",
+        overflow: "hidden",
       }}
     >
+      {/* Decorative background watermark */}
+      <div style={{ position: "absolute", top: -60, right: -80, opacity: 0.05, pointerEvents: "none" }}>
+        <Illustration name="splash-altar" size={300} invertOnDark />
+      </div>
+
       {/* Devotional medallion */}
       <div className="pw-reveal" style={{ marginBottom: 24 }}>
         <SaintMedallion

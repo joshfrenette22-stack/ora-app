@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Fleuron, RoseWindow } from "@/components/Sacred";
+import { Illustration } from "@/components/Illustration";
 import { SurfaceCard, FeatureCard } from "@/components/UI";
 import { Sun } from "lucide-react";
 import { localDateISO } from "@/lib/clientDate";
@@ -82,6 +82,7 @@ export default function TodayPage() {
 
       {/* Greeting card */}
       <div style={{ position: "relative", overflow: "hidden", background: "var(--surface-ink)", borderRadius: 22, padding: "26px 26px 24px", marginBottom: 30, boxShadow: "var(--shadow-lg)" }}>
+        <Illustration name="today-greeting-band" alt="" width={400} height={100} invertOnDark style={{ position: "absolute", right: -20, top: -10, opacity: 0.12, pointerEvents: "none" }} />
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 88% 0%, rgba(210,107,67,0.18) 0%, transparent 58%)", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, color: "rgba(239,230,214,0.6)" }}>{greeting ?? "Welcome"}</div>
@@ -124,7 +125,9 @@ export default function TodayPage() {
           &ldquo;{verse.text}&rdquo;
         </blockquote>
 
-        <Fleuron width={220} style={{ margin: "24px auto" }} />
+        <div style={{ display: "flex", justifyContent: "center", margin: "24px auto" }}>
+          <Illustration name="today-hero-verse-ornament" alt="" size={120} invertOnDark opacity={0.25} />
+        </div>
 
         <div style={{
           fontFamily: "var(--font-display)",
@@ -147,7 +150,7 @@ export default function TodayPage() {
             title="Daily Readings"
             meta={gospelMeta}
             onClick={() => router.push("/readings")}
-            motif={<RoseWindow size={220} />}
+            motif={<Illustration name="today-daily-readings" alt="" size={200} invertOnDark={false} opacity={0.15} />}
           />
         </div>
 

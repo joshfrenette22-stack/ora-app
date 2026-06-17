@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { SoftHalo, Cross, Fleuron } from "@/components/Sacred";
+import { Illustration } from "@/components/Illustration";
+import { MYSTERY_ART } from "@/lib/illustrations";
 import { Btn, LucideIcon } from "@/components/UI";
 import { PlayerBar, SpokenText, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { countWords } from "@/lib/words";
@@ -245,12 +247,16 @@ export default function RosaryPage() {
           {mysteryName}
         </h1>
 
-        {/* Halo + cross */}
-        <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: 150, height: 150, marginBottom: 34 }}>
-          <SoftHalo size={150} style={{ position: "absolute", inset: 0, color: "var(--gold)", opacity: 0.55 }} />
-          <div style={{ position: "relative", width: 54, height: 54, borderRadius: "50%", border: `1.5px solid ${cream(0.4)}`, background: "rgba(210,107,67,0.1)", display: "grid", placeItems: "center", color: "var(--gold)" }}>
-            <Cross size={25} />
-          </div>
+        {/* Mystery illustration with halo */}
+        <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: 180, height: 180, marginBottom: 36 }}>
+          <SoftHalo size={180} style={{ position: "absolute", inset: 0, color: "var(--gold)", opacity: 0.35 }} />
+          <Illustration
+            name={MYSTERY_ART[activeSet]}
+            size={140}
+            invertOnDark
+            opacity={0.7}
+            style={{ borderRadius: 12, position: "relative", zIndex: 1 }}
+          />
         </div>
 
         <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 12, letterSpacing: ".02em", color: "var(--gold)", marginBottom: 14, textAlign: "center" }}>

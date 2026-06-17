@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { Illustration } from "@/components/Illustration";
 
 export default function Error({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <div style={{ minHeight: "70vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "48px 24px", gap: 14 }}>
+      <div style={{ opacity: 0.15 }}>
+        <Illustration name="app-icon-crucifix" size={120} invertOnDark />
+      </div>
       <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 12, letterSpacing: ".02em", color: "var(--gold-deep)" }}>
         Something went wrong
       </div>

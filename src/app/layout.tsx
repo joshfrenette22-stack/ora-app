@@ -9,6 +9,17 @@ export const metadata: Metadata = {
   description: "A reverent Catholic prayer companion. Daily Mass readings, Liturgy of the Hours, the Holy Rosary, and more.",
   applicationName: "ORA",
   appleWebApp: { capable: true, title: "ORA", statusBarStyle: "black-translucent" },
+  openGraph: {
+    title: "ORA — Prayer Warrior",
+    description: "A reverent Catholic prayer companion. Daily Mass readings, Liturgy of the Hours, the Holy Rosary, and more.",
+    images: [{ url: "/illustrations/og-share.png", width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ORA — Prayer Warrior",
+    description: "A reverent Catholic prayer companion.",
+    images: ["/illustrations/og-share.png"],
+  },
 };
 
 export const viewport: Viewport = {
