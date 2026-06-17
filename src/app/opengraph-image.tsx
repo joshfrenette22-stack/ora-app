@@ -1,10 +1,16 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "fs/promises";
+import { join } from "path";
 
 export const alt = "Prayer Warrior — A Catholic Prayer Companion";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function OGImage() {
+  const buf = await readFile(join(process.cwd(), "public/illustrations/app-icon-crucifix.png"));
+  const base64 = buf.toString("base64");
+  const dataUri = `data:image/png;base64,${base64}`;
+
   return new ImageResponse(
     (
       <div
@@ -43,39 +49,23 @@ export default async function OGImage() {
           }}
         />
 
-        {/* Decorative cross — simple, geometric, subtle */}
+        {/* Crucifix — right side, large, subtle */}
         <div
           style={{
             position: "absolute",
-            right: 160,
+            right: 40,
             top: "50%",
             transform: "translateY(-50%)",
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            opacity: 0.06,
+            opacity: 0.12,
           }}
         >
-          {/* Vertical bar */}
-          <div
-            style={{
-              width: 28,
-              height: 320,
-              background: "#F2EBDF",
-              borderRadius: 4,
-              position: "absolute",
-            }}
-          />
-          {/* Horizontal bar */}
-          <div
-            style={{
-              width: 200,
-              height: 28,
-              background: "#F2EBDF",
-              borderRadius: 4,
-              position: "absolute",
-              marginTop: -80,
-            }}
+          <img
+            src={dataUri}
+            width={520}
+            height={520}
+            alt=""
+            style={{ filter: "invert(1) brightness(1.05) sepia(0.08)" }}
           />
         </div>
 
