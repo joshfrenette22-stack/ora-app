@@ -125,16 +125,32 @@ export function useNarration({
     };
   }, []);
 
+  // Track an estimation interval for browser speech progress.
+  const estimateRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const clearEstimate = useCallback(() => {
+    if (estimateRef.current) { clearInterval(estimateRef.current); estimateRef.current = null; }
+  }, []);
+
   // Speak one segment through the active engine, falling back to the browser
   // voice if the cloud audio can't play.
   const playSegment = useCallback(
     (text: string, onEnd: () => void, onError: () => void) => {
+      clearEstimate();
       const starts = wordStarts(text);
       const wc = starts.length;
+
+      // Shared handler: when a boundary event fires (browser speech), update
+      // both wordIndex AND frac so the waveform tracks progress.
+      let boundaryFired = false;
+      const onBoundary = (ci: number) => {
+        boundaryFired = true;
+        const wi = wordIndexAtChar(starts, ci);
+        setWordIndex(wi);
+        if (wc > 0) setFrac(Math.min(1, (wi + 1) / wc));
+      };
+
       if (engineRef.current === "google" && audioRef.current) {
         const a = audioRef.current;
-        // Guard so this segment resolves exactly once even if the element
-        // fires both `error` and a stale `ended`.
         let settled = false;
         const finish = () => { if (!settled) { settled = true; onEnd(); } };
         const fallback = () => {
@@ -142,13 +158,10 @@ export function useNarration({
           settled = true;
           a.onended = null;
           a.onerror = null;
-          // The browser voice highlights words via its own boundary events.
-          if (!speak(text, { rate, onEnd, onError, onBoundary: (ci) => setWordIndex(wordIndexAtChar(starts, ci)) })) onError();
+          if (!speak(text, { rate, onEnd, onError, onBoundary })) onError();
         };
         a.onended = finish;
         a.onerror = fallback;
-        // Cloud audio has no word timings, so approximate the spoken word from
-        // the playback fraction — even pacing across the segment's words.
         a.ontimeupdate = () => {
           if (a.duration > 0) {
             const f = a.currentTime / a.duration;
@@ -160,10 +173,34 @@ export function useNarration({
         a.play().catch(fallback);
         return;
       }
-      if (!speak(text, { rate, onEnd, onError, onBoundary: (ci) => setWordIndex(wordIndexAtChar(starts, ci)) })) onError();
+
+      // Browser speech — set up a timer-based fallback that estimates progress
+      // in case the browser doesn't fire boundary events (common on mobile).
+      const effectiveRate = rate ?? 0.92;
+      // ~160 WPM base rate, scaled by speech rate
+      const estimatedDurationMs = wc > 0 ? (wc / (160 * effectiveRate / 60)) * 1000 : 5000;
+      const startTime = Date.now();
+      estimateRef.current = setInterval(() => {
+        if (boundaryFired) return; // real events are flowing — don't interfere
+        const elapsed = Date.now() - startTime;
+        const f = Math.min(0.98, elapsed / estimatedDurationMs);
+        setFrac(f);
+        if (wc > 0) setWordIndex(Math.min(wc - 1, Math.floor(f * wc)));
+      }, 120);
+
+      const wrappedEnd = () => { clearEstimate(); setFrac(1); onEnd(); };
+      const wrappedError = () => { clearEstimate(); onError(); };
+
+      if (!speak(text, { rate, onEnd: wrappedEnd, onError: wrappedError, onBoundary })) {
+        clearEstimate();
+        onError();
+      }
     },
-    [rate, voice],
+    [rate, voice, clearEstimate],
   );
+
+  // Clean up estimation timer on unmount.
+  useEffect(() => clearEstimate, [clearEstimate]);
 
   const playIndex = useCallback(
     (i: number) => {
@@ -224,12 +261,13 @@ export function useNarration({
 
   const stop = useCallback(() => {
     genRef.current++;
+    clearEstimate();
     if (audioRef.current) audioRef.current.pause();
     stopSpeaking();
     setStatus("idle");
     setFrac(0);
     setWordIndex(-1);
-  }, []);
+  }, [clearEstimate]);
 
   const toggle = useCallback(() => {
     if (status === "playing") pause();
@@ -258,6 +296,7 @@ export function useNarration({
 
   const reset = useCallback((i = 0) => {
     genRef.current++;
+    clearEstimate();
     if (audioRef.current) audioRef.current.pause();
     stopSpeaking();
     setStatus("idle");
@@ -266,7 +305,7 @@ export function useNarration({
     setFrac(0);
     setWordIndex(-1);
     changeRef.current?.(clamped);
-  }, []);
+  }, [clearEstimate]);
 
   const count = segments.length;
   const progress = count > 0 ? Math.min(1, (index + frac) / count) : 0;
