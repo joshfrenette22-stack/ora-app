@@ -291,30 +291,51 @@ export function useNarration({
   };
 }
 
-// ── Progress bar ──────────────────────────────────────────────────────────────
+// ── Waveform "voice track" ────────────────────────────────────────────────────
 
-function ProgressTrack({ progress, dark, playing }: { progress: number; dark?: boolean; playing?: boolean }) {
-  const trackBg = dark ? "rgba(239,230,214,0.1)" : "var(--stone-200)";
-  const fillBg = dark ? "var(--gold)" : "var(--gold-deep)";
-  const pct = `${Math.min(100, Math.max(0, progress * 100))}%`;
+const WAVE_BARS = 64;
+function seededRand(seed: number): number {
+  const x = Math.sin(seed * 127.1 + seed * 311.7) * 43758.5453;
+  return x - Math.floor(x);
+}
+const WAVE_HEIGHTS = Array.from({ length: WAVE_BARS }, (_, i) => {
+  const t = i / (WAVE_BARS - 1);
+  const env = Math.sin(Math.PI * t) ** 0.6;
+  const n1 = seededRand(i * 3 + 7) * 0.5;
+  const n2 = seededRand(i * 7 + 13) * 0.3;
+  const n3 = seededRand(i * 11 + 31) * 0.2;
+  const spike = seededRand(i * 17 + 5) > 0.82 ? 0.3 : 0;
+  const raw = 0.22 + env * (n1 + n2 + n3 + spike);
+  return Math.max(0.08, Math.min(1, raw));
+});
+
+function Waveform({ progress, dark, playing }: { progress: number; dark?: boolean; playing?: boolean }) {
+  const rest = dark ? "rgba(239,230,214,0.12)" : "var(--stone-200)";
+  const played = dark ? "var(--gold)" : "var(--gold-deep)";
+  const activeColor = "var(--gold)";
   return (
-    <div style={{
-      position: "relative",
-      height: 4,
-      borderRadius: 2,
-      background: trackBg,
-      overflow: "hidden",
-    }}>
-      <div style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        height: "100%",
-        width: pct,
-        borderRadius: 2,
-        background: fillBg,
-        transition: playing ? "width .3s linear" : "width .15s ease",
-      }} />
+    <div style={{ display: "flex", alignItems: "center", gap: 1.5, height: 28 }}>
+      {WAVE_HEIGHTS.map((h, i) => {
+        const frac = i / (WAVE_BARS - 1);
+        const isPlayed = frac <= progress;
+        const isHead = playing && Math.abs(frac - progress) < 1 / WAVE_BARS;
+        return (
+          <span
+            key={i}
+            style={{
+              flex: 1,
+              minWidth: 1.5,
+              maxWidth: 3.5,
+              height: `${Math.round(h * 100)}%`,
+              borderRadius: 1,
+              background: isHead ? activeColor : isPlayed ? played : rest,
+              opacity: isHead ? 1 : isPlayed ? 0.85 : 0.45,
+              transition: "background .12s, opacity .12s",
+              transform: playing && isHead ? "scaleY(1.18)" : undefined,
+            }}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -363,139 +384,137 @@ export function PlayerBar({
 
   return (
     <div style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      padding: "10px 14px",
       borderRadius: 16,
       border,
       background: surface,
       boxShadow: dark ? "none" : "var(--shadow-sm)",
-      overflow: "hidden",
     }}>
-      {/* Progress track — full width at top of card */}
-      <ProgressTrack progress={narration.progress} dark={dark} playing={playing} />
+      {/* Play/pause */}
+      <button
+        onClick={narration.toggle}
+        aria-label={playing ? "Pause" : "Play"}
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: "50%",
+          border: "none",
+          background: dark ? "rgba(239,230,214,0.12)" : "var(--gold-faint)",
+          color: accent,
+          cursor: "pointer",
+          display: "grid",
+          placeItems: "center",
+          flexShrink: 0,
+        }}
+      >
+        <LucideIcon name={playing ? "pause" : "play"} size={18} />
+      </button>
 
-      {/* Controls row */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "10px 14px 12px",
-      }}>
-        {/* Play/pause — primary action */}
-        <button
-          onClick={narration.toggle}
-          aria-label={playing ? "Pause" : "Play"}
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: "50%",
-            border: "none",
-            background: dark ? "rgba(239,230,214,0.12)" : "var(--gold-faint)",
-            color: accent,
-            cursor: "pointer",
-            display: "grid",
-            placeItems: "center",
-            flexShrink: 0,
-            transition: "background .15s, transform .1s",
-          }}
-        >
-          <LucideIcon name={playing ? "pause" : "play"} size={18} />
-        </button>
-
-        {/* Title + segment info */}
-        <div style={{ flex: 1, minWidth: 0, padding: "0 6px" }}>
+      {/* Waveform + label */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: 8,
+          marginBottom: 4,
+        }}>
           <div style={{
             fontFamily: "var(--font-display)",
-            fontSize: 13,
+            fontSize: 12.5,
             fontWeight: 600,
             color: fg,
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
-            lineHeight: 1.3,
+            lineHeight: 1,
           }}>
             {current?.label ?? title ?? "Listen"}
           </div>
           {count > 1 && (
             <div style={{
               fontFamily: "var(--font-display)",
-              fontSize: 11,
+              fontSize: 10.5,
               color: subtle,
-              marginTop: 1,
+              flexShrink: 0,
               fontVariantNumeric: "tabular-nums",
+              lineHeight: 1,
             }}>
-              {index + 1} of {count}
+              {index + 1}/{count}
             </div>
           )}
         </div>
-
-        {/* Skip controls */}
-        {count > 1 && (
-          <>
-            <button
-              onClick={narration.prev}
-              aria-label="Previous"
-              disabled={index === 0}
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: "50%",
-                border: "none",
-                background: "transparent",
-                color: index === 0 ? (dark ? "rgba(239,230,214,0.15)" : "var(--stone-300)") : (dark ? "rgba(239,230,214,0.6)" : "var(--ink-500)"),
-                cursor: index === 0 ? "default" : "pointer",
-                display: "grid",
-                placeItems: "center",
-                flexShrink: 0,
-              }}
-            >
-              <LucideIcon name="skip-back" size={15} />
-            </button>
-            <button
-              onClick={narration.next}
-              aria-label="Next"
-              disabled={index >= count - 1}
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: "50%",
-                border: "none",
-                background: "transparent",
-                color: index >= count - 1 ? (dark ? "rgba(239,230,214,0.15)" : "var(--stone-300)") : (dark ? "rgba(239,230,214,0.6)" : "var(--ink-500)"),
-                cursor: index >= count - 1 ? "default" : "pointer",
-                display: "grid",
-                placeItems: "center",
-                flexShrink: 0,
-              }}
-            >
-              <LucideIcon name="skip-forward" size={15} />
-            </button>
-          </>
-        )}
-
-        {/* Speed button */}
-        <button
-          onClick={cycleSpeed}
-          aria-label={`Reading speed ${speedLabel}`}
-          title="Reading speed"
-          style={{
-            fontFamily: "var(--font-display)",
-            fontSize: 11.5,
-            fontWeight: 700,
-            letterSpacing: ".02em",
-            color: accent,
-            flexShrink: 0,
-            cursor: "pointer",
-            border: "none",
-            background: dark ? "rgba(239,230,214,0.08)" : "var(--gold-faint)",
-            borderRadius: 999,
-            padding: "5px 10px",
-            fontVariantNumeric: "tabular-nums",
-            lineHeight: 1,
-            transition: "background .15s",
-          }}
-        >
-          {speedLabel}
-        </button>
+        <Waveform progress={narration.progress} dark={dark} playing={playing} />
       </div>
+
+      {/* Skip controls */}
+      {count > 1 && (
+        <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+          <button
+            onClick={narration.prev}
+            aria-label="Previous"
+            disabled={index === 0}
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: "50%",
+              border: "none",
+              background: "transparent",
+              color: index === 0 ? (dark ? "rgba(239,230,214,0.15)" : "var(--stone-300)") : (dark ? "rgba(239,230,214,0.5)" : "var(--ink-500)"),
+              cursor: index === 0 ? "default" : "pointer",
+              display: "grid",
+              placeItems: "center",
+            }}
+          >
+            <LucideIcon name="skip-back" size={14} />
+          </button>
+          <button
+            onClick={narration.next}
+            aria-label="Next"
+            disabled={index >= count - 1}
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: "50%",
+              border: "none",
+              background: "transparent",
+              color: index >= count - 1 ? (dark ? "rgba(239,230,214,0.15)" : "var(--stone-300)") : (dark ? "rgba(239,230,214,0.5)" : "var(--ink-500)"),
+              cursor: index >= count - 1 ? "default" : "pointer",
+              display: "grid",
+              placeItems: "center",
+            }}
+          >
+            <LucideIcon name="skip-forward" size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* Speed */}
+      <button
+        onClick={cycleSpeed}
+        aria-label={`Reading speed ${speedLabel}`}
+        title="Reading speed"
+        style={{
+          fontFamily: "var(--font-display)",
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: ".02em",
+          color: accent,
+          flexShrink: 0,
+          cursor: "pointer",
+          border: "none",
+          background: dark ? "rgba(239,230,214,0.08)" : "var(--gold-faint)",
+          borderRadius: 999,
+          padding: "5px 10px",
+          fontVariantNumeric: "tabular-nums",
+          lineHeight: 1,
+        }}
+      >
+        {speedLabel}
+      </button>
     </div>
   );
 }
