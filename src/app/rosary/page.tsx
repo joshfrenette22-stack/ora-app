@@ -252,12 +252,12 @@ export default function RosaryPage() {
         </h1>
 
         {/* Mystery illustration — ambient texture behind the prayer */}
-        <div style={{ position: "absolute", top: "15%", left: "50%", transform: "translateX(-50%)", pointerEvents: "none" }}>
+        <div style={{ position: "absolute", top: "12%", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", maxWidth: "70%"  }}>
           <Illustration
             name={MYSTERY_ART[activeSet]}
-            size={280}
+            size={240}
             invertOnDark
-            opacity={0.3}
+            opacity={0.25}
           />
         </div>
 
