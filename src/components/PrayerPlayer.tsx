@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LucideIcon } from "./UI";
 import { useVoice } from "./VoiceProvider";
-import { wordStarts, wordIndexAtChar } from "@/lib/words";
+import { wordStarts, wordIndexAtChar, countWords } from "@/lib/words";
 import {
   ensureVoices,
   isSpeechSupported,
@@ -47,6 +47,10 @@ export interface Narration {
   count: number;
   /** Overall playback position 0–1 across all segments (for the waveform). */
   progress: number;
+  /** Estimated total length of the whole narration, in seconds. */
+  duration: number;
+  /** Estimated elapsed time, in seconds (0 → duration as it plays). */
+  elapsed: number;
   /** Index of the word being spoken within the current segment (−1 if none). */
   wordIndex: number;
   current: NarrationSegment | undefined;
@@ -98,6 +102,10 @@ export function useNarration({
   // Resolves once we know which engine to use (prevents the first segment
   // falling back to the browser voice while the cloud probe is in-flight).
   const engineReadyRef = useRef<Promise<void>>(Promise.resolve());
+  // Whether the probe has settled. Once it has, we start playback synchronously
+  // inside the click handler — iOS Safari silently drops speech/audio that is
+  // started from a deferred promise callback (it loses the user-gesture).
+  const engineResolvedRef = useRef(false);
 
   // Keep mutable refs in sync via effects (writing refs during render is disallowed).
   useEffect(() => { segmentsRef.current = segments; }, [segments]);
@@ -120,7 +128,8 @@ export function useNarration({
           setSupported(true);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => { engineResolvedRef.current = true; });
     return () => {
       alive = false;
       stopSpeaking();
@@ -146,9 +155,14 @@ export function useNarration({
       stopSpeaking();
       if (audioRef.current) { audioRef.current.pause(); audioRef.current.onended = null; audioRef.current.onerror = null; audioRef.current.ontimeupdate = null; }
 
-      // Wait for the engine probe to resolve so the first segment uses the
-      // correct voice instead of falling back to the browser Siri voice.
-      engineReadyRef.current.then(() => startSegmentRef.current(text, onEnd, onError));
+      // Once the probe has settled, start synchronously so the call stays inside
+      // the user gesture (iOS requirement). Only the very first play — before the
+      // probe resolves — needs to wait, and that path may need a second tap.
+      if (engineResolvedRef.current) {
+        startSegmentRef.current(text, onEnd, onError);
+      } else {
+        engineReadyRef.current.then(() => startSegmentRef.current(text, onEnd, onError));
+      }
     },
     [clearEstimate],
   );
@@ -332,12 +346,24 @@ export function useNarration({
   const count = segments.length;
   const progress = count > 0 ? Math.min(1, (index + frac) / count) : 0;
 
+  // Estimated total length from word count at the current speaking rate
+  // (~160 wpm × rate). Used for the player's running timestamp.
+  const totalWords = useMemo(
+    () => segments.reduce((n, s) => n + countWords(s.text), 0),
+    [segments],
+  );
+  const wordsPerSec = (160 * (rate || 1)) / 60;
+  const duration = totalWords > 0 && wordsPerSec > 0 ? totalWords / wordsPerSec : 0;
+  const elapsed = duration * progress;
+
   return {
     supported,
     status,
     index,
     count,
     progress,
+    duration,
+    elapsed,
     wordIndex,
     current: segments[index],
     play,
@@ -958,6 +984,14 @@ export function FloatingPlayer() {
 import { Illustration } from "./Illustration";
 import { Cross, Fleuron } from "./Sacred";
 
+/** Seconds → m:ss (clamped at 0). */
+function fmtTime(sec: number): string {
+  if (!isFinite(sec) || sec < 0) sec = 0;
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 const FS_WAVE_BARS = 80;
 const FS_WAVE_HEIGHTS = Array.from({ length: FS_WAVE_BARS }, (_, i) => {
   const t = i / (FS_WAVE_BARS - 1);
@@ -1196,8 +1230,24 @@ function FullScreenPlayer({
         zIndex: 1,
       }}>
         {/* Waveform progress */}
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 8 }}>
           <FullScreenWaveform progress={narration.progress} playing={playing} />
+        </div>
+
+        {/* Running timestamp: elapsed (left) → total length (right) */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 24,
+          fontFamily: "var(--font-display)",
+          fontSize: 12,
+          fontVariantNumeric: "tabular-nums",
+          color: "rgba(239,230,214,0.55)",
+          letterSpacing: ".02em",
+        }}>
+          <span>{fmtTime(narration.elapsed)}</span>
+          <span>{fmtTime(narration.duration)}</span>
         </div>
 
         {/* Playback controls */}
