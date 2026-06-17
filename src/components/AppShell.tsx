@@ -97,9 +97,31 @@ function Sidebar({ active, onChange }: { active: string; onChange: (id: string) 
   );
 }
 
-function ContentBar({ title, sub }: { title: string; sub: string | null }) {
+function ContentBar({ title, sub, pathname }: { title: string; sub: string | null; pathname: string }) {
   const { night, setNight } = useTheme();
   const router = useRouter();
+
+  // Date-dependent subtitles ("Wednesday · Ordinary Time", "June 17") are
+  // resolved on the client so they stay correct instead of hard-coding a day.
+  const [liveSub, setLiveSub] = useState<string | null>(null);
+  useEffect(() => {
+    const now = new Date();
+    const weekday = now.toLocaleDateString("en-US", { weekday: "long" });
+    const base =
+      pathname === "/saints" ? now.toLocaleDateString("en-US", { month: "long", day: "numeric" })
+      : pathname === "/" ? `${weekday} · Ordinary Time`
+      : null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLiveSub(base);
+    if (pathname === "/") {
+      fetch(`/api/today?date=${localDateISO()}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (d?.liturgical?.label) setLiveSub(`${weekday} · ${d.liturgical.label}`); })
+        .catch(() => {});
+    }
+  }, [pathname]);
+
+  const shownSub = liveSub ?? sub;
   const iconBtn: React.CSSProperties = {
     width: 42, height: 42, borderRadius: "50%", border: "1px solid var(--stone-200)",
     background: "var(--bone-raised)", color: "var(--ink-500)", cursor: "pointer",
@@ -108,12 +130,12 @@ function ContentBar({ title, sub }: { title: string; sub: string | null }) {
   return (
     <div className="pw-contentbar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px 44px", borderBottom: "1px solid var(--stone-200)" }}>
       <div>
-        {sub && (
+        {shownSub && (
           <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 12, letterSpacing: ".02em", color: "var(--stone-400)" }}>
-            {sub}
+            {shownSub}
           </div>
         )}
-        <div style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 25, letterSpacing: "-.01em", color: "var(--ink)", marginTop: sub ? 2 : 0 }}>
+        <div style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 25, letterSpacing: "-.01em", color: "var(--ink)", marginTop: shownSub ? 2 : 0 }}>
           {title}
         </div>
       </div>
@@ -178,7 +200,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div style={{ height: "100vh", display: "flex", fontFamily: "var(--font-body)" }}>
       <Sidebar active={pathname} onChange={(id) => router.push(id)} />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", background: immersive ? "var(--surface-ink)" : "var(--bone)", minWidth: 0 }}>
-        {!immersive && <ContentBar title={titleEntry[0]} sub={titleEntry[1]} />}
+        {!immersive && <ContentBar title={titleEntry[0]} sub={titleEntry[1]} pathname={pathname} />}
         <div className="pw-scroll" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
           {children}
         </div>

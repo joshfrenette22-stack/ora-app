@@ -7,9 +7,17 @@ import { Fleuron, RoseWindow } from "@/components/Sacred";
 import { SurfaceCard, FeatureCard } from "@/components/UI";
 import { Sun } from "lucide-react";
 import { localDateISO } from "@/lib/clientDate";
-import { HOURS, currentHourName } from "@/data/content";
+import { HOURS, currentHourName, WEEKDAY_SET } from "@/data/content";
 
 type Hour = typeof HOURS[number];
+
+// Which weekdays each set of mysteries is traditionally prayed.
+const SET_DAYS: Record<string, string> = {
+  Joyful: "Monday · Saturday",
+  Sorrowful: "Tuesday · Friday",
+  Glorious: "Wednesday · Sunday",
+  Luminous: "Thursday",
+};
 
 interface TodayData {
   liturgical: { label: string; badgeSeason: string };
@@ -45,6 +53,7 @@ export default function TodayPage() {
   const [data, setData] = useState<TodayData>(FALLBACK);
   const [greeting, setGreeting] = useState<string | null>(null);
   const [hour, setHour] = useState<Hour | null>(null);
+  const [rosarySet, setRosarySet] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -62,6 +71,7 @@ export default function TodayPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setGreeting(h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening");
     setHour(HOURS.find((x) => x.name === currentHourName()) ?? null);
+    setRosarySet(WEEKDAY_SET[new Date().getDay()]);
   }, []);
 
   const { liturgical, verse, saint, readings } = data;
@@ -155,8 +165,8 @@ export default function TodayPage() {
         <Link href="/rosary" style={{ textDecoration: "none" }}>
           <SurfaceCard
             kicker="The Holy Rosary"
-            title="Glorious Mysteries"
-            meta="Monday · Wednesday · Saturday"
+            title={rosarySet ? `${rosarySet} Mysteries` : "The Holy Rosary"}
+            meta={rosarySet ? `${SET_DAYS[rosarySet]} · today` : "Pray the Rosary"}
             lucide="circle-dot"
           />
         </Link>
