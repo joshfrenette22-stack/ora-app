@@ -55,10 +55,10 @@ export interface Narration {
   loading: boolean;
   /** Live animated level 0–1 (device voice, which has no analysable stream). */
   getLevel: () => number;
-  /** Decoded amplitude shape of the current cloud segment (0–1 per bar), or null. */
-  peaks: number[] | null;
-  /** Playback fraction within the current segment (0–1) — fills the waveform. */
-  segProgress: number;
+  /** Decoded fine amplitude envelope of the current cloud segment, or null. */
+  envelope: number[] | null;
+  /** Live within-segment playback fraction (0–1) for the real-time scope. */
+  getPlayFrac: () => number;
   /** Index of the word being spoken within the current segment (−1 if none). */
   wordIndex: number;
   current: NarrationSegment | undefined;
@@ -113,9 +113,11 @@ export function useNarration({
   // a MediaElementSource analyser — on iOS Safari that feeds the analyser silence
   // (and can mute the element), which is why the live wave read flat.
   const audioCtxRef = useRef<AudioContext | null>(null);
-  // The current cloud segment's real amplitude shape (0–1 per bar), or null.
-  const [peaks, setPeaks] = useState<number[] | null>(null);
-  const peaksGenRef = useRef(0);
+  // The current cloud segment's decoded amplitude envelope (fine resolution),
+  // used to drive a real-time scrolling scope synced to the audio position.
+  const [envelope, setEnvelope] = useState<number[] | null>(null);
+  const envGenRef = useRef(0);
+  const fracRef = useRef(0); // latest within-segment playback fraction
   // Whether speech/audio is currently producing sound (drives the animated
   // fallback level for the browser voice, which has no analysable stream).
   const soundingRef = useRef(false);
@@ -166,12 +168,12 @@ export function useNarration({
   // Core segment player — separated so playSegment can await the engine probe.
   const startSegmentRef = useRef<(text: string, onEnd: () => void, onError: () => void) => void>(() => {});
 
-  // Fetch + decode a cloud-audio segment into a real waveform shape (one peak
-  // per bar). Runs off the playback path — decodeAudioData is reliable on iOS,
-  // unlike a live MediaElementSource analyser. The audio itself keeps playing
-  // straight from the <audio> element.
-  const NUM_PEAKS = 96;
-  const decodePeaks = useCallback((url: string, gen: number) => {
+  // Fetch + decode a cloud-audio segment into a fine amplitude envelope (peak
+  // per ~33ms). A real-time scope then scrolls a window of this in sync with the
+  // audio position — iOS-safe (decodeAudioData works; a live MediaElementSource
+  // analyser does not). The audio itself keeps playing from the <audio> element.
+  const POINTS_PER_SEC = 30;
+  const decodeEnvelope = useCallback((url: string, gen: number) => {
     try {
       if (!audioCtxRef.current) {
         const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -188,25 +190,26 @@ export function useNarration({
           if (p && typeof p.then === "function") p.then(res, rej);
         }))
         .then((audio) => {
-          if (gen !== peaksGenRef.current) return; // superseded
+          if (gen !== envGenRef.current) return; // superseded
           const ch = audio.getChannelData(0);
-          const bucket = Math.floor(ch.length / NUM_PEAKS) || 1;
-          const out: number[] = [];
+          const n = Math.max(8, Math.round(audio.duration * POINTS_PER_SEC));
+          const bucket = Math.floor(ch.length / n) || 1;
+          const env: number[] = [];
           let max = 0.0001;
-          for (let i = 0; i < NUM_PEAKS; i++) {
-            let sum = 0;
+          for (let i = 0; i < n; i++) {
+            let peak = 0;
             const start = i * bucket;
             for (let j = 0; j < bucket && start + j < ch.length; j++) {
-              const v = ch[start + j];
-              sum += v * v;
+              const v = Math.abs(ch[start + j]);
+              if (v > peak) peak = v;
             }
-            const rms = Math.sqrt(sum / bucket);
-            out.push(rms);
-            if (rms > max) max = rms;
+            env.push(peak);
+            if (peak > max) max = peak;
           }
-          // Normalise so the loudest moment ≈ 1, with a gentle floor.
-          const norm = out.map((v) => Math.max(0.06, Math.min(1, (v / max) ** 0.85)));
-          if (gen === peaksGenRef.current) setPeaks(norm);
+          // Expand the dynamic range (gamma > 1) so syllables spike and pauses
+          // drop near zero — a lively, speech-shaped wave rather than a flat band.
+          const norm = env.map((v) => Math.max(0.03, Math.min(1, (v / max) ** 1.5)));
+          if (gen === envGenRef.current) setEnvelope(norm);
         })
         .catch(() => {});
     } catch {
@@ -256,9 +259,9 @@ export function useNarration({
         const a = audioRef.current;
         const url = ttsUrl(text, rate, voice);
         // New segment → drop the old waveform and decode the real one.
-        const gen = ++peaksGenRef.current;
-        setPeaks(null);
-        decodePeaks(url, gen);
+        const gen = ++envGenRef.current;
+        setEnvelope(null);
+        decodeEnvelope(url, gen);
         let settled = false;
         const finish = () => { if (!settled) { settled = true; soundingRef.current = false; onEnd(); } };
         const fallback = () => {
@@ -267,8 +270,8 @@ export function useNarration({
           a.onended = null;
           a.onerror = null;
           // Cloud audio failed — invalidate its decode and animate the device voice.
-          peaksGenRef.current++;
-          setPeaks(null);
+          envGenRef.current++;
+          setEnvelope(null);
           if (!speak(text, { rate, onStart: () => { setLoading(false); soundingRef.current = true; }, onEnd, onError, onBoundary })) onError();
         };
         a.onplaying = () => { setLoading(false); soundingRef.current = true; };
@@ -311,7 +314,7 @@ export function useNarration({
         onError();
       }
     },
-    [rate, voice, clearEstimate, decodePeaks],
+    [rate, voice, clearEstimate, decodeEnvelope],
   );
 
   useEffect(() => { startSegmentRef.current = startSegment; }, [startSegment]);
@@ -358,6 +361,7 @@ export function useNarration({
   const indexRef = useRef(index);
   const speedRef = useRef(speed);
   useEffect(() => { statusRef.current = status; }, [status]);
+  useEffect(() => { fracRef.current = frac; }, [frac]);
   useEffect(() => { indexRef.current = index; }, [index]);
   useEffect(() => {
     if (speedRef.current === speed) return;
@@ -402,6 +406,16 @@ export function useNarration({
       return Math.max(0.12, Math.min(1, v));
     }
     return 0;
+  }, []);
+
+  // Within-segment playback fraction (0–1) for the real-time scope. The cloud
+  // <audio> currentTime is read live (smooth); the device voice uses the estimate.
+  const getPlayFrac = useCallback(() => {
+    if (engineRef.current === "google") {
+      const a = audioRef.current;
+      if (a && a.duration > 0) return Math.min(1, a.currentTime / a.duration);
+    }
+    return fracRef.current;
   }, []);
 
   const toggle = useCallback(() => {
@@ -467,8 +481,8 @@ export function useNarration({
     elapsed,
     loading,
     getLevel,
-    peaks,
-    segProgress: frac,
+    envelope,
+    getPlayFrac,
     wordIndex,
     current: segments[index],
     play,
@@ -502,70 +516,64 @@ const WAVE_HEIGHTS = Array.from({ length: WAVE_BARS }, (_, i) => {
 });
 
 /**
- * A live scrolling waveform: each frame the current audio level is pushed onto a
- * ring buffer and the whole buffer scrolls left, so the bars read like a real
- * waveform playing — tall where the speaker is loud, short in the pauses. When
- * idle it shows a calm static shape.
+ * The live bars. On the cloud voice it scrolls a window of the decoded audio
+ * envelope in sync with the playback position, so the wave moves with the voice —
+ * tall on syllables, dropping into the pauses. On the device voice (no decodable
+ * stream) it scrolls a synthesized level. Idle shows a calm static shape.
  */
-function useScrollingWave(bars: number, playing: boolean, getLevel?: () => number, idle?: number[]): number[] {
-  const [buf, setBuf] = useState<number[]>(() => new Array(bars).fill(0));
+function useScopeBars(
+  bars: number,
+  playing: boolean,
+  envelope?: number[] | null,
+  getPlayFrac?: () => number,
+  getLevel?: () => number,
+  idle?: number[],
+): number[] {
+  const [frame, setFrame] = useState<number[]>(() => new Array(bars).fill(0));
   useEffect(() => {
-    if (!playing || !getLevel) return;
+    if (!playing) return;
     let raf = 0;
     let last = 0;
+    const scroll = new Array(bars).fill(0);
     const loop = (t: number) => {
-      if (t - last > 45) {
+      if (t - last > 33) {
         last = t;
-        // Push the newest sample on the right and scroll the rest left.
-        setBuf((prev) => {
-          const base = prev.length === bars ? prev.slice(1) : new Array(Math.max(0, bars - 1)).fill(0);
-          base.push(getLevel());
-          return base;
-        });
+        if (envelope && envelope.length && getPlayFrac) {
+          // Window of the real envelope ending at the current playback position.
+          const idx = Math.floor(getPlayFrac() * envelope.length);
+          const out = new Array(bars);
+          for (let i = 0; i < bars; i++) {
+            const e = idx - bars + 1 + i;
+            out[i] = e >= 0 && e < envelope.length ? envelope[e] : 0;
+          }
+          setFrame(out);
+        } else if (getLevel) {
+          scroll.push(getLevel());
+          scroll.shift();
+          setFrame(scroll.slice());
+        }
       }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [playing, getLevel, bars]);
-  return playing ? buf : (idle ?? buf);
-}
-
-/** Map a source array of amplitudes to exactly `n` bars (nearest sample). */
-function resampleBars(src: number[], n: number): number[] {
-  if (src.length === n) return src;
-  const out: number[] = [];
-  for (let i = 0; i < n; i++) out.push(src[Math.floor((i * src.length) / n)] ?? 0);
-  return out;
+  }, [playing, envelope, getPlayFrac, getLevel, bars]);
+  return playing ? frame : (idle ?? frame);
 }
 
 function Waveform({
-  dark, playing, getLevel, peaks, segProgress = 0,
-}: { dark?: boolean; playing?: boolean; getLevel?: () => number; peaks?: number[] | null; segProgress?: number }) {
+  dark, playing, getLevel, envelope, getPlayFrac,
+}: { dark?: boolean; playing?: boolean; getLevel?: () => number; envelope?: number[] | null; getPlayFrac?: () => number }) {
   const rest = dark ? "rgba(239,230,214,0.18)" : "var(--stone-300)";
   const live = dark ? "var(--gold)" : "var(--gold-deep)";
-  const usePeaks = !!(peaks && peaks.length);
-  // Real cloud waveform (static shape, fills as it plays) when decoded; otherwise
-  // the animated scrolling level for the device voice.
-  const scroll = useScrollingWave(WAVE_BARS, !!playing && !usePeaks, getLevel, WAVE_HEIGHTS.map((h) => h * 0.5));
-  const bars = usePeaks ? resampleBars(peaks!, WAVE_BARS) : scroll;
+  const bars = useScopeBars(WAVE_BARS, !!playing, envelope, getPlayFrac, getLevel, WAVE_HEIGHTS.map((h) => h * 0.5));
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 1.5, height: 28 }}>
       {bars.map((lv, i) => {
+        const recency = i / (WAVE_BARS - 1);
         const h = Math.max(0.06, Math.min(1, lv));
-        let bg: string;
-        let op: number;
-        if (usePeaks) {
-          const played = i / WAVE_BARS <= segProgress;
-          bg = played ? live : rest;
-          op = played ? 0.95 : 0.4;
-        } else {
-          const recency = i / (WAVE_BARS - 1);
-          bg = playing ? live : rest;
-          op = playing ? 0.45 + 0.55 * recency : 0.4;
-        }
         return (
-          <span key={i} style={{ flex: 1, minWidth: 1.5, maxWidth: 3.5, height: `${Math.round(h * 100)}%`, borderRadius: 1, background: bg, opacity: op }} />
+          <span key={i} style={{ flex: 1, minWidth: 1.5, maxWidth: 3.5, height: `${Math.round(h * 100)}%`, borderRadius: 1, background: playing ? live : rest, opacity: playing ? 0.5 + 0.5 * recency : 0.4 }} />
         );
       })}
     </div>
@@ -681,7 +689,7 @@ export function PlayerBar({
             </div>
           )}
         </div>
-        <Waveform dark={dark} playing={playing} getLevel={narration.getLevel} peaks={narration.peaks} segProgress={narration.segProgress} />
+        <Waveform dark={dark} playing={playing} getLevel={narration.getLevel} envelope={narration.envelope} getPlayFrac={narration.getPlayFrac} />
       </div>
 
       {/* Skip controls */}
@@ -1067,7 +1075,7 @@ export function FloatingPlayer() {
               </div>
             )}
           </div>
-          <Waveform playing={playing} getLevel={narration.getLevel} peaks={narration.peaks} segProgress={narration.segProgress} />
+          <Waveform playing={playing} getLevel={narration.getLevel} envelope={narration.envelope} getPlayFrac={narration.getPlayFrac} />
         </div>
 
         {/* Skip */}
@@ -1147,21 +1155,14 @@ const FS_WAVE_HEIGHTS = Array.from({ length: FS_WAVE_BARS }, (_, i) => {
 });
 
 function FullScreenWaveform({
-  playing, getLevel, peaks, segProgress = 0,
-}: { playing: boolean; getLevel?: () => number; peaks?: number[] | null; segProgress?: number }) {
-  const usePeaks = !!(peaks && peaks.length);
-  const scroll = useScrollingWave(FS_WAVE_BARS, playing && !usePeaks, getLevel, FS_WAVE_HEIGHTS.map((h) => h * 0.5));
-  const bars = usePeaks ? resampleBars(peaks!, FS_WAVE_BARS) : scroll;
+  playing, getLevel, envelope, getPlayFrac,
+}: { playing: boolean; getLevel?: () => number; envelope?: number[] | null; getPlayFrac?: () => number }) {
+  const bars = useScopeBars(FS_WAVE_BARS, playing, envelope, getPlayFrac, getLevel, FS_WAVE_HEIGHTS.map((h) => h * 0.5));
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 2, height: 48, padding: "0 4px" }}>
       {bars.map((lv, i) => {
         const h = Math.max(0.06, Math.min(1, lv));
-        let op: number;
-        if (usePeaks) {
-          op = i / FS_WAVE_BARS <= segProgress ? 0.95 : 0.32;
-        } else {
-          op = playing ? 0.4 + 0.6 * (i / (FS_WAVE_BARS - 1)) : 0.4;
-        }
+        const op = playing ? 0.5 + 0.5 * (i / (FS_WAVE_BARS - 1)) : 0.4;
         return (
           <span
             key={i}
@@ -1380,7 +1381,7 @@ function FullScreenPlayer({
       }}>
         {/* Waveform progress */}
         <div style={{ marginBottom: 8 }}>
-          <FullScreenWaveform playing={playing} getLevel={narration.getLevel} peaks={narration.peaks} segProgress={narration.segProgress} />
+          <FullScreenWaveform playing={playing} getLevel={narration.getLevel} envelope={narration.envelope} getPlayFrac={narration.getPlayFrac} />
         </div>
 
         {/* Running timestamp: elapsed (left) → total length (right) */}
