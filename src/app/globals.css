@@ -197,6 +197,16 @@ html { scroll-behavior: smooth; }
   .pw-scroll > *, .pw-reveal, .pw-reveal-2, .pw-reveal-3 { animation: none; }
 }
 
+/* Tappable cards — a gentle lift on hover, a soft press on tap */
+.pw-card { transition: transform .2s var(--ease-sacred), box-shadow .2s var(--ease-sacred); }
+@media (hover: hover) {
+  .pw-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+}
+.pw-card:active { transform: translateY(0) scale(.99); }
+@media (prefers-reduced-motion: reduce) {
+  .pw-card, .pw-card:hover, .pw-card:active { transform: none; transition: none; }
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

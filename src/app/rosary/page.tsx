@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { HaloRays, Cross, Fleuron } from "@/components/Sacred";
+import { SoftHalo, Cross, Fleuron } from "@/components/Sacred";
 import { Btn, LucideIcon } from "@/components/UI";
 import { PlayerBar, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { MYSTERY_SETS, ROSARY_PRAYERS, WEEKDAY_SET } from "@/data/content";
@@ -242,7 +242,7 @@ export default function RosaryPage() {
 
         {/* Halo + cross */}
         <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: 150, height: 150, marginBottom: 34 }}>
-          <HaloRays size={150} style={{ position: "absolute", inset: 0, color: "var(--gold)", opacity: 0.5 }} />
+          <SoftHalo size={150} style={{ position: "absolute", inset: 0, color: "var(--gold)", opacity: 0.55 }} />
           <div style={{ position: "relative", width: 54, height: 54, borderRadius: "50%", border: `1.5px solid ${cream(0.4)}`, background: "rgba(210,107,67,0.1)", display: "grid", placeItems: "center", color: "var(--gold)" }}>
             <Cross size={25} />
           </div>

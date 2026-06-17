@@ -22,6 +22,7 @@ const TITLES: Record<string, [string, string | null]> = {
   "/rosary": ["The Holy Rosary", null],
   "/saints": ["Saint of the Day", "June IX"],
   "/calendar": ["Liturgical Calendar", "Anno Domini MMXXVI"],
+  "/devotions": ["Devotions", "Prayers for every hour"],
   "/settings": ["Settings", "Voice & display"],
   "/pray": ["Pray", "The Office, the Rosary & devotions"],
   "/focus": ["Enter Into Prayer", null],

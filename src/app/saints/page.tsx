@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { HaloRays, Fleuron } from "@/components/Sacred";
+import { SaintMedallion, Fleuron } from "@/components/Sacred";
 import { SeasonBadge, Kicker } from "@/components/UI";
 import { PrayerPlayer, type NarrationSegment } from "@/components/PrayerPlayer";
 import { badgeSeason } from "@/lib/liturgical";
@@ -51,23 +51,12 @@ export default function SaintsPage() {
         gap: 0,
       }}
     >
-      {/* HaloRays monogram */}
-      <div style={{ position: "relative", width: 150, height: 150, display: "grid", placeItems: "center", marginBottom: 24 }}>
-        <HaloRays size={150} style={{ color: "var(--gold)", position: "absolute", inset: 0 }} />
-        <span
-          style={{
-            fontFamily: "var(--font-ornament)",
-            fontSize: 48,
-            fontWeight: 400,
-            color: "var(--gold-deep)",
-            lineHeight: 1,
-            position: "relative",
-            zIndex: 1,
-            userSelect: "none",
-          }}
-        >
-          {saint.monogram ?? saint.name.replace(/^(St\.|Sts\.|Bl\.)\s*/, "").charAt(0)}
-        </span>
+      {/* Devotional medallion */}
+      <div className="pw-reveal" style={{ marginBottom: 24 }}>
+        <SaintMedallion
+          size={150}
+          monogram={saint.monogram ?? saint.name.replace(/^(St\.|Sts\.|Bl\.)\s*/, "").charAt(0)}
+        />
       </div>
 
       {/* Saint name */}

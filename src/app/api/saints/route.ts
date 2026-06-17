@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     title: extras.title ?? (isFeria ? "Weekday in Ordinary Time" : titleFromRomcal),
     color: lit.color,
     rank: lit.rank,
-    monogram: extras.monogram ?? monogramFor(name),
+    monogram: extras.monogram ?? (isFeria ? "✝" : monogramFor(name)),
     bio: extras.bio ?? (isFeria ? FERIA_BIO : undefined),
     collect: extras.collect,
   });

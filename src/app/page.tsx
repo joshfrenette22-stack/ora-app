@@ -172,14 +172,14 @@ export default function TodayPage() {
         </Link>
 
         {/* Devotions */}
-        <div>
+        <Link href="/devotions" style={{ textDecoration: "none" }}>
           <SurfaceCard
             kicker="Devotions"
-            title="Angelus"
+            title="The Angelus"
             meta="Recited at noon"
             lucide="bell"
           />
-        </div>
+        </Link>
 
       </div>
 
