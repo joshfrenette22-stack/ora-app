@@ -24,7 +24,7 @@ export function SeasonBadge({ season = "green", children, dark = false }: { seas
 
 export function Kicker({ children, style = {} }: { children: ReactNode; style?: CSSProperties }) {
   return (
-    <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase", color: "var(--gold-deep)", ...style }}>
+    <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 12.5, letterSpacing: ".01em", color: "var(--ink-700)", ...style }}>
       {children}
     </div>
   );
