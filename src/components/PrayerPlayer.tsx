@@ -703,29 +703,40 @@ export function ListenButton({
   if (!narration.supported) return null;
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <button
         onClick={() => active ? narration.toggle() : narration.play(0)}
         style={{
           display: "inline-flex",
           alignItems: "center",
-          gap: 8,
-          padding: "8px 18px 8px 14px",
-          borderRadius: 999,
+          gap: 10,
+          padding: "12px 24px 12px 18px",
+          borderRadius: 14,
           border: "none",
           background: active
-            ? (dark ? "rgba(239,230,214,0.12)" : "var(--gold-faint)")
-            : (dark ? "rgba(239,230,214,0.08)" : "var(--gold-faint)"),
-          color: accent,
+            ? (dark ? "rgba(239,230,214,0.14)" : "var(--gold-faint)")
+            : (dark ? "var(--gilt)" : "var(--gilt)"),
+          color: active ? accent : "#FFF8ED",
           cursor: "pointer",
           fontFamily: "var(--font-display)",
-          fontSize: 13,
-          fontWeight: 600,
+          fontSize: 14,
+          fontWeight: 700,
           letterSpacing: ".01em",
-          transition: "background .15s",
+          transition: "transform .12s, box-shadow .12s",
+          boxShadow: active ? "none" : (dark ? "0 4px 16px rgba(200,90,44,0.35)" : "var(--shadow-gold)"),
         }}
       >
-        <LucideIcon name={narration.status === "playing" ? "pause" : "play"} size={15} />
+        <span style={{
+          width: 28,
+          height: 28,
+          borderRadius: "50%",
+          background: active ? accent : "rgba(255,255,255,0.2)",
+          display: "grid",
+          placeItems: "center",
+          flexShrink: 0,
+        }}>
+          <LucideIcon name={narration.status === "playing" ? "pause" : "play"} size={14} />
+        </span>
         {active ? (narration.status === "playing" ? "Pause" : "Resume") : label}
       </button>
       {active && (
@@ -733,13 +744,13 @@ export function ListenButton({
           onClick={narration.stop}
           aria-label="Stop"
           style={{
-            width: 32, height: 32, borderRadius: "50%", border: "none",
+            width: 36, height: 36, borderRadius: "50%", border: "none",
             background: dark ? "rgba(239,230,214,0.08)" : "var(--stone-100)",
             color: dark ? "rgba(239,230,214,0.5)" : "var(--stone-400)",
             cursor: "pointer", display: "grid", placeItems: "center",
           }}
         >
-          <LucideIcon name="x" size={14} />
+          <LucideIcon name="x" size={15} />
         </button>
       )}
       <button
@@ -747,14 +758,14 @@ export function ListenButton({
         aria-label={`Speed ${speedLabel}`}
         style={{
           fontFamily: "var(--font-display)",
-          fontSize: 11,
+          fontSize: 11.5,
           fontWeight: 700,
-          color: accent,
+          color: dark ? "var(--gold)" : "var(--gold-deep)",
           cursor: "pointer",
-          border: "none",
-          background: dark ? "rgba(239,230,214,0.08)" : "var(--gold-faint)",
+          border: dark ? "1px solid rgba(239,230,214,0.12)" : "1px solid var(--stone-200)",
+          background: dark ? "rgba(239,230,214,0.06)" : "var(--bone-raised)",
           borderRadius: 999,
-          padding: "5px 10px",
+          padding: "7px 12px",
           fontVariantNumeric: "tabular-nums",
           lineHeight: 1,
         }}
