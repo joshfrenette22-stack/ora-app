@@ -64,8 +64,8 @@ export default function HoursPage() {
       {/* Feature card — selected hour */}
       <div style={{ position: "relative", overflow: "hidden", background: "var(--surface-ink)", borderRadius: 20, padding: "30px 28px 28px", boxShadow: "var(--shadow-lg)", display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 70% 30%, rgba(210,107,67,0.14) 0%, transparent 65%)", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", right: -20, top: -20, opacity: 0.1, pointerEvents: "none" }}>
-          <Illustration name={HOUR_ART[selected] ?? "hours-sext"} size={200} invertOnDark={false} />
+        <div style={{ position: "absolute", right: -10, top: -10, pointerEvents: "none", maskImage: "radial-gradient(ellipse at 75% 35%, rgba(0,0,0,0.45) 0%, transparent 65%)", WebkitMaskImage: "radial-gradient(ellipse at 75% 35%, rgba(0,0,0,0.45) 0%, transparent 65%)" }}>
+          <Illustration name={HOUR_ART[selected] ?? "hours-sext"} size={220} invertOnDark opacity={0.35} />
         </div>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative" }}>

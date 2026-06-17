@@ -83,7 +83,7 @@ export function FeatureCard({ kicker, title, meta, onClick, motif }: {
 }) {
   return (
     <button className="pw-card" onClick={onClick} style={{ position: "relative", overflow: "hidden", textAlign: "left", cursor: "pointer", background: "var(--surface-ink)", color: "var(--gold-bright)", borderRadius: 18, padding: "30px 34px", boxShadow: "var(--shadow-lg)", border: "none", display: "flex", alignItems: "center", gap: 20, width: "100%" }}>
-      {motif && <div style={{ position: "absolute", right: -30, top: -30, opacity: 0.1, color: "var(--gold-bright)" }}>{motif}</div>}
+      {motif && <div style={{ position: "absolute", right: -20, top: -20, color: "var(--gold-bright)", maskImage: "radial-gradient(ellipse at 70% 40%, rgba(0,0,0,0.5) 0%, transparent 70%)", WebkitMaskImage: "radial-gradient(ellipse at 70% 40%, rgba(0,0,0,0.5) 0%, transparent 70%)" }}>{motif}</div>}
       <div style={{ flex: 1, position: "relative" }}>
         <Kicker style={{ color: "var(--gold-bright)", opacity: 0.85 }}>{kicker}</Kicker>
         <div style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 32, color: "#F3EEE2", marginTop: 6 }}>{title}</div>

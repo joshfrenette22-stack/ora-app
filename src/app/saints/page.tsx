@@ -63,8 +63,8 @@ export default function SaintsPage() {
       }}
     >
       {/* Decorative background watermark */}
-      <div style={{ position: "absolute", top: -60, right: -80, opacity: 0.05, pointerEvents: "none" }}>
-        <Illustration name="splash-altar" size={300} invertOnDark />
+      <div style={{ position: "absolute", top: -40, right: -60, pointerEvents: "none", maskImage: "radial-gradient(ellipse at 80% 20%, rgba(0,0,0,0.3) 0%, transparent 60%)", WebkitMaskImage: "radial-gradient(ellipse at 80% 20%, rgba(0,0,0,0.3) 0%, transparent 60%)" }}>
+        <Illustration name="splash-altar" size={340} invertOnDark opacity={0.18} />
       </div>
 
       {/* Devotional medallion */}
