@@ -12,6 +12,7 @@ const NAV = [
   { id: "/readings", label: "Daily Mass", short: "Mass", lucide: "book-open" },
   { id: "/hours", label: "Liturgy of the Hours", short: "Hours", lucide: "clock" },
   { id: "/rosary", label: "The Holy Rosary", short: "Rosary", cross: true },
+  { id: "/playlist", label: "My Playlist", short: "Playlist", lucide: "list-music" },
   { id: "/saints", label: "Saints", short: "Saints", lucide: "flame" },
   { id: "/calendar", label: "Calendar", short: "Calendar", lucide: "calendar" },
 ];
@@ -23,6 +24,7 @@ const TITLES: Record<string, [string, string | null]> = {
   "/rosary": ["The Holy Rosary", null],
   "/saints": ["Saint of the Day", "June IX"],
   "/calendar": ["Liturgical Calendar", "Anno Domini MMXXVI"],
+  "/playlist": ["My Playlist", "Build your prayer sequence"],
   "/devotions": ["Devotions", "Prayers for every hour"],
   "/settings": ["Settings", "Voice & display"],
   "/pray": ["Pray", "The Office, the Rosary & devotions"],

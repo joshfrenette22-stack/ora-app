@@ -784,11 +784,11 @@ export function FloatingPlayer() {
   const { narration, title, illustration } = useNowPlayingLive();
   const [expanded, setExpanded] = useState(false);
 
-  if (!narration || narration.status === "idle") {
-    // Close full-screen if playback stopped
-    if (expanded) setExpanded(false);
-    return null;
-  }
+  // Close full-screen when playback stops (must use effect, not during render).
+  const idle = !narration || narration.status === "idle";
+  useEffect(() => { if (idle) setExpanded(false); }, [idle]);
+
+  if (idle) return null;
 
   const { status, index, count } = narration;
   const accent = "var(--gold-deep)";
