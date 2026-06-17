@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fleuron, RoseWindow } from "@/components/Sacred";
-import { SeasonBadge, SurfaceCard, FeatureCard } from "@/components/UI";
+import { SurfaceCard, FeatureCard } from "@/components/UI";
 import { Sun } from "lucide-react";
 import { localDateISO } from "@/lib/clientDate";
 
@@ -18,6 +18,12 @@ interface TodayData {
     gospel: { cite: string; title: string };
   };
 }
+
+const WAYS = [
+  { label: "The Rosary", href: "/rosary" },
+  { label: "Daily Mass", href: "/readings" },
+  { label: "The Hours", href: "/hours" },
+];
 
 // Static fallback so the page renders instantly and works without the API.
 const FALLBACK: TodayData = {
@@ -34,6 +40,7 @@ const FALLBACK: TodayData = {
 export default function TodayPage() {
   const router = useRouter();
   const [data, setData] = useState<TodayData>(FALLBACK);
+  const [greeting, setGreeting] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -44,15 +51,45 @@ export default function TodayPage() {
     return () => { alive = false; };
   }, []);
 
+  useEffect(() => {
+    // Time-of-day greeting, resolved on the client to avoid a hydration mismatch.
+    const h = new Date().getHours();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setGreeting(h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening");
+  }, []);
+
   const { liturgical, verse, saint, readings } = data;
   const gospelMeta = `${readings.first.cite} · ${readings.psalm.cite} · ${readings.gospel.title}`;
 
   return (
     <div className="pw-today-pad" style={{ padding: "44px 44px 64px", maxWidth: 900, margin: "0 auto" }}>
 
-      {/* Season badge */}
-      <div style={{ marginBottom: 32 }}>
-        <SeasonBadge season={liturgical.badgeSeason}>{liturgical.label}</SeasonBadge>
+      {/* Greeting card */}
+      <div style={{ position: "relative", overflow: "hidden", background: "var(--surface-ink)", borderRadius: 22, padding: "26px 26px 24px", marginBottom: 30, boxShadow: "var(--shadow-lg)" }}>
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 88% 0%, rgba(210,107,67,0.18) 0%, transparent 58%)", pointerEvents: "none" }} />
+        <div style={{ position: "relative" }}>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, color: "rgba(239,230,214,0.6)" }}>{greeting ?? "Welcome"}</div>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 700, color: "#F6F0E6", lineHeight: 1.22, letterSpacing: "-.01em", margin: "8px 0 0" }}>
+            How would you like to pray today?
+          </h1>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: 15, lineHeight: 1.6, color: "rgba(239,230,214,0.72)", margin: "12px 0 0" }}>
+            It is <span style={{ color: "var(--gold-bright)", fontWeight: 600 }}>{liturgical.label}</span>
+            {saint.name && saint.name !== "Feria" ? (
+              <> · the Church keeps <span style={{ color: "var(--gold-bright)", fontWeight: 600 }}>{saint.name}</span>.</>
+            ) : "."}
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 18 }}>
+            {WAYS.map((w) => (
+              <button
+                key={w.href}
+                onClick={() => router.push(w.href)}
+                style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, padding: "9px 16px", borderRadius: 999, border: "1px solid rgba(239,230,214,0.18)", background: "rgba(239,230,214,0.06)", color: "#F6F0E6", cursor: "pointer" }}
+              >
+                {w.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Hero verse */}

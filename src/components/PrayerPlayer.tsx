@@ -44,6 +44,8 @@ export interface Narration {
   status: Status;
   index: number;
   count: number;
+  /** Overall playback position 0–1 across all segments (for the waveform). */
+  progress: number;
   current: NarrationSegment | undefined;
   play: (from?: number) => void;
   pause: () => void;
@@ -74,6 +76,7 @@ export function useNarration({
   const [supported, setSupported] = useState(true);
   const [status, setStatus] = useState<Status>("idle");
   const [index, setIndex] = useState(0);
+  const [frac, setFrac] = useState(0); // playback fraction within the current segment
   const { voice } = useVoice();
 
   const genRef = useRef(0);
@@ -135,6 +138,7 @@ export function useNarration({
         };
         a.onended = finish;
         a.onerror = fallback;
+        a.ontimeupdate = () => { if (a.duration > 0) setFrac(a.currentTime / a.duration); };
         a.src = ttsUrl(text, rate, voice);
         a.play().catch(fallback);
         return;
@@ -150,6 +154,7 @@ export function useNarration({
       if (i < 0 || i >= list.length) return;
       const gen = ++genRef.current;
       setIndex(i);
+      setFrac(0);
       changeRef.current?.(i);
       setStatus("playing");
       // Warm the next segment's audio so auto-advance is gapless.
@@ -192,6 +197,7 @@ export function useNarration({
     if (audioRef.current) audioRef.current.pause();
     stopSpeaking();
     setStatus("idle");
+    setFrac(0);
   }, []);
 
   const toggle = useCallback(() => {
@@ -206,6 +212,7 @@ export function useNarration({
       if (status === "idle") {
         genRef.current++;
         setIndex(clamped);
+        setFrac(0);
         changeRef.current?.(clamped);
       } else {
         playIndex(clamped);
@@ -224,14 +231,19 @@ export function useNarration({
     setStatus("idle");
     const clamped = Math.max(0, Math.min(segmentsRef.current.length - 1, i));
     setIndex(clamped);
+    setFrac(0);
     changeRef.current?.(clamped);
   }, []);
+
+  const count = segments.length;
+  const progress = count > 0 ? Math.min(1, (index + frac) / count) : 0;
 
   return {
     supported,
     status,
     index,
-    count: segments.length,
+    count,
+    progress,
     current: segments[index],
     play,
     pause,
@@ -243,6 +255,44 @@ export function useNarration({
     stop,
     reset,
   };
+}
+
+// ── Waveform "voice track" ────────────────────────────────────────────────────
+
+const WAVE_BARS = 42;
+// Deterministic, organic-looking bar heights (0.18–1), tapered toward the ends.
+const WAVE_HEIGHTS = Array.from({ length: WAVE_BARS }, (_, i) => {
+  const t = i / (WAVE_BARS - 1);
+  const taper = 0.35 + 0.65 * Math.sin(Math.PI * t);
+  const wobble = Math.abs(Math.sin(i * 1.7) * 0.6 + Math.sin(i * 0.7) * 0.4 + Math.cos(i * 2.3) * 0.25);
+  return Math.max(0.18, Math.min(1, taper * (0.45 + wobble)));
+});
+
+function Waveform({ progress, dark, playing }: { progress: number; dark?: boolean; playing?: boolean }) {
+  const rest = dark ? "rgba(239,230,214,0.22)" : "var(--stone-200)";
+  return (
+    <div
+      className={playing ? "ora-wave-live" : undefined}
+      style={{ display: "flex", alignItems: "center", gap: 2, height: 26, marginTop: 6 }}
+    >
+      {WAVE_HEIGHTS.map((h, i) => {
+        const played = i / (WAVE_BARS - 1) <= progress;
+        return (
+          <span
+            key={i}
+            style={{
+              flex: 1,
+              minWidth: 2,
+              height: `${Math.round(h * 100)}%`,
+              borderRadius: 2,
+              background: played ? "var(--gold)" : rest,
+              transition: "background .15s",
+            }}
+          />
+        );
+      })}
+    </div>
+  );
 }
 
 // ── Player bar UI ─────────────────────────────────────────────────────────────
@@ -319,11 +369,10 @@ export function PlayerBar({
         <div
           style={{
             fontFamily: "var(--font-display)",
-            fontSize: 11,
-            letterSpacing: ".16em",
-            textTransform: "uppercase",
+            fontSize: 12.5,
+            letterSpacing: "0",
             color: fg,
-            fontWeight: 600,
+            fontWeight: 700,
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -331,21 +380,8 @@ export function PlayerBar({
         >
           {current?.label ?? title ?? "Listen"}
         </div>
-        {/* Segment progress bar */}
-        <div style={{ display: "flex", gap: 3, marginTop: 7 }}>
-          {Array.from({ length: count }).map((_, i) => (
-            <span
-              key={i}
-              style={{
-                flex: 1,
-                height: 3,
-                borderRadius: 2,
-                background: i <= index ? "var(--gold)" : dark ? "rgba(216,188,118,0.2)" : "var(--stone-200)",
-                transition: "background .2s",
-              }}
-            />
-          ))}
-        </div>
+        {/* Waveform "voice track" */}
+        <Waveform progress={narration.progress} dark={dark} playing={playing} />
       </div>
 
       <div
