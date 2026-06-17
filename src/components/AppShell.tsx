@@ -46,58 +46,51 @@ function Sidebar({ active, onChange }: { active: string; onChange: (id: string) 
   }, []);
 
   return (
-    <div className="pw-sidebar" style={{ width: 256, flexShrink: 0, background: "var(--surface-ink)", color: "var(--gold-bright)", display: "flex", flexDirection: "column", padding: "26px 0", borderRight: "1px solid rgba(216,188,118,.12)" }}>
+    <div className="pw-sidebar" style={{ width: 256, flexShrink: 0, background: "var(--bone-raised)", display: "flex", flexDirection: "column", padding: "26px 0", borderRight: "1px solid var(--stone-200)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "0 24px 26px" }}>
-        <span style={{ color: "var(--gold)" }}><Logomark size={34} /></span>
-        <div>
-          <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 14, letterSpacing: ".16em", color: "#F3EEE2", lineHeight: 1.1 }}>
-            PRAYER<br />WARRIOR
-          </div>
+        <span style={{ color: "var(--gold)" }}><Logomark size={32} /></span>
+        <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 14, letterSpacing: ".16em", color: "var(--ink)", lineHeight: 1.15 }}>
+          PRAYER<br />WARRIOR
         </div>
       </div>
-      <div style={{ padding: "0 14px", display: "flex", flexDirection: "column", gap: 2 }}>
+      <div style={{ padding: "0 14px", display: "flex", flexDirection: "column", gap: 3 }}>
         {NAV.map((n) => {
           const on = active === n.id;
           return (
             <button key={n.id} onClick={() => onChange(n.id)} style={{
-              display: "flex", alignItems: "center", gap: 13, padding: "11px 14px", borderRadius: 9,
+              display: "flex", alignItems: "center", gap: 13, padding: "11px 14px", borderRadius: 12,
               border: "none", cursor: "pointer", textAlign: "left", width: "100%",
-              background: on ? "rgba(216,188,118,0.12)" : "transparent",
-              color: on ? "var(--gold-bright)" : "rgba(236,227,204,0.62)",
-              fontFamily: "var(--font-body)", fontSize: 16, fontWeight: on ? 600 : 400,
-              boxShadow: on ? "inset 2px 0 0 var(--gold-bright)" : "none",
+              background: on ? "var(--gold-faint)" : "transparent",
+              color: on ? "var(--gold-deep)" : "var(--ink-500)",
+              fontFamily: "var(--font-body)", fontSize: 15.5, fontWeight: on ? 700 : 500,
+              transition: "background .14s, color .14s",
             }}>
-              <span style={{ width: 20, display: "grid", placeItems: "center", color: on ? "var(--gold-bright)" : "rgba(216,188,118,0.55)" }}>
-                {n.cross ? <Cross size={17} /> : <LucideIcon name={n.lucide!} size={19} stroke={on ? 2 : 1.6} />}
+              <span style={{ width: 22, display: "grid", placeItems: "center", color: on ? "var(--gold)" : "var(--stone-400)" }}>
+                {n.cross ? <Cross size={17} /> : <LucideIcon name={n.lucide!} size={19} stroke={on ? 2 : 1.7} />}
               </span>
               {n.label}
             </button>
           );
         })}
       </div>
-      <div style={{ marginTop: "auto", padding: "0 24px" }}>
-        <div style={{ height: 1, background: "rgba(216,188,118,0.18)", margin: "0 0 18px" }} />
-        <SeasonBadge season={lit.badgeSeason} dark>{lit.label}</SeasonBadge>
-        <div style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "rgba(236,227,204,0.5)", marginTop: 8 }}>
+      <div style={{ marginTop: "auto", padding: "0 22px" }}>
+        <div style={{ height: 1, background: "var(--stone-200)", margin: "0 0 16px" }} />
+        <SeasonBadge season={lit.badgeSeason}>{lit.label}</SeasonBadge>
+        <div style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--stone-400)", marginTop: 7 }}>
           {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · {dayLabel}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 18 }}>
-          <button
-            onClick={() => setNight(!night)}
-            style={{
-              width: 36, height: 36, borderRadius: "50%",
-              background: night ? "var(--gold-faint)" : "rgba(216,188,118,0.16)",
-              color: night ? "var(--gold-deep)" : "var(--gold-bright)",
-              display: "grid", placeItems: "center", border: "none", cursor: "pointer",
-            }}
-            aria-label="Toggle night mode"
-          >
+        <button
+          onClick={() => setNight(!night)}
+          aria-label="Toggle night mode"
+          style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16, border: "none", background: "transparent", cursor: "pointer", padding: 0 }}
+        >
+          <span style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--gold-faint)", color: "var(--gold-deep)", display: "grid", placeItems: "center" }}>
             <LucideIcon name={night ? "sun" : "moon"} size={16} />
-          </button>
-          <span style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "rgba(236,227,204,.6)" }}>
-            {night ? "Day Mode" : "Night Mode"}
           </span>
-        </div>
+          <span style={{ fontFamily: "var(--font-body)", fontSize: 14, color: "var(--ink-500)" }}>
+            {night ? "Day mode" : "Night mode"}
+          </span>
+        </button>
       </div>
     </div>
   );
@@ -107,7 +100,7 @@ function ContentBar({ title, sub }: { title: string; sub: string | null }) {
   const { night, setNight } = useTheme();
   const router = useRouter();
   const iconBtn: React.CSSProperties = {
-    width: 42, height: 42, borderRadius: 10, border: "1px solid var(--stone-200)",
+    width: 42, height: 42, borderRadius: "50%", border: "1px solid var(--stone-200)",
     background: "var(--bone-raised)", color: "var(--ink-500)", cursor: "pointer",
     display: "grid", placeItems: "center",
   };
@@ -148,7 +141,8 @@ function BottomNav({ active, onChange }: { active: string; onChange: (id: string
       className="pw-bottomnav"
       style={{
         position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50,
-        background: "var(--surface-ink)", borderTop: "1px solid rgba(216,188,118,.18)",
+        background: "var(--bone-raised)", borderTop: "1px solid var(--stone-200)",
+        boxShadow: "0 -6px 22px rgba(45,30,18,.07)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
         alignItems: "stretch", justifyContent: "space-around",
       }}
@@ -161,15 +155,15 @@ function BottomNav({ active, onChange }: { active: string; onChange: (id: string
             onClick={() => onChange(n.id)}
             aria-label={n.label}
             style={{
-              flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+              flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
               padding: "9px 2px 7px", border: "none", background: "transparent", cursor: "pointer",
-              color: on ? "var(--gold-bright)" : "rgba(216,188,118,0.55)",
+              color: on ? "var(--gold-deep)" : "var(--stone-400)",
             }}
           >
-            <span style={{ display: "grid", placeItems: "center", height: 22 }}>
-              {n.cross ? <Cross size={18} /> : <LucideIcon name={n.lucide!} size={20} stroke={on ? 2 : 1.7} />}
+            <span style={{ display: "grid", placeItems: "center", height: 26, width: 46, borderRadius: 999, background: on ? "var(--gold-faint)" : "transparent", color: on ? "var(--gold)" : "var(--stone-400)", transition: "background .15s" }}>
+              {n.cross ? <Cross size={17} /> : <LucideIcon name={n.lucide!} size={20} stroke={on ? 2 : 1.7} />}
             </span>
-            <span style={{ fontFamily: "var(--font-display)", fontSize: 9.5, letterSpacing: ".06em", textTransform: "uppercase", fontWeight: on ? 600 : 500 }}>
+            <span style={{ fontFamily: "var(--font-display)", fontSize: 10, letterSpacing: ".01em", fontWeight: on ? 700 : 500 }}>
               {n.short}
             </span>
           </button>

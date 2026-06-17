@@ -111,6 +111,12 @@ body {
   font-family: var(--font-body);
 }
 
+html { scroll-behavior: smooth; }
+
+/* Clean keyboard-focus ring */
+:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 8px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
 /* Drop cap */
 .pw-dropcap::first-letter {
   font-family: var(--font-ornament);
