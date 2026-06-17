@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { SoftHalo, Cross, Fleuron } from "@/components/Sacred";
 import { Btn, LucideIcon } from "@/components/UI";
-import { PlayerBar, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
+import { PlayerBar, SpokenText, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
+import { countWords } from "@/lib/words";
 import { MYSTERY_SETS, ROSARY_PRAYERS, WEEKDAY_SET } from "@/data/content";
 
 type SetKey = keyof typeof MYSTERY_SETS;
@@ -94,6 +95,11 @@ export default function RosaryPage() {
   const ordinal = ORDINALS[mysteryIdx];
   const beadLabel = getBeadLabel(bead);
   const prayer = getBeadPrayer(bead);
+  // On the opening bead the segment reads "The Nth <Set> Mystery. <Name>." before
+  // the Our Father, so the displayed prayer's words start after that preamble.
+  const prayerOffset = bead === 0
+    ? countWords(`The ${ordinal} ${activeSet} Mystery. ${mysteryName}.`)
+    : 0;
 
   // Full sequence: 5 mysteries × 12 beads, narrated in order.
   const segments = useMemo<NarrationSegment[]>(() => {
@@ -252,9 +258,15 @@ export default function RosaryPage() {
           {beadLabel}
         </div>
 
-        <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 23, lineHeight: 1.58, color: cream(0.85), textAlign: "center", maxWidth: 580, margin: "0 0 36px" }}>
-          {prayer}
-        </p>
+        <SpokenText
+          as="p"
+          dark
+          text={prayer}
+          active={narration.status !== "idle"}
+          wordIndex={narration.wordIndex}
+          wordOffset={prayerOffset}
+          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 23, lineHeight: 1.58, color: cream(0.85), textAlign: "center", maxWidth: 580, margin: "0 0 36px" }}
+        />
 
         <Fleuron width={170} style={{ marginBottom: 32 }} />
 

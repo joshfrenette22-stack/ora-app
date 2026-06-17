@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LucideIcon } from "./UI";
 import { useVoice } from "./VoiceProvider";
+import { wordStarts, wordIndexAtChar } from "@/lib/words";
 import {
   ensureVoices,
   isSpeechSupported,
@@ -46,6 +47,8 @@ export interface Narration {
   count: number;
   /** Overall playback position 0–1 across all segments (for the waveform). */
   progress: number;
+  /** Index of the word being spoken within the current segment (−1 if none). */
+  wordIndex: number;
   current: NarrationSegment | undefined;
   play: (from?: number) => void;
   pause: () => void;
@@ -77,6 +80,7 @@ export function useNarration({
   const [status, setStatus] = useState<Status>("idle");
   const [index, setIndex] = useState(0);
   const [frac, setFrac] = useState(0); // playback fraction within the current segment
+  const [wordIndex, setWordIndex] = useState(-1); // word being spoken within the segment
   const { voice } = useVoice();
 
   const genRef = useRef(0);
@@ -123,6 +127,8 @@ export function useNarration({
   // voice if the cloud audio can't play.
   const playSegment = useCallback(
     (text: string, onEnd: () => void, onError: () => void) => {
+      const starts = wordStarts(text);
+      const wc = starts.length;
       if (engineRef.current === "google" && audioRef.current) {
         const a = audioRef.current;
         // Guard so this segment resolves exactly once even if the element
@@ -134,16 +140,25 @@ export function useNarration({
           settled = true;
           a.onended = null;
           a.onerror = null;
-          if (!speak(text, { rate, onEnd, onError })) onError();
+          // The browser voice highlights words via its own boundary events.
+          if (!speak(text, { rate, onEnd, onError, onBoundary: (ci) => setWordIndex(wordIndexAtChar(starts, ci)) })) onError();
         };
         a.onended = finish;
         a.onerror = fallback;
-        a.ontimeupdate = () => { if (a.duration > 0) setFrac(a.currentTime / a.duration); };
+        // Cloud audio has no word timings, so approximate the spoken word from
+        // the playback fraction — even pacing across the segment's words.
+        a.ontimeupdate = () => {
+          if (a.duration > 0) {
+            const f = a.currentTime / a.duration;
+            setFrac(f);
+            if (wc > 0) setWordIndex(Math.min(wc - 1, Math.floor(f * wc)));
+          }
+        };
         a.src = ttsUrl(text, rate, voice);
         a.play().catch(fallback);
         return;
       }
-      if (!speak(text, { rate, onEnd, onError })) onError();
+      if (!speak(text, { rate, onEnd, onError, onBoundary: (ci) => setWordIndex(wordIndexAtChar(starts, ci)) })) onError();
     },
     [rate, voice],
   );
@@ -155,6 +170,7 @@ export function useNarration({
       const gen = ++genRef.current;
       setIndex(i);
       setFrac(0);
+      setWordIndex(-1);
       changeRef.current?.(i);
       setStatus("playing");
       // Warm the next segment's audio so auto-advance is gapless.
@@ -198,6 +214,7 @@ export function useNarration({
     stopSpeaking();
     setStatus("idle");
     setFrac(0);
+    setWordIndex(-1);
   }, []);
 
   const toggle = useCallback(() => {
@@ -213,6 +230,7 @@ export function useNarration({
         genRef.current++;
         setIndex(clamped);
         setFrac(0);
+        setWordIndex(-1);
         changeRef.current?.(clamped);
       } else {
         playIndex(clamped);
@@ -232,6 +250,7 @@ export function useNarration({
     const clamped = Math.max(0, Math.min(segmentsRef.current.length - 1, i));
     setIndex(clamped);
     setFrac(0);
+    setWordIndex(-1);
     changeRef.current?.(clamped);
   }, []);
 
@@ -244,6 +263,7 @@ export function useNarration({
     index,
     count,
     progress,
+    wordIndex,
     current: segments[index],
     play,
     pause,
@@ -397,6 +417,74 @@ export function PlayerBar({
         {index + 1} / {count}
       </div>
     </div>
+  );
+}
+
+// ── Follow-along text ─────────────────────────────────────────────────────────
+
+/**
+ * Renders `text` word-by-word and highlights the one currently being spoken,
+ * scrolling it into view so the reader can follow along. `wordOffset` accounts
+ * for any words spoken before this text within the same segment (e.g. a title or
+ * antiphon read aloud ahead of the body).
+ */
+export function SpokenText({
+  text,
+  active,
+  wordIndex,
+  wordOffset = 0,
+  dark = false,
+  as: Tag = "p",
+  className,
+  style,
+  autoScroll = true,
+}: {
+  text: string;
+  active: boolean;
+  wordIndex: number;
+  wordOffset?: number;
+  dark?: boolean;
+  as?: React.ElementType;
+  className?: string;
+  style?: React.CSSProperties;
+  autoScroll?: boolean;
+}) {
+  const tokens = useMemo(() => text.split(/(\s+)/), [text]);
+  const activeRef = useRef<HTMLSpanElement | null>(null);
+  const local = active ? wordIndex - wordOffset : -1;
+
+  useEffect(() => {
+    if (!active || local < 0 || !autoScroll) return;
+    const el = activeRef.current;
+    if (!el) return;
+    const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ block: "nearest", inline: "nearest", behavior: reduce ? "auto" : "smooth" });
+  }, [local, active, autoScroll]);
+
+  const hi: React.CSSProperties = dark
+    ? { background: "rgba(239,230,214,0.24)", color: "#FFF8ED", fontWeight: 600 }
+    : { background: "rgba(210,107,67,0.20)", color: "var(--gold-deep)", fontWeight: 600 };
+
+  let wi = -1;
+  return (
+    <Tag className={className} style={style}>
+      {tokens.map((tok, i) => {
+        if (tok === "" || /^\s+$/.test(tok)) return tok;
+        wi++;
+        const on = wi === local;
+        return (
+          <span
+            key={i}
+            ref={on ? activeRef : undefined}
+            style={on
+              ? { ...hi, borderRadius: 4, padding: "0.05em 0.14em", margin: "0 -0.14em", boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone", transition: "background .1s ease, color .1s ease" }
+              : undefined}
+          >
+            {tok}
+          </span>
+        );
+      })}
+    </Tag>
   );
 }
 

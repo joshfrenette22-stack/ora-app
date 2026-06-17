@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Fleuron } from "@/components/Sacred";
 import { Kicker } from "@/components/UI";
-import { PlayerBar, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
+import { PlayerBar, SpokenText, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
+import { countWords } from "@/lib/words";
 import type { DailyReadings } from "@/lib/readings";
 import { localDateISO } from "@/lib/clientDate";
 import { Flame, Clock, BookOpen } from "lucide-react";
@@ -73,6 +74,13 @@ export default function ReadingsPage() {
     segments,
     onSegmentChange: (i) => setActive(order[i]),
   });
+
+  // Word-highlight bookkeeping: the spoken segment reads "<title>. <refrain> <body>",
+  // so the body's words start after the title (and refrain, on psalms).
+  const speaking = narration.status !== "idle";
+  const titleWords = countWords(reading.title);
+  const refrainWords = isPsalm && reading.refrain ? countWords(reading.refrain) : 0;
+  const bodyOffset = titleWords + refrainWords;
 
   return (
     <div className="pw-readings" style={{ display: "flex", gap: 0, alignItems: "flex-start", minHeight: "100%" }}>
@@ -161,13 +169,18 @@ export default function ReadingsPage() {
               }}>
                 Refrain
               </div>
-              {reading.refrain}
+              <SpokenText as="span" text={reading.refrain} active={speaking} wordIndex={narration.wordIndex} wordOffset={titleWords} />
             </div>
           )}
 
           {/* Body with drop cap */}
-          <p
+          <SpokenText
+            as="p"
             className="pw-dropcap"
+            text={reading.body}
+            active={speaking}
+            wordIndex={narration.wordIndex}
+            wordOffset={bodyOffset}
             style={{
               fontFamily: "var(--font-body)",
               fontSize: 19,
@@ -176,9 +189,7 @@ export default function ReadingsPage() {
               margin: "0 0 36px",
               letterSpacing: ".005em",
             }}
-          >
-            {reading.body}
-          </p>
+          />
 
           <Fleuron width={200} style={{ marginBottom: 32 }} />
 

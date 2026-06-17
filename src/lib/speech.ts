@@ -42,6 +42,8 @@ export interface SpeakOptions {
   pitch?: number;
   onEnd?: () => void;
   onError?: () => void;
+  /** Fires as each word is spoken, with the character offset into `text`. */
+  onBoundary?: (charIndex: number) => void;
 }
 
 /** Speak a single utterance. Returns false if speech is unavailable. */
@@ -57,6 +59,12 @@ export function speak(text: string, opts: SpeakOptions = {}): boolean {
   u.lang = voice?.lang ?? "en-US";
   if (opts.onEnd) u.onend = () => opts.onEnd!();
   if (opts.onError) u.onerror = () => opts.onError!();
+  if (opts.onBoundary) {
+    u.onboundary = (e: SpeechSynthesisEvent) => {
+      // Highlight on word boundaries (some engines also fire sentence ones).
+      if (e.name === "word" || e.name === undefined) opts.onBoundary!(e.charIndex);
+    };
+  }
   synth.speak(u);
   return true;
 }

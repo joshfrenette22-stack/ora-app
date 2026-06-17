@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Sunrise, Sun, Sunset, Moon } from "lucide-react";
 import { Cross, Fleuron } from "@/components/Sacred";
 import { SeasonBadge, Kicker, Btn } from "@/components/UI";
-import { PlayerBar, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
+import { PlayerBar, SpokenText, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
+import { countWords } from "@/lib/words";
 import { HOURS, currentHourName as getCurrentHour } from "@/data/content";
 import { OFFICE, type OfficePart } from "@/data/office";
 
@@ -90,7 +91,14 @@ export default function HoursPage() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {parts.map((p, i) => (
-            <OfficePartView key={i} part={p} active={i === activePart} onClick={() => narration.seek(i)} />
+            <OfficePartView
+              key={i}
+              part={p}
+              active={i === activePart}
+              speaking={i === activePart && narration.status !== "idle"}
+              wordIndex={narration.wordIndex}
+              onClick={() => narration.seek(i)}
+            />
           ))}
         </div>
 
@@ -134,7 +142,7 @@ export default function HoursPage() {
 }
 
 // ── A single part of the Office ───────────────────────────────────────────────
-function OfficePartView({ part, active, onClick }: { part: OfficePart; active: boolean; onClick: () => void }) {
+function OfficePartView({ part, active, speaking, wordIndex, onClick }: { part: OfficePart; active: boolean; speaking: boolean; wordIndex: number; onClick: () => void }) {
   const wrap: React.CSSProperties = {
     padding: "14px 16px",
     borderRadius: 12,
@@ -150,13 +158,14 @@ function OfficePartView({ part, active, onClick }: { part: OfficePart; active: b
     "aria-label": `Play ${part.label ?? "this part"}`,
     onKeyDown: (e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } },
   };
+  // The spoken segment is "<antiphon> <text>", so the body starts after it.
+  const antiphonWords = part.antiphon ? countWords(part.antiphon) : 0;
 
   if (part.type === "versicle") {
     return (
       <div {...interactive} style={wrap}>
-        <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 16, lineHeight: 1.6, color: "var(--ink-700)", textAlign: "center", margin: 0 }}>
-          {part.text}
-        </p>
+        <SpokenText as="p" text={part.text} active={speaking} wordIndex={wordIndex}
+          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 16, lineHeight: 1.6, color: "var(--ink-700)", textAlign: "center", margin: 0 }} />
       </div>
     );
   }
@@ -167,11 +176,11 @@ function OfficePartView({ part, active, onClick }: { part: OfficePart; active: b
         <Kicker style={{ marginBottom: 4 }}>{part.label}{part.ref ? ` · ${part.ref}` : ""}</Kicker>
         {part.sub && <div style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--stone-400)", marginBottom: 6 }}>{part.sub}</div>}
         {part.antiphon && (
-          <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 16, lineHeight: 1.6, color: "var(--gold-deep)", margin: "6px 0 10px" }}>
-            {part.antiphon}
-          </p>
+          <SpokenText as="p" text={part.antiphon} active={speaking} wordIndex={wordIndex}
+            style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 16, lineHeight: 1.6, color: "var(--gold-deep)", margin: "6px 0 10px" }} />
         )}
-        <p style={{ fontFamily: "var(--font-body)", fontSize: 17, lineHeight: 1.72, color: "var(--ink)", margin: 0 }}>{part.text}</p>
+        <SpokenText as="p" text={part.text} active={speaking} wordIndex={wordIndex} wordOffset={antiphonWords}
+          style={{ fontFamily: "var(--font-body)", fontSize: 17, lineHeight: 1.72, color: "var(--ink)", margin: 0 }} />
       </div>
     );
   }
@@ -180,9 +189,8 @@ function OfficePartView({ part, active, onClick }: { part: OfficePart; active: b
   return (
     <div {...interactive} style={wrap}>
       <Kicker style={{ marginBottom: 6 }}>{part.label}{part.ref ? ` · ${part.ref}` : ""}</Kicker>
-      <p style={{ fontFamily: "var(--font-body)", fontStyle: part.type === "reading" ? "normal" : "italic", fontSize: 16.5, lineHeight: 1.68, color: "var(--ink-700)", margin: 0 }}>
-        {part.text}
-      </p>
+      <SpokenText as="p" text={part.text} active={speaking} wordIndex={wordIndex}
+        style={{ fontFamily: "var(--font-body)", fontStyle: part.type === "reading" ? "normal" : "italic", fontSize: 16.5, lineHeight: 1.68, color: "var(--ink-700)", margin: 0 }} />
     </div>
   );
 }
