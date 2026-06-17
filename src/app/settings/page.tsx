@@ -72,7 +72,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div style={{ padding: "40px 28px 80px", maxWidth: 640, margin: "0 auto" }}>
+    <div className="pw-settings-pad" style={{ padding: "40px 28px 80px", maxWidth: 640, margin: "0 auto" }}>
 
       {/* Voice section */}
       <Kicker style={{ marginBottom: 6 }}>Narration Voice</Kicker>

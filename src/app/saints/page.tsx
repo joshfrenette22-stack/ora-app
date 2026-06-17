@@ -50,6 +50,7 @@ export default function SaintsPage() {
 
   return (
     <div
+      className="pw-saints-pad"
       style={{
         maxWidth: 480,
         margin: "0 auto",
@@ -63,8 +64,8 @@ export default function SaintsPage() {
       }}
     >
       {/* Decorative background watermark */}
-      <div style={{ position: "absolute", top: -40, right: -60, pointerEvents: "none", maskImage: "radial-gradient(ellipse at 80% 20%, rgba(0,0,0,0.3) 0%, transparent 60%)", WebkitMaskImage: "radial-gradient(ellipse at 80% 20%, rgba(0,0,0,0.3) 0%, transparent 60%)" }}>
-        <Illustration name="splash-altar" size={340} invertOnDark opacity={0.18} />
+      <div style={{ position: "absolute", top: -30, right: -40, pointerEvents: "none", maskImage: "radial-gradient(ellipse at 75% 25%, rgba(0,0,0,0.5) 0%, transparent 55%)", WebkitMaskImage: "radial-gradient(ellipse at 75% 25%, rgba(0,0,0,0.5) 0%, transparent 55%)" }}>
+        <Illustration name="splash-altar" size={360} invertOnDark opacity={0.35} />
       </div>
 
       {/* Devotional medallion */}
@@ -77,7 +78,7 @@ export default function SaintsPage() {
 
       {/* Saint name */}
       <div
-        className="pw-reveal"
+        className="pw-reveal pw-saint-name"
         style={{
           fontFamily: "var(--font-serif)",
           fontWeight: 500,

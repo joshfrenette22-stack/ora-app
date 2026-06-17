@@ -147,6 +147,10 @@ html { scroll-behavior: smooth; }
 .pw-mobile-only { display: none; }
 .pw-rosary-sets { display: none; }
 
+/* ── Prevent overflow globally ─────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+h1, h2, h3, p, blockquote, div, span { overflow-wrap: break-word; word-break: break-word; }
+
 @media (max-width: 768px) {
   /* Navigation */
   .pw-sidebar { display: none !important; }
@@ -157,33 +161,82 @@ html { scroll-behavior: smooth; }
   .pw-scroll { padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)); }
 
   /* Top bar: tighter padding so the title + actions fit. */
-  .pw-contentbar { padding: 16px 16px !important; }
+  .pw-contentbar { padding: 14px 16px !important; }
+  .pw-contentbar-title { font-size: 20px !important; }
 
   /* Page paddings shrink on phones. */
-  .pw-today-pad { padding: 24px 18px 48px !important; }
-  .pw-calendar-pad { padding: 20px 10px 56px !important; }
+  .pw-today-pad { padding: 20px 16px 48px !important; }
+  .pw-calendar-pad { padding: 16px 10px 56px !important; }
 
   /* Today: cards stack to one column. */
   .pw-card-grid { grid-template-columns: 1fr !important; }
 
+  /* Responsive typography */
+  .pw-hero-verse { font-size: 22px !important; }
+  .pw-greeting-heading { font-size: 22px !important; }
+  .pw-feature-title { font-size: 24px !important; }
+  .pw-reading-title { font-size: 28px !important; }
+  .pw-saint-name { font-size: 30px !important; }
+  .pw-mystery-name { font-size: 26px !important; }
+  .pw-hour-name { font-size: 22px !important; }
+  .pw-devotion-title { font-size: 22px !important; }
+
+  /* Feature card tighter padding */
+  .pw-feature-card { padding: 22px 20px !important; }
+  .pw-feature-card .pw-feature-btn { display: none !important; }
+
   /* Readings: the side column drops below the reading. */
   .pw-readings { flex-direction: column !important; }
-  .pw-readings-main { padding: 24px 18px 32px !important; }
+  .pw-readings-main { padding: 20px 16px 32px !important; }
   .pw-readings-aside {
     width: 100% !important;
     border-left: none !important;
     border-top: 1px solid var(--stone-200);
-    padding: 26px 18px 40px !important;
+    padding: 24px 16px 40px !important;
   }
 
   /* Rosary: hide the desktop side panel; show compact set pills instead. */
   .pw-rosary-aside { display: none !important; }
   .pw-rosary-sets { display: flex; }
-  .pw-rosary-main { padding: 28px 18px 32px !important; justify-content: flex-start !important; }
+  .pw-rosary-main { padding: 24px 16px 32px !important; justify-content: flex-start !important; }
 
   /* Calendar: columns are too narrow for feast names on phones — show the
      liturgical-colour dot only; full names remain on desktop. */
   .pw-cal-name { display: none !important; }
+
+  /* Rosary prayer text */
+  .pw-rosary-main p { font-size: 19px !important; }
+
+  /* Hours page */
+  .pw-hours-card { padding: 22px 20px 22px !important; }
+  .pw-hours-list button { padding: 14px 16px !important; }
+
+  /* Readings segmented control scrollable */
+  .pw-reading-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .pw-reading-body { font-size: 17px !important; }
+
+  /* Saints page */
+  .pw-saints-pad { padding: 24px 16px 48px !important; }
+
+  /* Devotions page */
+  .pw-devotions-pad { padding: 24px 14px 48px !important; }
+  .pw-devotion-card { padding: 22px 18px 24px !important; }
+
+  /* Settings */
+  .pw-settings-pad { padding: 28px 16px 64px !important; }
+}
+
+/* Extra-small phones (iPhone SE, 375px and below) */
+@media (max-width: 400px) {
+  .pw-today-pad { padding: 16px 12px 48px !important; }
+  .pw-hero-verse { font-size: 20px !important; }
+  .pw-greeting-heading { font-size: 20px !important; }
+  .pw-feature-title { font-size: 20px !important; }
+  .pw-reading-title { font-size: 24px !important; }
+  .pw-saint-name { font-size: 26px !important; }
+  .pw-mystery-name { font-size: 22px !important; }
+  .pw-rosary-main { padding: 20px 12px 28px !important; }
+  .pw-contentbar { padding: 12px 12px !important; }
 }
 
 /* Waveform breathing while audio plays */

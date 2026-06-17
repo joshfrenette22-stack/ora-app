@@ -82,16 +82,18 @@ export function FeatureCard({ kicker, title, meta, onClick, motif }: {
   motif?: ReactNode;
 }) {
   return (
-    <button className="pw-card" onClick={onClick} style={{ position: "relative", overflow: "hidden", textAlign: "left", cursor: "pointer", background: "var(--surface-ink)", color: "var(--gold-bright)", borderRadius: 18, padding: "30px 34px", boxShadow: "var(--shadow-lg)", border: "none", display: "flex", alignItems: "center", gap: 20, width: "100%" }}>
-      {motif && <div style={{ position: "absolute", right: -20, top: -20, color: "var(--gold-bright)", maskImage: "radial-gradient(ellipse at 70% 40%, rgba(0,0,0,0.5) 0%, transparent 70%)", WebkitMaskImage: "radial-gradient(ellipse at 70% 40%, rgba(0,0,0,0.5) 0%, transparent 70%)" }}>{motif}</div>}
-      <div style={{ flex: 1, position: "relative" }}>
+    <button className="pw-card pw-feature-card" onClick={onClick} style={{ position: "relative", overflow: "hidden", textAlign: "left", cursor: "pointer", background: "var(--surface-ink)", color: "var(--gold-bright)", borderRadius: 18, padding: "30px 34px", boxShadow: "var(--shadow-lg)", border: "none", display: "flex", alignItems: "center", gap: 20, width: "100%" }}>
+      {motif && <div style={{ position: "absolute", right: -10, top: -10, color: "var(--gold-bright)", maskImage: "radial-gradient(ellipse at 65% 45%, rgba(0,0,0,0.8) 0%, transparent 65%)", WebkitMaskImage: "radial-gradient(ellipse at 65% 45%, rgba(0,0,0,0.8) 0%, transparent 65%)" }}>{motif}</div>}
+      <div style={{ flex: 1, position: "relative", minWidth: 0 }}>
         <Kicker style={{ color: "var(--gold-bright)", opacity: 0.85 }}>{kicker}</Kicker>
-        <div style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 32, color: "#F3EEE2", marginTop: 6 }}>{title}</div>
+        <div className="pw-feature-title" style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 32, color: "#F3EEE2", marginTop: 6 }}>{title}</div>
         <div style={{ fontFamily: "var(--font-body)", fontSize: 16, opacity: 0.72, marginTop: 4 }}>{meta}</div>
       </div>
-      <Btn variant="primary" icon={<Cross size={15} />} onClick={() => { onClick?.(); }}>
-        Begin
-      </Btn>
+      <span className="pw-feature-btn">
+        <Btn variant="primary" icon={<Cross size={15} />} onClick={() => { onClick?.(); }}>
+          Begin
+        </Btn>
+      </span>
     </button>
   );
 }
@@ -106,14 +108,14 @@ export function SurfaceCard({ kicker, title, meta, onClick, lucide, motif }: {
 }) {
   return (
     <button className="pw-card" onClick={onClick} style={{ textAlign: "left", cursor: "pointer", background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 18, padding: "24px 26px", boxShadow: "var(--shadow-sm)", display: "flex", flexDirection: "column", gap: 14, width: "100%", position: "relative", overflow: "hidden" }}>
-      {motif && <div style={{ position: "absolute", right: -15, bottom: -15, pointerEvents: "none", maskImage: "radial-gradient(ellipse at 85% 80%, rgba(0,0,0,0.4) 0%, transparent 55%)", WebkitMaskImage: "radial-gradient(ellipse at 85% 80%, rgba(0,0,0,0.4) 0%, transparent 55%)" }}>{motif}</div>}
+      {motif && <div style={{ position: "absolute", right: -10, bottom: -10, pointerEvents: "none", maskImage: "radial-gradient(ellipse at 80% 75%, rgba(0,0,0,0.7) 0%, transparent 60%)", WebkitMaskImage: "radial-gradient(ellipse at 80% 75%, rgba(0,0,0,0.7) 0%, transparent 60%)" }}>{motif}</div>}
       <span style={{ width: 50, height: 50, borderRadius: "50%", background: "var(--gold-faint)", color: "var(--gold-deep)", display: "grid", placeItems: "center", position: "relative" }}>
         {lucide ? <LucideIcon name={lucide} size={24} /> : <Cross size={22} />}
       </span>
-      <div style={{ position: "relative" }}>
+      <div style={{ position: "relative", minWidth: 0 }}>
         <Kicker>{kicker}</Kicker>
         <div style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 22, color: "var(--ink)", marginTop: 3 }}>{title}</div>
-        <div style={{ fontFamily: "var(--font-body)", fontSize: 14, color: "var(--stone-400)", marginTop: 2 }}>{meta}</div>
+        <div style={{ fontFamily: "var(--font-body)", fontSize: 14, color: "var(--stone-400)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis" }}>{meta}</div>
       </div>
     </button>
   );

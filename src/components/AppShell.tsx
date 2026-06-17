@@ -135,7 +135,7 @@ function ContentBar({ title, sub, pathname }: { title: string; sub: string | nul
             {shownSub}
           </div>
         )}
-        <div style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 25, letterSpacing: "-.01em", color: "var(--ink)", marginTop: shownSub ? 2 : 0 }}>
+        <div className="pw-contentbar-title" style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 25, letterSpacing: "-.01em", color: "var(--ink)", marginTop: shownSub ? 2 : 0 }}>
           {title}
         </div>
       </div>

@@ -143,8 +143,8 @@ export default function RosaryPage() {
     return (
       <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "var(--surface-ink)", color: "var(--gold-bright)", padding: "40px 24px", overflowY: "auto", position: "relative", overflow: "hidden" }}>
         {/* Background rosary watermark */}
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", pointerEvents: "none", maskImage: "radial-gradient(circle at center, rgba(0,0,0,0.2) 20%, transparent 55%)", WebkitMaskImage: "radial-gradient(circle at center, rgba(0,0,0,0.2) 20%, transparent 55%)" }}>
-          <Illustration name="section-rosary" size={500} invertOnDark opacity={0.25} />
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", pointerEvents: "none", maskImage: "radial-gradient(circle at center, rgba(0,0,0,0.4) 20%, transparent 55%)", WebkitMaskImage: "radial-gradient(circle at center, rgba(0,0,0,0.4) 20%, transparent 55%)" }}>
+          <Illustration name="section-rosary" size={500} invertOnDark opacity={0.4} />
         </div>
         <div style={{ width: 56, height: 56, borderRadius: "50%", border: `1.5px solid ${cream(0.4)}`, display: "grid", placeItems: "center", color: "var(--gold)", marginBottom: 20, position: "relative" }}>
           <Cross size={26} />
@@ -247,19 +247,19 @@ export default function RosaryPage() {
           {ordinal} {activeSet} Mystery
         </div>
 
-        <h1 className="pw-reveal" style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 34, color: "#F6F0E6", margin: "0 0 34px", textAlign: "center", lineHeight: 1.18, letterSpacing: "-.015em", maxWidth: 560 }}>
+        <h1 className="pw-reveal pw-mystery-name" style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 34, color: "#F6F0E6", margin: "0 0 34px", textAlign: "center", lineHeight: 1.18, letterSpacing: "-.015em", maxWidth: 560 }}>
           {mysteryName}
         </h1>
 
         {/* Mystery illustration with halo */}
         <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: 220, height: 220, marginBottom: 36 }}>
           <SoftHalo size={240} style={{ position: "absolute", inset: -10, color: "var(--gold)", opacity: 0.4 }} />
-          <div style={{ position: "relative", zIndex: 1, borderRadius: 16, overflow: "hidden", maskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 40%, transparent 75%)", WebkitMaskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 40%, transparent 75%)" }}>
+          <div style={{ position: "relative", zIndex: 1, borderRadius: 16, overflow: "hidden", maskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 45%, transparent 70%)", WebkitMaskImage: "radial-gradient(circle at center, rgba(0,0,0,1) 45%, transparent 70%)" }}>
             <Illustration
               name={MYSTERY_ART[activeSet]}
               size={200}
               invertOnDark
-              opacity={0.85}
+              opacity={0.9}
             />
           </div>
         </div>
@@ -275,7 +275,7 @@ export default function RosaryPage() {
           active={narration.status !== "idle"}
           wordIndex={narration.wordIndex}
           wordOffset={prayerOffset}
-          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 23, lineHeight: 1.58, color: cream(0.85), textAlign: "center", maxWidth: 580, margin: "0 0 36px" }}
+          style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 23, lineHeight: 1.58, color: cream(0.85), textAlign: "center", maxWidth: 580, margin: "0 0 36px", width: "100%" }}
         />
 
         <Fleuron width={170} style={{ marginBottom: 32 }} />

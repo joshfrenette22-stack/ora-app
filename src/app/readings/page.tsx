@@ -90,13 +90,14 @@ export default function ReadingsPage() {
       <div className="pw-readings-main" style={{ flex: 1, padding: "40px 48px 72px", minWidth: 0 }}>
 
         {/* Segmented control */}
-        <div style={{
+        <div className="pw-reading-tabs" style={{
           display: "inline-flex",
           background: "var(--paper-edge)",
           borderRadius: 12,
           padding: 4,
           gap: 2,
           marginBottom: 24,
+          maxWidth: "100%",
         }}>
           {order.map((key) => {
             const on = activeTab === key;
@@ -135,7 +136,7 @@ export default function ReadingsPage() {
 
           <Kicker style={{ marginBottom: 10 }}>{reading.cite}</Kicker>
 
-          <h1 className="pw-reveal" style={{
+          <h1 className="pw-reveal pw-reading-title" style={{
             fontFamily: "var(--font-serif)",
             fontWeight: 500,
             fontSize: 40,
@@ -226,8 +227,8 @@ export default function ReadingsPage() {
         overflow: "hidden",
       }}>
         {/* Ambient texture */}
-        <div style={{ position: "absolute", bottom: -30, right: -30, pointerEvents: "none", maskImage: "radial-gradient(ellipse at 80% 80%, rgba(0,0,0,0.25) 0%, transparent 55%)", WebkitMaskImage: "radial-gradient(ellipse at 80% 80%, rgba(0,0,0,0.25) 0%, transparent 55%)" }}>
-          <Illustration name="section-daily-mass" size={240} invertOnDark opacity={0.25} />
+        <div style={{ position: "absolute", bottom: -20, right: -20, pointerEvents: "none", maskImage: "radial-gradient(ellipse at 75% 75%, rgba(0,0,0,0.5) 0%, transparent 55%)", WebkitMaskImage: "radial-gradient(ellipse at 75% 75%, rgba(0,0,0,0.5) 0%, transparent 55%)" }}>
+          <Illustration name="section-daily-mass" size={260} invertOnDark opacity={0.45} />
         </div>
 
         {/* Also Today */}

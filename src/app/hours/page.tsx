@@ -62,10 +62,10 @@ export default function HoursPage() {
     <div style={{ maxWidth: 560, margin: "0 auto", padding: "24px 16px 64px", display: "flex", flexDirection: "column", gap: 24, position: "relative" }}>
 
       {/* Feature card — selected hour */}
-      <div style={{ position: "relative", overflow: "hidden", background: "var(--surface-ink)", borderRadius: 20, padding: "30px 28px 28px", boxShadow: "var(--shadow-lg)", display: "flex", flexDirection: "column", gap: 14 }}>
+      <div className="pw-hours-card" style={{ position: "relative", overflow: "hidden", background: "var(--surface-ink)", borderRadius: 20, padding: "30px 28px 28px", boxShadow: "var(--shadow-lg)", display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 70% 30%, rgba(210,107,67,0.14) 0%, transparent 65%)", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", right: -10, top: -10, pointerEvents: "none", maskImage: "radial-gradient(ellipse at 75% 35%, rgba(0,0,0,0.45) 0%, transparent 65%)", WebkitMaskImage: "radial-gradient(ellipse at 75% 35%, rgba(0,0,0,0.45) 0%, transparent 65%)" }}>
-          <Illustration name={HOUR_ART[selected] ?? "hours-sext"} size={220} invertOnDark opacity={0.35} />
+        <div style={{ position: "absolute", right: -5, top: -5, pointerEvents: "none", maskImage: "radial-gradient(ellipse at 70% 35%, rgba(0,0,0,0.7) 0%, transparent 60%)", WebkitMaskImage: "radial-gradient(ellipse at 70% 35%, rgba(0,0,0,0.7) 0%, transparent 60%)" }}>
+          <Illustration name={HOUR_ART[selected] ?? "hours-sext"} size={240} invertOnDark opacity={0.55} />
         </div>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative" }}>
@@ -74,7 +74,7 @@ export default function HoursPage() {
         </div>
 
         <div style={{ position: "relative" }}>
-          <div style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 28, color: "#F3EEE2" }}>{hour.name}</div>
+          <div className="pw-hour-name" style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 28, color: "#F3EEE2" }}>{hour.name}</div>
           <div style={{ fontFamily: "var(--font-body)", fontSize: 15, color: "var(--gold-bright)", opacity: 0.72, marginTop: 2 }}>{hour.en}</div>
         </div>
 
