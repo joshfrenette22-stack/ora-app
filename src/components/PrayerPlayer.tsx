@@ -53,8 +53,12 @@ export interface Narration {
   elapsed: number;
   /** True from pressing play until audio/speech actually begins. */
   loading: boolean;
-  /** Live audio level 0–1 for a reactive waveform (real on cloud voice). */
+  /** Live animated level 0–1 (device voice, which has no analysable stream). */
   getLevel: () => number;
+  /** Decoded amplitude shape of the current cloud segment (0–1 per bar), or null. */
+  peaks: number[] | null;
+  /** Playback fraction within the current segment (0–1) — fills the waveform. */
+  segProgress: number;
   /** Index of the word being spoken within the current segment (−1 if none). */
   wordIndex: number;
   current: NarrationSegment | undefined;
@@ -104,11 +108,14 @@ export function useNarration({
   // browser's Web Speech API.
   const engineRef = useRef<"browser" | "google">("browser");
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  // Web Audio analyser for a real, audio-reactive waveform on the cloud voice.
+  // AudioContext is used only to DECODE the cloud audio into a real waveform
+  // (precomputed peaks). We deliberately do NOT route the <audio> element through
+  // a MediaElementSource analyser — on iOS Safari that feeds the analyser silence
+  // (and can mute the element), which is why the live wave read flat.
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const srcNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
-  const freqDataRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
+  // The current cloud segment's real amplitude shape (0–1 per bar), or null.
+  const [peaks, setPeaks] = useState<number[] | null>(null);
+  const peaksGenRef = useRef(0);
   // Whether speech/audio is currently producing sound (drives the animated
   // fallback level for the browser voice, which has no analysable stream).
   const soundingRef = useRef(false);
@@ -159,11 +166,12 @@ export function useNarration({
   // Core segment player — separated so playSegment can await the engine probe.
   const startSegmentRef = useRef<(text: string, onEnd: () => void, onError: () => void) => void>(() => {});
 
-  // Lazily build the Web Audio graph (audio → analyser → speakers) so the cloud
-  // waveform reacts to the real audio. Created inside a user gesture.
-  const setupAnalyser = useCallback(() => {
-    const a = audioRef.current;
-    if (!a) return;
+  // Fetch + decode a cloud-audio segment into a real waveform shape (one peak
+  // per bar). Runs off the playback path — decodeAudioData is reliable on iOS,
+  // unlike a live MediaElementSource analyser. The audio itself keeps playing
+  // straight from the <audio> element.
+  const NUM_PEAKS = 96;
+  const decodePeaks = useCallback((url: string, gen: number) => {
     try {
       if (!audioCtxRef.current) {
         const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -171,22 +179,33 @@ export function useNarration({
         audioCtxRef.current = new Ctx();
       }
       const ctx = audioCtxRef.current;
-      if (ctx.state === "suspended") void ctx.resume();
-      if (!srcNodeRef.current) {
-        srcNodeRef.current = ctx.createMediaElementSource(a);
-        const an = ctx.createAnalyser();
-        an.fftSize = 256;
-        an.smoothingTimeConstant = 0.55;
-        srcNodeRef.current.connect(an);
-        an.connect(ctx.destination);
-        analyserRef.current = an;
-        // Time-domain reads need a buffer the size of fftSize.
-        freqDataRef.current = new Uint8Array(an.fftSize);
-      } else if (audioCtxRef.current.state === "suspended") {
-        void audioCtxRef.current.resume();
-      }
+      fetch(url)
+        .then((r) => r.arrayBuffer())
+        .then((buf) => ctx.decodeAudioData(buf))
+        .then((audio) => {
+          if (gen !== peaksGenRef.current) return; // superseded
+          const ch = audio.getChannelData(0);
+          const bucket = Math.floor(ch.length / NUM_PEAKS) || 1;
+          const out: number[] = [];
+          let max = 0.0001;
+          for (let i = 0; i < NUM_PEAKS; i++) {
+            let sum = 0;
+            const start = i * bucket;
+            for (let j = 0; j < bucket && start + j < ch.length; j++) {
+              const v = ch[start + j];
+              sum += v * v;
+            }
+            const rms = Math.sqrt(sum / bucket);
+            out.push(rms);
+            if (rms > max) max = rms;
+          }
+          // Normalise so the loudest moment ≈ 1, with a gentle floor.
+          const norm = out.map((v) => Math.max(0.06, Math.min(1, (v / max) ** 0.85)));
+          if (gen === peaksGenRef.current) setPeaks(norm);
+        })
+        .catch(() => {});
     } catch {
-      /* analyser is best-effort; audio still plays without it */
+      /* best-effort — falls back to the animated wave */
     }
   }, []);
 
@@ -230,7 +249,11 @@ export function useNarration({
 
       if (engineRef.current === "google" && audioRef.current) {
         const a = audioRef.current;
-        setupAnalyser();
+        const url = ttsUrl(text, rate, voice);
+        // New segment → drop the old waveform and decode the real one.
+        const gen = ++peaksGenRef.current;
+        setPeaks(null);
+        decodePeaks(url, gen);
         let settled = false;
         const finish = () => { if (!settled) { settled = true; soundingRef.current = false; onEnd(); } };
         const fallback = () => {
@@ -238,6 +261,9 @@ export function useNarration({
           settled = true;
           a.onended = null;
           a.onerror = null;
+          // Cloud audio failed — invalidate its decode and animate the device voice.
+          peaksGenRef.current++;
+          setPeaks(null);
           if (!speak(text, { rate, onStart: () => { setLoading(false); soundingRef.current = true; }, onEnd, onError, onBoundary })) onError();
         };
         a.onplaying = () => { setLoading(false); soundingRef.current = true; };
@@ -251,7 +277,7 @@ export function useNarration({
             if (wc > 0) setWordIndex(Math.min(wc - 1, Math.floor(f * wc)));
           }
         };
-        a.src = ttsUrl(text, rate, voice);
+        a.src = url;
         a.play().catch(fallback);
         return;
       }
@@ -280,7 +306,7 @@ export function useNarration({
         onError();
       }
     },
-    [rate, voice, clearEstimate, setupAnalyser],
+    [rate, voice, clearEstimate, decodePeaks],
   );
 
   useEffect(() => { startSegmentRef.current = startSegment; }, [startSegment]);
@@ -362,23 +388,9 @@ export function useNarration({
     setLoading(false);
   }, [clearEstimate]);
 
-  // Live audio level (0–1) for a reactive waveform. On the cloud voice this is
-  // the true loudness (time-domain RMS of the audio) so the wave swells when the
-  // speaker is loud; the device voice has no analysable stream, so it animates.
+  // Animated level (0–1) for the device/Siri voice, which gives no audio stream
+  // to analyse. The cloud voice instead renders its decoded waveform (`peaks`).
   const getLevel = useCallback(() => {
-    const an = analyserRef.current;
-    const data = freqDataRef.current;
-    if (engineRef.current === "google" && an && data && soundingRef.current) {
-      an.getByteTimeDomainData(data);
-      let sum = 0;
-      for (let i = 0; i < data.length; i++) {
-        const x = (data[i] - 128) / 128; // −1..1 around silence
-        sum += x * x;
-      }
-      const rms = Math.sqrt(sum / data.length); // ~0..0.4 for speech
-      return Math.max(0, Math.min(1, rms * 3.2));
-    }
-    // The device/Siri voice gives no audio stream — animate while it's speaking.
     if (statusRef.current === "playing") {
       const t = performance.now() / 1000;
       const v = 0.45 + 0.3 * Math.sin(t * 8.5) + 0.22 * Math.sin(t * 5.1) + 0.16 * Math.sin(t * 13.3);
@@ -450,6 +462,8 @@ export function useNarration({
     elapsed,
     loading,
     getLevel,
+    peaks,
+    segProgress: frac,
     wordIndex,
     current: segments[index],
     play,
@@ -512,30 +526,41 @@ function useScrollingWave(bars: number, playing: boolean, getLevel?: () => numbe
   return playing ? buf : (idle ?? buf);
 }
 
-function Waveform({ progress, dark, playing, getLevel }: { progress: number; dark?: boolean; playing?: boolean; getLevel?: () => number }) {
-  void progress;
+/** Map a source array of amplitudes to exactly `n` bars (nearest sample). */
+function resampleBars(src: number[], n: number): number[] {
+  if (src.length === n) return src;
+  const out: number[] = [];
+  for (let i = 0; i < n; i++) out.push(src[Math.floor((i * src.length) / n)] ?? 0);
+  return out;
+}
+
+function Waveform({
+  dark, playing, getLevel, peaks, segProgress = 0,
+}: { dark?: boolean; playing?: boolean; getLevel?: () => number; peaks?: number[] | null; segProgress?: number }) {
   const rest = dark ? "rgba(239,230,214,0.18)" : "var(--stone-300)";
   const live = dark ? "var(--gold)" : "var(--gold-deep)";
-  const levels = useScrollingWave(WAVE_BARS, !!playing, getLevel, WAVE_HEIGHTS.map((h) => h * 0.5));
+  const usePeaks = !!(peaks && peaks.length);
+  // Real cloud waveform (static shape, fills as it plays) when decoded; otherwise
+  // the animated scrolling level for the device voice.
+  const scroll = useScrollingWave(WAVE_BARS, !!playing && !usePeaks, getLevel, WAVE_HEIGHTS.map((h) => h * 0.5));
+  const bars = usePeaks ? resampleBars(peaks!, WAVE_BARS) : scroll;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 1.5, height: 28 }}>
-      {levels.map((lv, i) => {
-        // Newest sample is on the right; fade the older (left) samples slightly.
-        const recency = i / (WAVE_BARS - 1);
-        const h = playing ? Math.max(0.06, Math.min(1, lv)) : Math.max(0.06, lv);
+      {bars.map((lv, i) => {
+        const h = Math.max(0.06, Math.min(1, lv));
+        let bg: string;
+        let op: number;
+        if (usePeaks) {
+          const played = i / WAVE_BARS <= segProgress;
+          bg = played ? live : rest;
+          op = played ? 0.95 : 0.4;
+        } else {
+          const recency = i / (WAVE_BARS - 1);
+          bg = playing ? live : rest;
+          op = playing ? 0.45 + 0.55 * recency : 0.4;
+        }
         return (
-          <span
-            key={i}
-            style={{
-              flex: 1,
-              minWidth: 1.5,
-              maxWidth: 3.5,
-              height: `${Math.round(h * 100)}%`,
-              borderRadius: 1,
-              background: playing ? live : rest,
-              opacity: playing ? 0.45 + 0.55 * recency : 0.4,
-            }}
-          />
+          <span key={i} style={{ flex: 1, minWidth: 1.5, maxWidth: 3.5, height: `${Math.round(h * 100)}%`, borderRadius: 1, background: bg, opacity: op }} />
         );
       })}
     </div>
@@ -651,7 +676,7 @@ export function PlayerBar({
             </div>
           )}
         </div>
-        <Waveform progress={narration.progress} dark={dark} playing={playing} getLevel={narration.getLevel} />
+        <Waveform dark={dark} playing={playing} getLevel={narration.getLevel} peaks={narration.peaks} segProgress={narration.segProgress} />
       </div>
 
       {/* Skip controls */}
@@ -1037,7 +1062,7 @@ export function FloatingPlayer() {
               </div>
             )}
           </div>
-          <Waveform progress={narration.progress} playing={playing} getLevel={narration.getLevel} />
+          <Waveform playing={playing} getLevel={narration.getLevel} peaks={narration.peaks} segProgress={narration.segProgress} />
         </div>
 
         {/* Skip */}
@@ -1116,14 +1141,22 @@ const FS_WAVE_HEIGHTS = Array.from({ length: FS_WAVE_BARS }, (_, i) => {
   return Math.max(0.06, Math.min(1, raw));
 });
 
-function FullScreenWaveform({ progress, playing, getLevel }: { progress: number; playing: boolean; getLevel?: () => number }) {
-  void progress;
-  const levels = useScrollingWave(FS_WAVE_BARS, playing, getLevel, FS_WAVE_HEIGHTS.map((h) => h * 0.5));
+function FullScreenWaveform({
+  playing, getLevel, peaks, segProgress = 0,
+}: { playing: boolean; getLevel?: () => number; peaks?: number[] | null; segProgress?: number }) {
+  const usePeaks = !!(peaks && peaks.length);
+  const scroll = useScrollingWave(FS_WAVE_BARS, playing && !usePeaks, getLevel, FS_WAVE_HEIGHTS.map((h) => h * 0.5));
+  const bars = usePeaks ? resampleBars(peaks!, FS_WAVE_BARS) : scroll;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 2, height: 48, padding: "0 4px" }}>
-      {levels.map((lv, i) => {
-        const recency = i / (FS_WAVE_BARS - 1);
+      {bars.map((lv, i) => {
         const h = Math.max(0.06, Math.min(1, lv));
+        let op: number;
+        if (usePeaks) {
+          op = i / FS_WAVE_BARS <= segProgress ? 0.95 : 0.32;
+        } else {
+          op = playing ? 0.4 + 0.6 * (i / (FS_WAVE_BARS - 1)) : 0.4;
+        }
         return (
           <span
             key={i}
@@ -1133,8 +1166,8 @@ function FullScreenWaveform({ progress, playing, getLevel }: { progress: number;
               maxWidth: 4,
               height: `${Math.round(h * 100)}%`,
               borderRadius: 1.5,
-              background: playing ? "var(--gold)" : "rgba(239,230,214,0.4)",
-              opacity: playing ? 0.4 + 0.6 * recency : 0.4,
+              background: "var(--gold)",
+              opacity: op,
             }}
           />
         );
@@ -1342,7 +1375,7 @@ function FullScreenPlayer({
       }}>
         {/* Waveform progress */}
         <div style={{ marginBottom: 8 }}>
-          <FullScreenWaveform progress={narration.progress} playing={playing} getLevel={narration.getLevel} />
+          <FullScreenWaveform playing={playing} getLevel={narration.getLevel} peaks={narration.peaks} segProgress={narration.segProgress} />
         </div>
 
         {/* Running timestamp: elapsed (left) → total length (right) */}
