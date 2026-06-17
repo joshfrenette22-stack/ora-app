@@ -325,8 +325,8 @@ export function PlayerBar({
 
   const fg = dark ? "var(--gold-bright)" : "var(--gold-deep)";
   const subtle = dark ? "rgba(236,227,204,0.55)" : "var(--stone-400)";
-  const border = dark ? "1px solid rgba(216,188,118,.22)" : "1px solid var(--stone-200)";
-  const surface = dark ? "rgba(216,188,118,0.08)" : "var(--bone-raised)";
+  const border = dark ? "1px solid rgba(239,230,214,.2)" : "1px solid var(--stone-200)";
+  const surface = dark ? "rgba(239,230,214,0.06)" : "var(--bone-raised)";
   const playing = status === "playing";
 
   const ctrlStyle = (primary = false): React.CSSProperties => ({

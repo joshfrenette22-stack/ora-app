@@ -8,7 +8,7 @@ export default function Error({ reset }: { error: Error & { digest?: string }; r
       <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 12, letterSpacing: ".02em", color: "var(--gold-deep)" }}>
         Something went wrong
       </div>
-      <h1 style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 30, color: "var(--ink)", margin: 0, lineHeight: 1.2 }}>
+      <h1 style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 31, color: "var(--ink)", margin: 0, lineHeight: 1.15 }}>
         An unexpected error occurred
       </h1>
       <p style={{ fontFamily: "var(--font-body)", fontSize: 16, color: "var(--stone-400)", maxWidth: 420, lineHeight: 1.6, margin: "0 0 8px" }}>

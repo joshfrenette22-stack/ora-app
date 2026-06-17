@@ -75,7 +75,7 @@ export default function TodayPage() {
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 88% 0%, rgba(210,107,67,0.18) 0%, transparent 58%)", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, color: "rgba(239,230,214,0.6)" }}>{greeting ?? "Welcome"}</div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 700, color: "#F6F0E6", lineHeight: 1.22, letterSpacing: "-.01em", margin: "8px 0 0" }}>
+          <h1 className="pw-reveal" style={{ fontFamily: "var(--font-serif)", fontSize: 28, fontWeight: 500, color: "#F6F0E6", lineHeight: 1.2, letterSpacing: "-.01em", margin: "8px 0 0" }}>
             How would you like to pray today?
           </h1>
           <p style={{ fontFamily: "var(--font-body)", fontSize: 15, lineHeight: 1.6, color: "rgba(239,230,214,0.72)", margin: "12px 0 0" }}>
@@ -100,16 +100,16 @@ export default function TodayPage() {
 
       {/* Hero verse */}
       <div style={{ textAlign: "center", marginBottom: 36 }}>
-        <blockquote style={{
-          fontFamily: "var(--font-body)",
+        <blockquote className="pw-reveal" style={{
+          fontFamily: "var(--font-serif)",
           fontStyle: "italic",
           fontSize: 30,
-          lineHeight: 1.48,
+          lineHeight: 1.42,
           color: "var(--ink)",
           fontWeight: 400,
           margin: "0 auto",
           maxWidth: 640,
-          letterSpacing: ".01em",
+          letterSpacing: "0",
         }}>
           &ldquo;{verse.text}&rdquo;
         </blockquote>

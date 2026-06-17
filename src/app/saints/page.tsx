@@ -72,14 +72,15 @@ export default function SaintsPage() {
 
       {/* Saint name */}
       <div
+        className="pw-reveal"
         style={{
-          fontFamily: "var(--font-display)",
-          fontWeight: 700,
-          fontSize: 38,
+          fontFamily: "var(--font-serif)",
+          fontWeight: 500,
+          fontSize: 40,
           color: "var(--ink)",
-          letterSpacing: "-.015em",
+          letterSpacing: "-.02em",
           textAlign: "center",
-          lineHeight: 1.1,
+          lineHeight: 1.08,
           marginBottom: 10,
         }}
       >
@@ -152,10 +153,10 @@ export default function SaintsPage() {
           <Kicker style={{ marginBottom: 12 }}>Collect</Kicker>
           <p
             style={{
-              fontFamily: "var(--font-body)",
+              fontFamily: "var(--font-serif)",
               fontStyle: "italic",
-              fontSize: 16.5,
-              lineHeight: 1.7,
+              fontSize: 18,
+              lineHeight: 1.65,
               color: "var(--ink-700)",
               margin: 0,
             }}

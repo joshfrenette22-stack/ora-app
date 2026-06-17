@@ -151,10 +151,10 @@ export default function CalendarPage() {
 
         <div style={{ textAlign: "center" }}>
           <div style={{
-            fontFamily: "var(--font-display)",
-            fontWeight: 700,
-            fontSize: 28,
-            letterSpacing: ".005em",
+            fontFamily: "var(--font-serif)",
+            fontWeight: 500,
+            fontSize: 30,
+            letterSpacing: "-.01em",
             color: "var(--ink)",
           }}>
             {MONTH_NAMES[viewMonth - 1]}

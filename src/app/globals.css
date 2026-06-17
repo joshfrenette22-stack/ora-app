@@ -1,11 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&display=swap');
 @import "tailwindcss";
 
 :root {
-  /* Type families — one warm modern sans, varied by weight */
+  /* Type — clean sans for UI/body, a classy serif for headings & drop caps */
   --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-ornament: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-ornament: 'Fraunces', Georgia, serif;
 
   /* Warm neutral surfaces */
   --bone: #EFE9DF;          /* page background — warm cream */
@@ -184,6 +185,17 @@ html { scroll-behavior: smooth; }
 @keyframes oraWave { 0%, 100% { transform: scaleY(0.95); } 50% { transform: scaleY(1.05); } }
 .ora-wave-live { animation: oraWave 1.7s var(--ease-inout) infinite; transform-origin: center; }
 @media (prefers-reduced-motion: reduce) { .ora-wave-live { animation: none; } }
+
+/* Entrance animations — gentle rise on each screen, classy blur-reveal for headings */
+@keyframes oraRise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes oraReveal { from { opacity: 0; transform: translateY(10px); filter: blur(6px); } to { opacity: 1; transform: none; filter: blur(0); } }
+.pw-scroll > * { animation: oraRise .5s var(--ease-sacred) both; }
+.pw-reveal { animation: oraReveal .85s var(--ease-sacred) .08s both; }
+.pw-reveal-2 { animation: oraReveal .85s var(--ease-sacred) .18s both; }
+.pw-reveal-3 { animation: oraReveal .85s var(--ease-sacred) .28s both; }
+@media (prefers-reduced-motion: reduce) {
+  .pw-scroll > *, .pw-reveal, .pw-reveal-2, .pw-reveal-3 { animation: none; }
+}
 
 /* Scrollbar styling */
 ::-webkit-scrollbar { width: 6px; }

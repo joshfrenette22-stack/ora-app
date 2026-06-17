@@ -112,7 +112,7 @@ function ContentBar({ title, sub }: { title: string; sub: string | null }) {
             {sub}
           </div>
         )}
-        <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 23, letterSpacing: "-.01em", color: "var(--ink)", marginTop: sub ? 3 : 0 }}>
+        <div style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 25, letterSpacing: "-.01em", color: "var(--ink)", marginTop: sub ? 2 : 0 }}>
           {title}
         </div>
       </div>

@@ -126,14 +126,14 @@ export default function ReadingsPage() {
 
           <Kicker style={{ marginBottom: 10 }}>{reading.cite}</Kicker>
 
-          <h1 style={{
-            fontFamily: "var(--font-body)",
-            fontWeight: 600,
+          <h1 className="pw-reveal" style={{
+            fontFamily: "var(--font-serif)",
+            fontWeight: 500,
             fontSize: 40,
-            lineHeight: 1.18,
+            lineHeight: 1.14,
             color: "var(--ink)",
             margin: "0 0 28px",
-            letterSpacing: "-.01em",
+            letterSpacing: "-.015em",
           }}>
             {reading.title}
           </h1>

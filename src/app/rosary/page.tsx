@@ -138,7 +138,7 @@ export default function RosaryPage() {
         <div style={{ width: 56, height: 56, borderRadius: "50%", border: `1.5px solid ${cream(0.4)}`, display: "grid", placeItems: "center", color: "var(--gold)", marginBottom: 20 }}>
           <Cross size={26} />
         </div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 30, color: "#F6F0E6", margin: 0, letterSpacing: "-.01em" }}>The Holy Rosary</h1>
+        <h1 className="pw-reveal" style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 32, color: "#F6F0E6", margin: 0, letterSpacing: "-.015em" }}>The Holy Rosary</h1>
         <p style={{ fontFamily: "var(--font-body)", fontSize: 15.5, color: cream(0.7), margin: "10px 0 22px", textAlign: "center" }}>
           Today, the Church prays the <span style={{ color: "var(--gold)", fontWeight: 600 }}>{activeSet}</span> Mysteries.
         </p>
@@ -236,7 +236,7 @@ export default function RosaryPage() {
           {ordinal} {activeSet} Mystery
         </div>
 
-        <h1 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 33, color: "#F6F0E6", margin: "0 0 34px", textAlign: "center", lineHeight: 1.22, letterSpacing: "-.01em", maxWidth: 560 }}>
+        <h1 className="pw-reveal" style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 34, color: "#F6F0E6", margin: "0 0 34px", textAlign: "center", lineHeight: 1.18, letterSpacing: "-.015em", maxWidth: 560 }}>
           {mysteryName}
         </h1>
 
@@ -252,7 +252,7 @@ export default function RosaryPage() {
           {beadLabel}
         </div>
 
-        <p style={{ fontFamily: "var(--font-body)", fontStyle: "italic", fontSize: 21, lineHeight: 1.62, color: cream(0.85), textAlign: "center", maxWidth: 580, margin: "0 0 36px" }}>
+        <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 23, lineHeight: 1.58, color: cream(0.85), textAlign: "center", maxWidth: 580, margin: "0 0 36px" }}>
           {prayer}
         </p>
 
