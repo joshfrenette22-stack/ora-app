@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Fleuron } from "@/components/Sacred";
 import { Illustration } from "@/components/Illustration";
 import { SeasonBadge, Kicker } from "@/components/UI";
-import { PlayerBar, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
+import { ListenButton, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { countWords } from "@/lib/words";
 import { badgeSeason } from "@/lib/liturgical";
 import type { Saint } from "@/lib/saints";
@@ -114,7 +114,7 @@ export default function SaintsPage() {
       {/* Voice player */}
       {segments.length > 0 && (
         <div style={{ width: "100%", marginBottom: 28, position: "relative", zIndex: 1 }}>
-          <PlayerBar narration={narration} title={`Listen · ${saint.name}`} />
+          <ListenButton narration={narration} label={`Listen to ${saint.name}`} />
         </div>
       )}
 

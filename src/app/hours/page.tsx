@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Sunrise, Sun, Sunset, Moon, BookOpen } from "lucide-react";
 import { Cross, Fleuron } from "@/components/Sacred";
 import { SeasonBadge, Kicker, Btn } from "@/components/UI";
-import { PlayerBar, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
+import { ListenButton, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { countWords } from "@/lib/words";
 import { Illustration } from "@/components/Illustration";
 import { HOURS, currentHourName as getCurrentHour } from "@/data/content";
@@ -92,7 +92,7 @@ export default function HoursPage() {
       <div ref={officeRef} style={{ scrollMarginTop: 16 }}>
         <Kicker style={{ marginBottom: 12 }}>{hour.name} · {hour.en}</Kicker>
         <div style={{ marginBottom: 22 }}>
-          <PlayerBar narration={narration} title={`Pray ${hour.name} aloud`} />
+          <ListenButton narration={narration} label={`Listen to ${hour.name}`} />
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>

@@ -5,7 +5,7 @@ import { Cross, Fleuron } from "@/components/Sacred";
 import { Illustration } from "@/components/Illustration";
 import { MYSTERY_ART } from "@/lib/illustrations";
 import { Btn, LucideIcon } from "@/components/UI";
-import { PlayerBar, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
+import { ListenButton, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { countWords } from "@/lib/words";
 import { MYSTERY_SETS, ROSARY_PRAYERS, WEEKDAY_SET } from "@/data/content";
 
@@ -293,7 +293,7 @@ export default function RosaryPage() {
 
         {/* Voice player */}
         <div style={{ marginTop: 32, width: "100%", maxWidth: 460 }}>
-          <PlayerBar narration={narration} dark title={mode === "guided" ? "Fully guided" : "Listen"} />
+          <ListenButton narration={narration} dark label={mode === "guided" ? "Fully guided" : "Listen"} />
         </div>
       </main>
     </div>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Fleuron } from "@/components/Sacred";
 import { Kicker } from "@/components/UI";
-import { PlayerBar, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
+import { ListenButton, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { countWords } from "@/lib/words";
 import type { DailyReadings } from "@/lib/readings";
 import { localDateISO } from "@/lib/clientDate";
@@ -128,8 +128,8 @@ export default function ReadingsPage() {
         </div>
 
         {/* Audio player — listen to the Mass */}
-        <div style={{ maxWidth: 700, marginBottom: 40 }}>
-          <PlayerBar narration={narration} title="Listen to the Readings" />
+        <div style={{ marginBottom: 32 }}>
+          <ListenButton narration={narration} label="Listen to the Readings" />
         </div>
 
         {/* Reading content — max 700px centered */}

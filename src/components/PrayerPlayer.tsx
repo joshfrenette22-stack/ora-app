@@ -95,6 +95,9 @@ export function useNarration({
   // browser's Web Speech API.
   const engineRef = useRef<"browser" | "google">("browser");
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Resolves once we know which engine to use (prevents the first segment
+  // falling back to the browser voice while the cloud probe is in-flight).
+  const engineReadyRef = useRef<Promise<void>>(Promise.resolve());
 
   // Keep mutable refs in sync via effects (writing refs during render is disallowed).
   useEffect(() => { segmentsRef.current = segments; }, [segments]);
@@ -110,7 +113,7 @@ export function useNarration({
     audioRef.current = typeof Audio !== "undefined" ? new Audio() : null;
     let alive = true;
     // Prefer the cloud voice when the server reports it's configured.
-    fetch("/api/tts?probe=1")
+    engineReadyRef.current = fetch("/api/tts?probe=1")
       .then((r) => {
         if (alive && r.status === 204) {
           engineRef.current = "google";
@@ -131,6 +134,9 @@ export function useNarration({
     if (estimateRef.current) { clearInterval(estimateRef.current); estimateRef.current = null; }
   }, []);
 
+  // Core segment player — separated so playSegment can await the engine probe.
+  const startSegmentRef = useRef<(text: string, onEnd: () => void, onError: () => void) => void>(() => {});
+
   // Speak one segment through the active engine, falling back to the browser
   // voice if the cloud audio can't play.
   const playSegment = useCallback(
@@ -140,6 +146,15 @@ export function useNarration({
       stopSpeaking();
       if (audioRef.current) { audioRef.current.pause(); audioRef.current.onended = null; audioRef.current.onerror = null; audioRef.current.ontimeupdate = null; }
 
+      // Wait for the engine probe to resolve so the first segment uses the
+      // correct voice instead of falling back to the browser Siri voice.
+      engineReadyRef.current.then(() => startSegmentRef.current(text, onEnd, onError));
+    },
+    [clearEstimate],
+  );
+
+  const startSegment = useCallback(
+    (text: string, onEnd: () => void, onError: () => void) => {
       const starts = wordStarts(text);
       const wc = starts.length;
 
@@ -203,7 +218,10 @@ export function useNarration({
     [rate, voice, clearEstimate],
   );
 
+  useEffect(() => { startSegmentRef.current = startSegment; }, [startSegment]);
+
   // Clean up estimation timer on unmount.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => clearEstimate, [clearEstimate]);
 
   const playIndex = useCallback(
@@ -662,9 +680,94 @@ export function useRegisterNarration(narration: Narration, title: string, dark =
   }, [narration.status, narration.progress, narration.index, narration.wordIndex, register, unregister, narration, title, dark]);
 }
 
-/** Rendered in AppShell — shows a compact floating player above the bottom nav when audio is active. */
+/** A "Listen to X" button that pages render instead of an inline PlayerBar. */
+export function ListenButton({
+  narration,
+  label = "Listen",
+  dark = false,
+}: {
+  narration: Narration;
+  label?: string;
+  dark?: boolean;
+}) {
+  const { speed, setSpeed } = useVoice();
+  const SPEEDS = [0.75, 1, 1.25, 1.5];
+  const cycleSpeed = () => {
+    const i = SPEEDS.indexOf(speed);
+    setSpeed(SPEEDS[(i + 1) % SPEEDS.length] ?? 1);
+  };
+  const speedLabel = `${Number.isInteger(speed) ? speed : speed.toString().replace(/0+$/, "")}×`;
+  const active = narration.status !== "idle";
+  const accent = dark ? "var(--gold)" : "var(--gold-deep)";
+
+  if (!narration.supported) return null;
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <button
+        onClick={() => active ? narration.toggle() : narration.play(0)}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "8px 18px 8px 14px",
+          borderRadius: 999,
+          border: "none",
+          background: active
+            ? (dark ? "rgba(239,230,214,0.12)" : "var(--gold-faint)")
+            : (dark ? "rgba(239,230,214,0.08)" : "var(--gold-faint)"),
+          color: accent,
+          cursor: "pointer",
+          fontFamily: "var(--font-display)",
+          fontSize: 13,
+          fontWeight: 600,
+          letterSpacing: ".01em",
+          transition: "background .15s",
+        }}
+      >
+        <LucideIcon name={narration.status === "playing" ? "pause" : "play"} size={15} />
+        {active ? (narration.status === "playing" ? "Pause" : "Resume") : label}
+      </button>
+      {active && (
+        <button
+          onClick={narration.stop}
+          aria-label="Stop"
+          style={{
+            width: 32, height: 32, borderRadius: "50%", border: "none",
+            background: dark ? "rgba(239,230,214,0.08)" : "var(--stone-100)",
+            color: dark ? "rgba(239,230,214,0.5)" : "var(--stone-400)",
+            cursor: "pointer", display: "grid", placeItems: "center",
+          }}
+        >
+          <LucideIcon name="x" size={14} />
+        </button>
+      )}
+      <button
+        onClick={cycleSpeed}
+        aria-label={`Speed ${speedLabel}`}
+        style={{
+          fontFamily: "var(--font-display)",
+          fontSize: 11,
+          fontWeight: 700,
+          color: accent,
+          cursor: "pointer",
+          border: "none",
+          background: dark ? "rgba(239,230,214,0.08)" : "var(--gold-faint)",
+          borderRadius: 999,
+          padding: "5px 10px",
+          fontVariantNumeric: "tabular-nums",
+          lineHeight: 1,
+        }}
+      >
+        {speedLabel}
+      </button>
+    </div>
+  );
+}
+
+/** Rendered in AppShell — floating player above bottom nav with waveform. */
 export function FloatingPlayer() {
-  const { narration, title, dark } = useNowPlayingState();
+  const { narration, title } = useNowPlayingState();
 
   if (!narration || narration.status === "idle") return null;
 
@@ -685,33 +788,21 @@ export function FloatingPlayer() {
         background: "var(--bone-raised)",
         border: "1px solid var(--stone-200)",
         boxShadow: "0 -4px 24px rgba(45,30,18,0.12), 0 2px 8px rgba(45,30,18,0.08)",
-        overflow: "hidden",
       }}
     >
-      {/* Progress track */}
-      <div style={{ height: 3, background: "var(--stone-200)", overflow: "hidden" }}>
-        <div style={{
-          height: "100%",
-          width: `${Math.min(100, narration.progress * 100)}%`,
-          background: accent,
-          transition: playing ? "width .3s linear" : "width .15s ease",
-        }} />
-      </div>
-
-      {/* Controls */}
       <div style={{
         display: "flex",
         alignItems: "center",
         gap: 10,
-        padding: "8px 14px 10px",
+        padding: "10px 14px",
       }}>
         {/* Play/pause */}
         <button
           onClick={narration.toggle}
           aria-label={playing ? "Pause" : "Play"}
           style={{
-            width: 36,
-            height: 36,
+            width: 38,
+            height: 38,
             borderRadius: "50%",
             border: "none",
             background: "var(--gold-faint)",
@@ -725,31 +816,41 @@ export function FloatingPlayer() {
           <LucideIcon name={playing ? "pause" : "play"} size={16} />
         </button>
 
-        {/* Title */}
+        {/* Waveform + label */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            fontFamily: "var(--font-display)",
-            fontSize: 12.5,
-            fontWeight: 600,
-            color: "var(--ink)",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            lineHeight: 1.2,
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            gap: 8,
+            marginBottom: 4,
           }}>
-            {narration.current?.label ?? title}
-          </div>
-          {count > 1 && (
             <div style={{
               fontFamily: "var(--font-display)",
-              fontSize: 10,
-              color: "var(--stone-400)",
-              fontVariantNumeric: "tabular-nums",
-              marginTop: 1,
+              fontSize: 12,
+              fontWeight: 600,
+              color: "var(--ink)",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              lineHeight: 1,
             }}>
-              {index + 1}/{count}
+              {narration.current?.label ?? title}
             </div>
-          )}
+            {count > 1 && (
+              <div style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 10,
+                color: "var(--stone-400)",
+                flexShrink: 0,
+                fontVariantNumeric: "tabular-nums",
+                lineHeight: 1,
+              }}>
+                {index + 1}/{count}
+              </div>
+            )}
+          </div>
+          <Waveform progress={narration.progress} playing={playing} />
         </div>
 
         {/* Skip */}
@@ -760,26 +861,26 @@ export function FloatingPlayer() {
               disabled={index === 0}
               aria-label="Previous"
               style={{
-                width: 30, height: 30, borderRadius: "50%", border: "none",
+                width: 28, height: 28, borderRadius: "50%", border: "none",
                 background: "transparent", cursor: index === 0 ? "default" : "pointer",
                 color: index === 0 ? "var(--stone-300)" : "var(--ink-500)",
                 display: "grid", placeItems: "center",
               }}
             >
-              <LucideIcon name="skip-back" size={14} />
+              <LucideIcon name="skip-back" size={13} />
             </button>
             <button
               onClick={narration.next}
               disabled={index >= count - 1}
               aria-label="Next"
               style={{
-                width: 30, height: 30, borderRadius: "50%", border: "none",
+                width: 28, height: 28, borderRadius: "50%", border: "none",
                 background: "transparent", cursor: index >= count - 1 ? "default" : "pointer",
                 color: index >= count - 1 ? "var(--stone-300)" : "var(--ink-500)",
                 display: "grid", placeItems: "center",
               }}
             >
-              <LucideIcon name="skip-forward" size={14} />
+              <LucideIcon name="skip-forward" size={13} />
             </button>
           </div>
         )}
@@ -789,13 +890,14 @@ export function FloatingPlayer() {
           onClick={narration.stop}
           aria-label="Stop"
           style={{
-            width: 30, height: 30, borderRadius: "50%", border: "none",
+            width: 28, height: 28, borderRadius: "50%", border: "none",
             background: "transparent", cursor: "pointer",
             color: "var(--stone-400)",
             display: "grid", placeItems: "center",
+            flexShrink: 0,
           }}
         >
-          <LucideIcon name="x" size={16} />
+          <LucideIcon name="x" size={15} />
         </button>
       </div>
     </div>

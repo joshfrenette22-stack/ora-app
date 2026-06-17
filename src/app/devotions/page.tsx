@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { Fleuron } from "@/components/Sacred";
 import { Kicker } from "@/components/UI";
-import { PlayerBar, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
+import { ListenButton, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { LucideIcon } from "@/components/UI";
 import { Illustration } from "@/components/Illustration";
 import { DEVOTION_ART } from "@/lib/illustrations";
@@ -81,7 +81,7 @@ function DevotionCard({ dkey, lucide }: { dkey: DevotionKey; lucide: string }) {
       </div>
 
       <div style={{ marginBottom: 22 }}>
-        <PlayerBar narration={narration} title={`Pray ${d.title} aloud`} />
+        <ListenButton narration={narration} label={`Pray ${d.title}`} />
       </div>
 
       <div>
