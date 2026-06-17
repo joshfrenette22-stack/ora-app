@@ -179,9 +179,14 @@ export function useNarration({
         audioCtxRef.current = new Ctx();
       }
       const ctx = audioCtxRef.current;
+      if (ctx.state === "suspended") void ctx.resume();
       fetch(url)
         .then((r) => r.arrayBuffer())
-        .then((buf) => ctx.decodeAudioData(buf))
+        // Callback form too — some iOS Safari versions only support that one.
+        .then((buf) => new Promise<AudioBuffer>((res, rej) => {
+          const p = ctx.decodeAudioData(buf, res, rej);
+          if (p && typeof p.then === "function") p.then(res, rej);
+        }))
         .then((audio) => {
           if (gen !== peaksGenRef.current) return; // superseded
           const ch = audio.getChannelData(0);
