@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Cross, Fleuron } from "@/components/Sacred";
 import { Illustration } from "@/components/Illustration";
-import { MYSTERY_ART } from "@/lib/illustrations";
+import { MYSTERY_ART, type IllustrationKey } from "@/lib/illustrations";
 import { Btn, LucideIcon } from "@/components/UI";
 import { ListenButton, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { countWords } from "@/lib/words";
@@ -122,7 +122,7 @@ export default function RosaryPage() {
     segments,
     onSegmentChange: (i) => { setMysteryIdx(Math.floor(i / TOTAL_BEADS)); setBead(i % TOTAL_BEADS); },
   });
-  useRegisterNarration(narration, mode === "guided" ? "Fully guided" : "Listen", true);
+  useRegisterNarration(narration, mode === "guided" ? "Fully guided" : "Listen", true, MYSTERY_ART[activeSet] as IllustrationKey | undefined);
 
   // Fully-guided mode plays the whole rosary aloud, auto-advancing the text.
   useEffect(() => {

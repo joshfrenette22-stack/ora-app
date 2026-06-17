@@ -40,7 +40,7 @@ export default function SaintsPage() {
   }, [saint]);
 
   const narration = useNarration({ segments });
-  useRegisterNarration(narration, `Listen · ${saint.name}`);
+  useRegisterNarration(narration, `Listen · ${saint.name}`, false, "splash-altar");
   const speaking = narration.status !== "idle";
   // The "life" segment reads "<name>. <bio>", so the bio starts after the name.
   const nameWords = countWords(saint.name);

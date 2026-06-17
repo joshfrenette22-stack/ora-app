@@ -6,7 +6,7 @@ import { Kicker } from "@/components/UI";
 import { ListenButton, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { LucideIcon } from "@/components/UI";
 import { Illustration } from "@/components/Illustration";
-import { DEVOTION_ART } from "@/lib/illustrations";
+import { DEVOTION_ART, type IllustrationKey } from "@/lib/illustrations";
 import { DEVOTIONS } from "@/data/content";
 
 type DevotionKey = keyof typeof DEVOTIONS;
@@ -55,7 +55,7 @@ function DevotionCard({ dkey, lucide }: { dkey: DevotionKey; lucide: string }) {
   const d = DEVOTIONS[dkey];
   const segments = useMemo(() => segmentsFor(d.blocks, d.title), [d]);
   const narration = useNarration({ segments });
-  useRegisterNarration(narration, `Pray ${d.title} aloud`);
+  useRegisterNarration(narration, `Pray ${d.title} aloud`, false, DEVOTION_ART[dkey] as IllustrationKey | undefined);
   const speaking = narration.status !== "idle";
 
   // Each non-rule block maps to one narration segment, in order.

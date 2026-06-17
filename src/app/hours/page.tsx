@@ -40,7 +40,7 @@ export default function HoursPage() {
   );
 
   const narration = useNarration({ segments, onSegmentChange: setActivePart });
-  useRegisterNarration(narration, `Pray ${hour.name} aloud`);
+  useRegisterNarration(narration, `Pray ${hour.name} aloud`, false, HOUR_ART[hour.name]);
 
   // Switching hours resets the office narration (reset() clears the highlight
   // via onSegmentChange).

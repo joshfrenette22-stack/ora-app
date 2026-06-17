@@ -666,18 +666,21 @@ export function PrayerPlayer({
 
 // ── Floating mini-player (Spotify-style, above bottom nav) ────────────────────
 
-import { useNowPlaying, useNowPlayingState } from "./NowPlayingProvider";
+import { useNowPlaying, useNowPlayingLive } from "./NowPlayingProvider";
+import type { IllustrationKey } from "@/lib/illustrations";
 
 /** Pages call this to register their narration for the floating player. */
-export function useRegisterNarration(narration: Narration, title: string, dark = false) {
+export function useRegisterNarration(narration: Narration, title: string, dark = false, illustration?: IllustrationKey) {
   const { register, unregister } = useNowPlaying();
+  // Keep a mutable ref so the getter always returns the latest narration
+  // without needing to re-register on every render.
+  const narrationRef = useRef(narration);
+  useEffect(() => { narrationRef.current = narration; });
+  const getterRef = useRef(() => narrationRef.current);
   useEffect(() => {
-    register(narration, title, dark);
-    return () => unregister(narration);
-    // Re-register whenever status/progress/wordIndex change so the floating
-    // player stays in sync (the store does a shallow replace).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [narration.status, narration.progress, narration.index, narration.wordIndex, register, unregister, narration, title, dark]);
+    register(getterRef.current, title, dark, illustration);
+    return () => unregister(getterRef.current);
+  }, [register, unregister, title, dark, illustration]);
 }
 
 /** A "Listen to X" button that pages render instead of an inline PlayerBar. */
@@ -778,17 +781,27 @@ export function ListenButton({
 
 /** Rendered in AppShell — floating player above bottom nav with waveform. */
 export function FloatingPlayer() {
-  const { narration, title } = useNowPlayingState();
+  const { narration, title, illustration } = useNowPlayingLive();
+  const [expanded, setExpanded] = useState(false);
 
-  if (!narration || narration.status === "idle") return null;
+  if (!narration || narration.status === "idle") {
+    // Close full-screen if playback stopped
+    if (expanded) setExpanded(false);
+    return null;
+  }
 
   const { status, index, count } = narration;
   const accent = "var(--gold-deep)";
   const playing = status === "playing";
 
+  if (expanded) {
+    return <FullScreenPlayer narration={narration} title={title} illustration={illustration} onCollapse={() => setExpanded(false)} />;
+  }
+
   return (
     <div
       className="pw-floating-player"
+      onClick={() => setExpanded(true)}
       style={{
         position: "fixed",
         left: 8,
@@ -799,6 +812,7 @@ export function FloatingPlayer() {
         background: "var(--bone-raised)",
         border: "1px solid var(--stone-200)",
         boxShadow: "0 -4px 24px rgba(45,30,18,0.12), 0 2px 8px rgba(45,30,18,0.08)",
+        cursor: "pointer",
       }}
     >
       <div style={{
@@ -809,7 +823,7 @@ export function FloatingPlayer() {
       }}>
         {/* Play/pause */}
         <button
-          onClick={narration.toggle}
+          onClick={(e) => { e.stopPropagation(); narration.toggle(); }}
           aria-label={playing ? "Pause" : "Play"}
           style={{
             width: 38,
@@ -868,7 +882,7 @@ export function FloatingPlayer() {
         {count > 1 && (
           <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
             <button
-              onClick={narration.prev}
+              onClick={(e) => { e.stopPropagation(); narration.prev(); }}
               disabled={index === 0}
               aria-label="Previous"
               style={{
@@ -881,7 +895,7 @@ export function FloatingPlayer() {
               <LucideIcon name="skip-back" size={13} />
             </button>
             <button
-              onClick={narration.next}
+              onClick={(e) => { e.stopPropagation(); narration.next(); }}
               disabled={index >= count - 1}
               aria-label="Next"
               style={{
@@ -898,7 +912,7 @@ export function FloatingPlayer() {
 
         {/* Stop */}
         <button
-          onClick={narration.stop}
+          onClick={(e) => { e.stopPropagation(); narration.stop(); }}
           aria-label="Stop"
           style={{
             width: 28, height: 28, borderRadius: "50%", border: "none",
@@ -910,6 +924,340 @@ export function FloatingPlayer() {
         >
           <LucideIcon name="x" size={15} />
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Full-screen "Now Playing" view ────────────────────────────────────────────
+
+import { Illustration } from "./Illustration";
+import { Cross, Fleuron } from "./Sacred";
+
+const FS_WAVE_BARS = 80;
+const FS_WAVE_HEIGHTS = Array.from({ length: FS_WAVE_BARS }, (_, i) => {
+  const t = i / (FS_WAVE_BARS - 1);
+  const env = Math.sin(Math.PI * t) ** 0.5;
+  const n1 = seededRand(i * 3 + 7) * 0.5;
+  const n2 = seededRand(i * 7 + 13) * 0.3;
+  const n3 = seededRand(i * 11 + 31) * 0.2;
+  const spike = seededRand(i * 17 + 5) > 0.82 ? 0.3 : 0;
+  const raw = 0.18 + env * (n1 + n2 + n3 + spike);
+  return Math.max(0.06, Math.min(1, raw));
+});
+
+function FullScreenWaveform({ progress, playing }: { progress: number; playing: boolean }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 2, height: 48, padding: "0 4px" }}>
+      {FS_WAVE_HEIGHTS.map((h, i) => {
+        const frac = i / (FS_WAVE_BARS - 1);
+        const isPlayed = frac <= progress;
+        const isHead = playing && Math.abs(frac - progress) < 1 / FS_WAVE_BARS;
+        return (
+          <span
+            key={i}
+            style={{
+              flex: 1,
+              minWidth: 2,
+              maxWidth: 4,
+              height: `${Math.round(h * 100)}%`,
+              borderRadius: 1.5,
+              background: isHead ? "var(--gold)" : isPlayed ? "rgba(239,230,214,0.7)" : "rgba(239,230,214,0.18)",
+              opacity: isHead ? 1 : isPlayed ? 0.9 : 0.5,
+              transition: "background .12s, opacity .12s",
+              transform: playing && isHead ? "scaleY(1.2)" : undefined,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function FullScreenPlayer({
+  narration,
+  title,
+  illustration,
+  onCollapse,
+}: {
+  narration: Narration;
+  title: string;
+  illustration?: IllustrationKey;
+  onCollapse: () => void;
+}) {
+  const { speed, setSpeed } = useVoice();
+  const SPEEDS = [0.75, 1, 1.25, 1.5];
+  const cycleSpeed = () => {
+    const i = SPEEDS.indexOf(speed);
+    setSpeed(SPEEDS[(i + 1) % SPEEDS.length] ?? 1);
+  };
+  const speedLabel = `${Number.isInteger(speed) ? speed : speed.toString().replace(/0+$/, "")}×`;
+
+  const { status, index, count, current } = narration;
+  const playing = status === "playing";
+
+  return (
+    <div
+      className="pw-fullscreen-player"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 200,
+        background: "var(--surface-ink, #1A130D)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        overflow: "hidden",
+      }}
+    >
+      {/* Background ambient illustration */}
+      {illustration && (
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          display: "grid",
+          placeItems: "center",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}>
+          <Illustration
+            name={illustration}
+            size={420}
+            invertOnDark
+            opacity={0.08}
+            feather
+          />
+        </div>
+      )}
+
+      {/* Top bar: chevron-down + title + speed */}
+      <div style={{
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "env(safe-area-inset-top, 16px) 20px 0",
+        paddingTop: "max(env(safe-area-inset-top, 16px), 16px)",
+        position: "relative",
+        zIndex: 1,
+      }}>
+        <button
+          onClick={onCollapse}
+          aria-label="Collapse player"
+          style={{
+            width: 44, height: 44, borderRadius: "50%", border: "none",
+            background: "transparent", cursor: "pointer",
+            color: "rgba(239,230,214,0.6)",
+            display: "grid", placeItems: "center",
+          }}
+        >
+          <LucideIcon name="chevron-down" size={24} />
+        </button>
+        <div style={{
+          fontFamily: "var(--font-display)",
+          fontSize: 11,
+          fontWeight: 600,
+          letterSpacing: ".04em",
+          color: "rgba(239,230,214,0.5)",
+          textAlign: "center",
+        }}>
+          NOW PLAYING
+        </div>
+        <button
+          onClick={cycleSpeed}
+          aria-label={`Speed ${speedLabel}`}
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: 12,
+            fontWeight: 700,
+            color: "var(--gold)",
+            cursor: "pointer",
+            border: "1px solid rgba(239,230,214,0.12)",
+            background: "rgba(239,230,214,0.06)",
+            borderRadius: 999,
+            padding: "7px 14px",
+            fontVariantNumeric: "tabular-nums",
+            lineHeight: 1,
+          }}
+        >
+          {speedLabel}
+        </button>
+      </div>
+
+      {/* Central artwork area */}
+      <div style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 0,
+        width: "100%",
+        maxWidth: 400,
+        padding: "0 32px",
+        position: "relative",
+        zIndex: 1,
+      }}>
+        {/* Illustration card */}
+        <div style={{
+          width: "100%",
+          aspectRatio: "1",
+          maxWidth: 320,
+          borderRadius: 20,
+          background: "rgba(239,230,214,0.04)",
+          border: "1px solid rgba(239,230,214,0.08)",
+          display: "grid",
+          placeItems: "center",
+          marginBottom: 36,
+          overflow: "hidden",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
+        }}>
+          {illustration ? (
+            <Illustration
+              name={illustration}
+              size={260}
+              invertOnDark
+              opacity={0.55}
+              feather={false}
+            />
+          ) : (
+            <Cross size={100} style={{ color: "rgba(239,230,214,0.15)" }} />
+          )}
+        </div>
+
+        {/* Title + segment label */}
+        <div style={{ textAlign: "center", width: "100%", marginBottom: 8 }}>
+          <div style={{
+            fontFamily: "var(--font-serif)",
+            fontWeight: 500,
+            fontSize: 26,
+            color: "var(--gold-bright, #EFE6D6)",
+            letterSpacing: "-.01em",
+            lineHeight: 1.2,
+            marginBottom: 6,
+          }}>
+            {title}
+          </div>
+          {current?.label && current.label !== title && (
+            <div style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 15,
+              color: "rgba(239,230,214,0.5)",
+              lineHeight: 1.4,
+            }}>
+              {current.label}
+            </div>
+          )}
+          {count > 1 && (
+            <div style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 11,
+              color: "rgba(239,230,214,0.35)",
+              marginTop: 6,
+              fontVariantNumeric: "tabular-nums",
+            }}>
+              {index + 1} of {count}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bottom controls */}
+      <div style={{
+        width: "100%",
+        maxWidth: 400,
+        padding: "0 32px",
+        paddingBottom: "max(env(safe-area-inset-bottom, 24px), 32px)",
+        position: "relative",
+        zIndex: 1,
+      }}>
+        {/* Waveform progress */}
+        <div style={{ marginBottom: 24 }}>
+          <FullScreenWaveform progress={narration.progress} playing={playing} />
+        </div>
+
+        {/* Playback controls */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 28,
+        }}>
+          {/* Previous */}
+          <button
+            onClick={() => narration.prev()}
+            disabled={index === 0}
+            aria-label="Previous"
+            style={{
+              width: 44, height: 44, borderRadius: "50%", border: "none",
+              background: "transparent", cursor: index === 0 ? "default" : "pointer",
+              color: index === 0 ? "rgba(239,230,214,0.15)" : "rgba(239,230,214,0.6)",
+              display: "grid", placeItems: "center",
+            }}
+          >
+            <LucideIcon name="skip-back" size={22} />
+          </button>
+
+          {/* Play/Pause — large central button */}
+          <button
+            onClick={() => narration.toggle()}
+            aria-label={playing ? "Pause" : "Play"}
+            style={{
+              width: 68,
+              height: 68,
+              borderRadius: "50%",
+              border: "none",
+              background: "var(--gold-bright, #EFE6D6)",
+              color: "var(--surface-ink, #1A130D)",
+              cursor: "pointer",
+              display: "grid",
+              placeItems: "center",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+            }}
+          >
+            <LucideIcon name={playing ? "pause" : "play"} size={28} />
+          </button>
+
+          {/* Next */}
+          <button
+            onClick={() => narration.next()}
+            disabled={index >= count - 1}
+            aria-label="Next"
+            style={{
+              width: 44, height: 44, borderRadius: "50%", border: "none",
+              background: "transparent", cursor: index >= count - 1 ? "default" : "pointer",
+              color: index >= count - 1 ? "rgba(239,230,214,0.15)" : "rgba(239,230,214,0.6)",
+              display: "grid", placeItems: "center",
+            }}
+          >
+            <LucideIcon name="skip-forward" size={22} />
+          </button>
+        </div>
+
+        {/* Stop button below controls */}
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
+          <button
+            onClick={() => { narration.stop(); onCollapse(); }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "10px 22px",
+              borderRadius: 999,
+              border: "1px solid rgba(239,230,214,0.12)",
+              background: "rgba(239,230,214,0.06)",
+              color: "rgba(239,230,214,0.5)",
+              cursor: "pointer",
+              fontFamily: "var(--font-display)",
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: ".02em",
+            }}
+          >
+            <LucideIcon name="square" size={12} />
+            Stop
+          </button>
+        </div>
       </div>
     </div>
   );

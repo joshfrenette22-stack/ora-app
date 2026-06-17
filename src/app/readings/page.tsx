@@ -75,7 +75,7 @@ export default function ReadingsPage() {
     segments,
     onSegmentChange: (i) => setActive(order[i]),
   });
-  useRegisterNarration(narration, "Listen to the Readings");
+  useRegisterNarration(narration, "Listen to the Readings", false, "section-daily-mass");
 
   // Word-highlight bookkeeping: the spoken segment reads "<title>. <refrain> <body>",
   // so the body's words start after the title (and refrain, on psalms).

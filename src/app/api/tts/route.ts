@@ -15,9 +15,9 @@ export async function GET(request: NextRequest) {
 
   const text = params.get("text")?.trim();
   if (!text) return new Response("Missing text", { status: 400 });
-  // Cap length: a single prayer/reading segment is well under this, and it
-  // bounds the cost of any one synthesis request to the paid TTS API.
-  if (text.length > 5000) return new Response("Text too long", { status: 413 });
+  // Cap length: long readings are split into chunks server-side (see googleTts),
+  // but we still guard against abuse.
+  if (text.length > 15000) return new Response("Text too long", { status: 413 });
   const rate = Number(params.get("rate")) || undefined;
   const voice = params.get("voice") ?? undefined;
 
