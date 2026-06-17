@@ -50,7 +50,9 @@ export default function SettingsPage() {
     } catch {
       /* best effort — reload regardless */
     }
-    window.location.reload();
+    // Navigate to a unique URL so iOS (which caches the installed app's shell
+    // and ignores a plain reload) is forced to fetch the latest build.
+    window.location.replace(`/?_r=${Date.now()}`);
   }
 
   useEffect(() => {
