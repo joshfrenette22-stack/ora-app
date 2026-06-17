@@ -118,6 +118,10 @@ export function useNarration({
   const [envelope, setEnvelope] = useState<number[] | null>(null);
   const envGenRef = useRef(0);
   const fracRef = useRef(0); // latest within-segment playback fraction
+  // The decoded buffer's exact duration. iOS often reports audio.duration as
+  // Infinity/NaN for streamed MP3, which froze the position at 0 (flat wave,
+  // stuck timestamp). The decoded duration is always reliable.
+  const decodedDurRef = useRef(0);
   // Whether speech/audio is currently producing sound (drives the animated
   // fallback level for the browser voice, which has no analysable stream).
   const soundingRef = useRef(false);
@@ -191,6 +195,7 @@ export function useNarration({
         }))
         .then((audio) => {
           if (gen !== envGenRef.current) return; // superseded
+          decodedDurRef.current = audio.duration; // reliable duration for position
           const ch = audio.getChannelData(0);
           const n = Math.max(8, Math.round(audio.duration * POINTS_PER_SEC));
           const bucket = Math.floor(ch.length / n) || 1;
@@ -261,6 +266,7 @@ export function useNarration({
         // New segment → drop the old waveform and decode the real one.
         const gen = ++envGenRef.current;
         setEnvelope(null);
+        decodedDurRef.current = 0;
         decodeEnvelope(url, gen);
         let settled = false;
         const finish = () => { if (!settled) { settled = true; soundingRef.current = false; onEnd(); } };
@@ -278,9 +284,11 @@ export function useNarration({
         a.onended = finish;
         a.onerror = fallback;
         a.ontimeupdate = () => {
-          if (a.duration > 0) {
-            setLoading(false);
-            const f = a.currentTime / a.duration;
+          setLoading(false);
+          // Prefer the decoded duration; audio.duration can be Infinity/NaN on iOS.
+          const dur = decodedDurRef.current > 0 ? decodedDurRef.current : (Number.isFinite(a.duration) ? a.duration : 0);
+          if (dur > 0) {
+            const f = Math.min(1, a.currentTime / dur);
             setFrac(f);
             if (wc > 0) setWordIndex(Math.min(wc - 1, Math.floor(f * wc)));
           }
@@ -413,7 +421,8 @@ export function useNarration({
   const getPlayFrac = useCallback(() => {
     if (engineRef.current === "google") {
       const a = audioRef.current;
-      if (a && a.duration > 0) return Math.min(1, a.currentTime / a.duration);
+      const dur = decodedDurRef.current > 0 ? decodedDurRef.current : (a && Number.isFinite(a.duration) ? a.duration : 0);
+      if (a && dur > 0) return Math.min(1, a.currentTime / dur);
     }
     return fracRef.current;
   }, []);
@@ -539,11 +548,13 @@ function useScopeBars(
       if (t - last > 33) {
         last = t;
         if (envelope && envelope.length && getPlayFrac) {
-          // Window of the real envelope ending at the current playback position.
+          // Window of the real envelope around the playback position — mostly the
+          // recent past with a little of what's coming, so it's always populated.
           const idx = Math.floor(getPlayFrac() * envelope.length);
+          const lookahead = Math.floor(bars * 0.22);
           const out = new Array(bars);
           for (let i = 0; i < bars; i++) {
-            const e = idx - bars + 1 + i;
+            const e = idx - bars + 1 + lookahead + i;
             out[i] = e >= 0 && e < envelope.length ? envelope[e] : 0;
           }
           setFrame(out);
