@@ -82,7 +82,7 @@ export function FeatureCard({ kicker, title, meta, onClick, motif }: {
   motif?: ReactNode;
 }) {
   return (
-    <button onClick={onClick} style={{ position: "relative", overflow: "hidden", textAlign: "left", cursor: "pointer", background: "var(--surface-ink)", color: "var(--gold-bright)", borderRadius: 18, padding: "30px 34px", boxShadow: "var(--shadow-lg)", border: "none", display: "flex", alignItems: "center", gap: 20, width: "100%" }}>
+    <button className="pw-card" onClick={onClick} style={{ position: "relative", overflow: "hidden", textAlign: "left", cursor: "pointer", background: "var(--surface-ink)", color: "var(--gold-bright)", borderRadius: 18, padding: "30px 34px", boxShadow: "var(--shadow-lg)", border: "none", display: "flex", alignItems: "center", gap: 20, width: "100%" }}>
       {motif && <div style={{ position: "absolute", right: -30, top: -30, opacity: 0.1, color: "var(--gold-bright)" }}>{motif}</div>}
       <div style={{ flex: 1, position: "relative" }}>
         <Kicker style={{ color: "var(--gold-bright)", opacity: 0.85 }}>{kicker}</Kicker>
@@ -104,7 +104,7 @@ export function SurfaceCard({ kicker, title, meta, onClick, lucide }: {
   lucide?: string;
 }) {
   return (
-    <button onClick={onClick} style={{ textAlign: "left", cursor: "pointer", background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 18, padding: "24px 26px", boxShadow: "var(--shadow-sm)", display: "flex", flexDirection: "column", gap: 14, width: "100%" }}>
+    <button className="pw-card" onClick={onClick} style={{ textAlign: "left", cursor: "pointer", background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 18, padding: "24px 26px", boxShadow: "var(--shadow-sm)", display: "flex", flexDirection: "column", gap: 14, width: "100%" }}>
       <span style={{ width: 50, height: 50, borderRadius: "50%", background: "var(--gold-faint)", color: "var(--gold-deep)", display: "grid", placeItems: "center" }}>
         {lucide ? <LucideIcon name={lucide} size={24} /> : <Cross size={22} />}
       </span>

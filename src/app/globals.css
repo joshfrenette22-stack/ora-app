@@ -1,11 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&display=swap');
 @import "tailwindcss";
 
 :root {
-  /* Type families — one warm modern sans, varied by weight */
+  /* Type — clean sans for UI/body, a classy serif for headings & drop caps */
   --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-ornament: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-ornament: 'Fraunces', Georgia, serif;
 
   /* Warm neutral surfaces */
   --bone: #EFE9DF;          /* page background — warm cream */
@@ -34,6 +35,7 @@
   --lit-red: #B0432E;
   --lit-rose: #C98AA0;
   --lit-white: var(--gold);
+  --lit-festal: #C0982F;    /* white/festal days — a dignified, legible gold */
   --lit-black: #2C2823;
 
   /* Functional */
@@ -111,6 +113,12 @@ body {
   font-family: var(--font-body);
 }
 
+html { scroll-behavior: smooth; }
+
+/* Clean keyboard-focus ring */
+:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 8px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
 /* Drop cap */
 .pw-dropcap::first-letter {
   font-family: var(--font-ornament);
@@ -172,12 +180,45 @@ body {
   .pw-rosary-aside { display: none !important; }
   .pw-rosary-sets { display: flex; }
   .pw-rosary-main { padding: 28px 18px 32px !important; justify-content: flex-start !important; }
+
+  /* Calendar: columns are too narrow for feast names on phones — show the
+     liturgical-colour dot only; full names remain on desktop. */
+  .pw-cal-name { display: none !important; }
 }
 
 /* Waveform breathing while audio plays */
 @keyframes oraWave { 0%, 100% { transform: scaleY(0.95); } 50% { transform: scaleY(1.05); } }
 .ora-wave-live { animation: oraWave 1.7s var(--ease-inout) infinite; transform-origin: center; }
 @media (prefers-reduced-motion: reduce) { .ora-wave-live { animation: none; } }
+
+/* Entrance animations — gentle rise on each screen, classy blur-reveal for headings */
+@keyframes oraRise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes oraReveal { from { opacity: 0; transform: translateY(10px); filter: blur(6px); } to { opacity: 1; transform: none; filter: blur(0); } }
+.pw-scroll > * { animation: oraRise .5s var(--ease-sacred) both; }
+.pw-reveal { animation: oraReveal .85s var(--ease-sacred) .08s both; }
+.pw-reveal-2 { animation: oraReveal .85s var(--ease-sacred) .18s both; }
+.pw-reveal-3 { animation: oraReveal .85s var(--ease-sacred) .28s both; }
+@media (prefers-reduced-motion: reduce) {
+  .pw-scroll > *, .pw-reveal, .pw-reveal-2, .pw-reveal-3 { animation: none; }
+}
+
+/* Circular icon buttons — subtle tint on hover, press on tap */
+.pw-iconbtn { transition: background .15s, color .15s, transform .15s; }
+@media (hover: hover) {
+  .pw-iconbtn:hover { background: var(--gold-faint) !important; color: var(--gold-deep) !important; }
+}
+.pw-iconbtn:active { transform: scale(.94); }
+@media (prefers-reduced-motion: reduce) { .pw-iconbtn:active { transform: none; } }
+
+/* Tappable cards — a gentle lift on hover, a soft press on tap */
+.pw-card { transition: transform .2s var(--ease-sacred), box-shadow .2s var(--ease-sacred); }
+@media (hover: hover) {
+  .pw-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+}
+.pw-card:active { transform: translateY(0) scale(.99); }
+@media (prefers-reduced-motion: reduce) {
+  .pw-card, .pw-card:hover, .pw-card:active { transform: none; transition: none; }
+}
 
 /* Scrollbar styling */
 ::-webkit-scrollbar { width: 6px; }

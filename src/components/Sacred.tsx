@@ -61,17 +61,66 @@ export function RoseWindow({ size = 200, strokeWidth = 1.2, style = {} }: { size
   );
 }
 
-export function HaloRays({ size = 150, style = {} }: { size?: number; style?: React.CSSProperties }) {
+/** Calm concentric-ring halo (no spikes) — a quiet glow behind a motif. */
+export function SoftHalo({ size = 150, style = {} }: { size?: number; style?: React.CSSProperties }) {
   return (
     <svg viewBox="0 0 200 200" width={size} height={size} fill="none" stroke="currentColor" style={{ display: "block", ...style }} aria-hidden="true">
-      {Array.from({ length: 24 }).map((_, i) => {
-        const a = ((i * 15 - 90) * Math.PI) / 180;
-        return (
-          <line key={i} x1={100} y1={100} x2={100 + (i % 2 ? 78 : 94) * Math.cos(a)} y2={100 + (i % 2 ? 78 : 94) * Math.sin(a)} strokeWidth={i % 2 ? 1 : 2.4} strokeOpacity={i % 2 ? 0.5 : 0.9} strokeLinecap="round" />
-        );
-      })}
-      <circle cx="100" cy="100" r="26" strokeWidth="2" />
+      <circle cx="100" cy="100" r="92" strokeWidth="1" strokeOpacity="0.22" />
+      <circle cx="100" cy="100" r="74" strokeWidth="1" strokeOpacity="0.38" />
+      <circle cx="100" cy="100" r="56" strokeWidth="1.4" strokeOpacity="0.6" />
     </svg>
+  );
+}
+
+/**
+ * A gilded devotional medallion — a religious-medal style emblem (soft disk,
+ * fine rim, beaded inner border, crowning cross) holding a saint's monogram.
+ * Replaces the old sunburst crest with something quieter and more Catholic.
+ */
+export function SaintMedallion({ monogram, size = 140, style = {} }: { monogram: string; size?: number; style?: React.CSSProperties }) {
+  const beads = 44;
+  const gid = `oraMedal-${monogram.charCodeAt(0) || 0}`;
+  return (
+    <div style={{ position: "relative", width: size, height: size, display: "grid", placeItems: "center", ...style }}>
+      <svg viewBox="0 0 200 200" width={size} height={size} aria-hidden="true" style={{ position: "absolute", inset: 0 }}>
+        <defs>
+          <radialGradient id={gid} cx="50%" cy="40%" r="66%">
+            <stop offset="0%" stopColor="var(--gold-bright)" />
+            <stop offset="100%" stopColor="var(--gold-faint)" />
+          </radialGradient>
+        </defs>
+        {/* medal disk */}
+        <circle cx="100" cy="104" r="80" fill={`url(#${gid})`} />
+        {/* rim — two fine gilt rings */}
+        <circle cx="100" cy="104" r="80" fill="none" stroke="var(--gold)" strokeWidth="2" strokeOpacity="0.9" />
+        <circle cx="100" cy="104" r="85" fill="none" stroke="var(--gold)" strokeWidth="1" strokeOpacity="0.32" />
+        {/* beaded inner border */}
+        {Array.from({ length: beads }).map((_, i) => {
+          const a = ((i * 360) / beads - 90) * (Math.PI / 180);
+          return <circle key={i} cx={100 + 68 * Math.cos(a)} cy={104 + 68 * Math.sin(a)} r="1.5" fill="var(--gold-deep)" fillOpacity="0.5" />;
+        })}
+        {/* crowning cross */}
+        <g fill="var(--gold)">
+          <rect x="96.8" y="5" width="6.4" height="21" rx="1.2" />
+          <rect x="90.5" y="11.5" width="19" height="5.6" rx="1.2" />
+        </g>
+      </svg>
+      <span
+        style={{
+          fontFamily: "var(--font-ornament)",
+          fontSize: size * 0.36,
+          fontWeight: 500,
+          color: "var(--gold-deep)",
+          lineHeight: 1,
+          position: "relative",
+          zIndex: 1,
+          userSelect: "none",
+          marginTop: size * 0.03,
+        }}
+      >
+        {monogram}
+      </span>
+    </div>
   );
 }
 

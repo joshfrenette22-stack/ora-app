@@ -7,6 +7,17 @@ import { Fleuron, RoseWindow } from "@/components/Sacred";
 import { SurfaceCard, FeatureCard } from "@/components/UI";
 import { Sun } from "lucide-react";
 import { localDateISO } from "@/lib/clientDate";
+import { HOURS, currentHourName, WEEKDAY_SET } from "@/data/content";
+
+type Hour = typeof HOURS[number];
+
+// Which weekdays each set of mysteries is traditionally prayed.
+const SET_DAYS: Record<string, string> = {
+  Joyful: "Monday · Saturday",
+  Sorrowful: "Tuesday · Friday",
+  Glorious: "Wednesday · Sunday",
+  Luminous: "Thursday",
+};
 
 interface TodayData {
   liturgical: { label: string; badgeSeason: string };
@@ -41,6 +52,8 @@ export default function TodayPage() {
   const router = useRouter();
   const [data, setData] = useState<TodayData>(FALLBACK);
   const [greeting, setGreeting] = useState<string | null>(null);
+  const [hour, setHour] = useState<Hour | null>(null);
+  const [rosarySet, setRosarySet] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -52,10 +65,13 @@ export default function TodayPage() {
   }, []);
 
   useEffect(() => {
-    // Time-of-day greeting, resolved on the client to avoid a hydration mismatch.
+    // Time-of-day greeting + nearest hour, resolved on the client to avoid a
+    // hydration mismatch.
     const h = new Date().getHours();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setGreeting(h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening");
+    setHour(HOURS.find((x) => x.name === currentHourName()) ?? null);
+    setRosarySet(WEEKDAY_SET[new Date().getDay()]);
   }, []);
 
   const { liturgical, verse, saint, readings } = data;
@@ -69,7 +85,7 @@ export default function TodayPage() {
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 88% 0%, rgba(210,107,67,0.18) 0%, transparent 58%)", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, color: "rgba(239,230,214,0.6)" }}>{greeting ?? "Welcome"}</div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 700, color: "#F6F0E6", lineHeight: 1.22, letterSpacing: "-.01em", margin: "8px 0 0" }}>
+          <h1 className="pw-reveal" style={{ fontFamily: "var(--font-serif)", fontSize: 28, fontWeight: 500, color: "#F6F0E6", lineHeight: 1.2, letterSpacing: "-.01em", margin: "8px 0 0" }}>
             How would you like to pray today?
           </h1>
           <p style={{ fontFamily: "var(--font-body)", fontSize: 15, lineHeight: 1.6, color: "rgba(239,230,214,0.72)", margin: "12px 0 0" }}>
@@ -94,16 +110,16 @@ export default function TodayPage() {
 
       {/* Hero verse */}
       <div style={{ textAlign: "center", marginBottom: 36 }}>
-        <blockquote style={{
-          fontFamily: "var(--font-body)",
+        <blockquote className="pw-reveal" style={{
+          fontFamily: "var(--font-serif)",
           fontStyle: "italic",
           fontSize: 30,
-          lineHeight: 1.48,
+          lineHeight: 1.42,
           color: "var(--ink)",
           fontWeight: 400,
           margin: "0 auto",
           maxWidth: 640,
-          letterSpacing: ".01em",
+          letterSpacing: "0",
         }}>
           &ldquo;{verse.text}&rdquo;
         </blockquote>
@@ -139,8 +155,8 @@ export default function TodayPage() {
         <Link href="/hours" style={{ textDecoration: "none" }}>
           <SurfaceCard
             kicker="Liturgy of the Hours"
-            title="Sext · Midday"
-            meta="Midday Prayer · 12:00"
+            title={hour ? hour.name : "The Divine Office"}
+            meta={hour ? `${hour.en} · ${hour.time}` : "Pray the hours"}
             lucide="clock"
           />
         </Link>
@@ -149,8 +165,8 @@ export default function TodayPage() {
         <Link href="/rosary" style={{ textDecoration: "none" }}>
           <SurfaceCard
             kicker="The Holy Rosary"
-            title="Glorious Mysteries"
-            meta="Monday · Wednesday · Saturday"
+            title={rosarySet ? `${rosarySet} Mysteries` : "The Holy Rosary"}
+            meta={rosarySet ? `${SET_DAYS[rosarySet]} · today` : "Pray the Rosary"}
             lucide="circle-dot"
           />
         </Link>
@@ -166,14 +182,14 @@ export default function TodayPage() {
         </Link>
 
         {/* Devotions */}
-        <div>
+        <Link href="/devotions" style={{ textDecoration: "none" }}>
           <SurfaceCard
             kicker="Devotions"
-            title="Angelus"
+            title="The Angelus"
             meta="Recited at noon"
             lucide="bell"
           />
-        </div>
+        </Link>
 
       </div>
 

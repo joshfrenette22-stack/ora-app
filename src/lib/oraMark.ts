@@ -1,7 +1,7 @@
 // The ORA logomark (cross within a double ring) as an inline SVG data URI,
 // shared by the generated app icons. Matches the <Logomark> in Sacred.tsx.
 
-const GOLD = "#D8BC76";
+const GOLD = "#D26B43";
 
 export const ORA_MARK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
 <circle cx="60" cy="60" r="53" fill="none" stroke="${GOLD}" stroke-width="2.4"/>

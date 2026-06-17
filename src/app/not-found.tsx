@@ -4,11 +4,11 @@ import { Fleuron } from "@/components/Sacred";
 export default function NotFound() {
   return (
     <div style={{ minHeight: "70vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "48px 24px", gap: 14 }}>
-      <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 56, letterSpacing: ".005em", color: "var(--gold-deep)", lineHeight: 1 }}>
+      <div style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 62, letterSpacing: "-.01em", color: "var(--gold-deep)", lineHeight: 1 }}>
         404
       </div>
       <Fleuron width={200} style={{ margin: "6px auto" }} />
-      <h1 style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 28, color: "var(--ink)", margin: 0, lineHeight: 1.2 }}>
+      <h1 style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 29, color: "var(--ink)", margin: 0, lineHeight: 1.15 }}>
         Page not found
       </h1>
       <p style={{ fontFamily: "var(--font-body)", fontSize: 16, color: "var(--stone-400)", maxWidth: 420, lineHeight: 1.6, margin: "0 0 8px" }}>

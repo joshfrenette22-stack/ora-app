@@ -5,20 +5,10 @@ import { Sunrise, Sun, Sunset, Moon } from "lucide-react";
 import { Cross, Fleuron } from "@/components/Sacred";
 import { SeasonBadge, Kicker, Btn } from "@/components/UI";
 import { PlayerBar, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
-import { HOURS } from "@/data/content";
+import { HOURS, currentHourName as getCurrentHour } from "@/data/content";
 import { OFFICE, type OfficePart } from "@/data/office";
 
 type HourName = typeof HOURS[number]["name"];
-
-function getCurrentHour(): HourName {
-  const h = new Date().getHours();
-  if (h >= 5 && h < 8) return "Lauds";
-  if (h >= 8 && h < 11) return "Terce";
-  if (h >= 11 && h < 14) return "Sext";
-  if (h >= 14 && h < 17) return "None";
-  if (h >= 17 && h < 21) return "Vespers";
-  return "Compline";
-}
 
 const HOUR_ICONS: Record<string, typeof Sun> = { sunrise: Sunrise, sun: Sun, sunset: Sunset, moon: Moon };
 
@@ -70,7 +60,7 @@ export default function HoursPage() {
 
       {/* Feature card — selected hour */}
       <div style={{ position: "relative", overflow: "hidden", background: "var(--surface-ink)", borderRadius: 20, padding: "30px 28px 28px", boxShadow: "var(--shadow-lg)", display: "flex", flexDirection: "column", gap: 14 }}>
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 70% 30%, rgba(181,145,47,0.12) 0%, transparent 65%)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 70% 30%, rgba(210,107,67,0.14) 0%, transparent 65%)", pointerEvents: "none" }} />
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative" }}>
           <SeasonBadge season="gold" dark>{selected === getCurrentHour() ? `Now · ${hour.time}` : hour.time}</SeasonBadge>
@@ -78,11 +68,11 @@ export default function HoursPage() {
         </div>
 
         <div style={{ position: "relative" }}>
-          <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 28, color: "#F3EEE2", letterSpacing: ".03em" }}>{hour.name}</div>
+          <div style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 28, color: "#F3EEE2" }}>{hour.name}</div>
           <div style={{ fontFamily: "var(--font-body)", fontSize: 15, color: "var(--gold-bright)", opacity: 0.72, marginTop: 2 }}>{hour.en}</div>
         </div>
 
-        <p style={{ fontFamily: "var(--font-body)", fontStyle: "italic", fontSize: 15.5, lineHeight: 1.65, color: "var(--gold-bright)", opacity: 0.82, margin: 0, borderLeft: "2px solid var(--gold)", paddingLeft: 14, position: "relative" }}>
+        <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 15.5, lineHeight: 1.65, color: "var(--gold-bright)", opacity: 0.82, margin: 0, borderLeft: "2px solid var(--gold)", paddingLeft: 14, position: "relative" }}>
           {opening}
         </p>
 
@@ -121,7 +111,7 @@ export default function HoursPage() {
                   onClick={() => pickHour(h.name)}
                   style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", width: "100%", border: "none", textAlign: "left", background: on ? "var(--gold-faint)" : "transparent", cursor: "pointer", transition: "background .14s" }}
                 >
-                  <div style={{ width: 38, height: 38, borderRadius: "50%", background: on ? "rgba(181,145,47,0.18)" : "var(--stone-100)", display: "grid", placeItems: "center", flexShrink: 0, color: on ? "var(--gold-deep)" : "var(--stone-400)" }}>
+                  <div style={{ width: 38, height: 38, borderRadius: "50%", background: on ? "var(--gold-faint)" : "var(--stone-100)", display: "grid", placeItems: "center", flexShrink: 0, color: on ? "var(--gold-deep)" : "var(--stone-400)" }}>
                     <Icon size={17} strokeWidth={1.6} />
                   </div>
                   <div style={{ flex: 1 }}>
@@ -164,7 +154,7 @@ function OfficePartView({ part, active, onClick }: { part: OfficePart; active: b
   if (part.type === "versicle") {
     return (
       <div {...interactive} style={wrap}>
-        <p style={{ fontFamily: "var(--font-body)", fontStyle: "italic", fontSize: 16, lineHeight: 1.6, color: "var(--ink-700)", textAlign: "center", margin: 0 }}>
+        <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 16, lineHeight: 1.6, color: "var(--ink-700)", textAlign: "center", margin: 0 }}>
           {part.text}
         </p>
       </div>
@@ -177,7 +167,7 @@ function OfficePartView({ part, active, onClick }: { part: OfficePart; active: b
         <Kicker style={{ marginBottom: 4 }}>{part.label}{part.ref ? ` · ${part.ref}` : ""}</Kicker>
         {part.sub && <div style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--stone-400)", marginBottom: 6 }}>{part.sub}</div>}
         {part.antiphon && (
-          <p style={{ fontFamily: "var(--font-body)", fontStyle: "italic", fontSize: 16, lineHeight: 1.6, color: "var(--gold-deep)", margin: "6px 0 10px" }}>
+          <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 16, lineHeight: 1.6, color: "var(--gold-deep)", margin: "6px 0 10px" }}>
             {part.antiphon}
           </p>
         )}
