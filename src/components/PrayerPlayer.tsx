@@ -175,12 +175,15 @@ export function useNarration({
       if (!srcNodeRef.current) {
         srcNodeRef.current = ctx.createMediaElementSource(a);
         const an = ctx.createAnalyser();
-        an.fftSize = 64;
-        an.smoothingTimeConstant = 0.8;
+        an.fftSize = 256;
+        an.smoothingTimeConstant = 0.55;
         srcNodeRef.current.connect(an);
         an.connect(ctx.destination);
         analyserRef.current = an;
-        freqDataRef.current = new Uint8Array(an.frequencyBinCount);
+        // Time-domain reads need a buffer the size of fftSize.
+        freqDataRef.current = new Uint8Array(an.fftSize);
+      } else if (audioCtxRef.current.state === "suspended") {
+        void audioCtxRef.current.resume();
       }
     } catch {
       /* analyser is best-effort; audio still plays without it */
@@ -359,21 +362,27 @@ export function useNarration({
     setLoading(false);
   }, [clearEstimate]);
 
-  // Live audio level (0–1) for a reactive waveform.
+  // Live audio level (0–1) for a reactive waveform. On the cloud voice this is
+  // the true loudness (time-domain RMS of the audio) so the wave swells when the
+  // speaker is loud; the device voice has no analysable stream, so it animates.
   const getLevel = useCallback(() => {
     const an = analyserRef.current;
     const data = freqDataRef.current;
     if (engineRef.current === "google" && an && data && soundingRef.current) {
-      an.getByteFrequencyData(data);
+      an.getByteTimeDomainData(data);
       let sum = 0;
-      for (let i = 0; i < data.length; i++) sum += data[i];
-      return Math.min(1, sum / data.length / 255 * 1.7);
+      for (let i = 0; i < data.length; i++) {
+        const x = (data[i] - 128) / 128; // −1..1 around silence
+        sum += x * x;
+      }
+      const rms = Math.sqrt(sum / data.length); // ~0..0.4 for speech
+      return Math.max(0, Math.min(1, rms * 3.2));
     }
-    // Animated fallback for the browser voice (no analysable stream).
-    if (soundingRef.current) {
+    // The device/Siri voice gives no audio stream — animate while it's speaking.
+    if (statusRef.current === "playing") {
       const t = performance.now() / 1000;
-      const v = 0.5 + 0.28 * Math.sin(t * 7) + 0.18 * Math.sin(t * 11.7) + 0.12 * Math.sin(t * 3.3);
-      return Math.max(0.18, Math.min(1, v));
+      const v = 0.45 + 0.3 * Math.sin(t * 8.5) + 0.22 * Math.sin(t * 5.1) + 0.16 * Math.sin(t * 13.3);
+      return Math.max(0.12, Math.min(1, v));
     }
     return 0;
   }, []);
@@ -473,39 +482,47 @@ const WAVE_HEIGHTS = Array.from({ length: WAVE_BARS }, (_, i) => {
   return Math.max(0.08, Math.min(1, raw));
 });
 
-/** Drives a ~25fps re-render with the live audio level + a clock, while playing. */
-function useAudioLevel(playing: boolean, getLevel?: () => number): { level: number; t: number } {
-  const [wave, setWave] = useState({ level: 0, t: 0 });
+/**
+ * A live scrolling waveform: each frame the current audio level is pushed onto a
+ * ring buffer and the whole buffer scrolls left, so the bars read like a real
+ * waveform playing — tall where the speaker is loud, short in the pauses. When
+ * idle it shows a calm static shape.
+ */
+function useScrollingWave(bars: number, playing: boolean, getLevel?: () => number, idle?: number[]): number[] {
+  const [buf, setBuf] = useState<number[]>(() => new Array(bars).fill(0));
   useEffect(() => {
-    // When not playing the consumer falls back to the static base heights, so
-    // there's no need to reset state here (avoids a synchronous setState).
     if (!playing || !getLevel) return;
     let raf = 0;
     let last = 0;
-    const t0 = performance.now();
     const loop = (t: number) => {
-      if (t - last > 38) { setWave({ level: getLevel(), t: (t - t0) / 1000 }); last = t; }
+      if (t - last > 45) {
+        last = t;
+        // Push the newest sample on the right and scroll the rest left.
+        setBuf((prev) => {
+          const base = prev.length === bars ? prev.slice(1) : new Array(Math.max(0, bars - 1)).fill(0);
+          base.push(getLevel());
+          return base;
+        });
+      }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [playing, getLevel]);
-  return wave;
+  }, [playing, getLevel, bars]);
+  return playing ? buf : (idle ?? buf);
 }
 
 function Waveform({ progress, dark, playing, getLevel }: { progress: number; dark?: boolean; playing?: boolean; getLevel?: () => number }) {
-  const rest = dark ? "rgba(239,230,214,0.12)" : "var(--stone-200)";
-  const played = dark ? "var(--gold)" : "var(--gold-deep)";
-  const activeColor = "var(--gold)";
-  const { level, t } = useAudioLevel(!!playing, getLevel);
+  void progress;
+  const rest = dark ? "rgba(239,230,214,0.18)" : "var(--stone-300)";
+  const live = dark ? "var(--gold)" : "var(--gold-deep)";
+  const levels = useScrollingWave(WAVE_BARS, !!playing, getLevel, WAVE_HEIGHTS.map((h) => h * 0.5));
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 1.5, height: 28 }}>
-      {WAVE_HEIGHTS.map((h, i) => {
-        const frac = i / (WAVE_BARS - 1);
-        const isPlayed = frac <= progress;
-        const isHead = playing && Math.abs(frac - progress) < 1 / WAVE_BARS;
-        // Reactive height: scale by the live level with a travelling shimmer.
-        const react = playing ? Math.max(0.12, Math.min(1, h * (0.42 + level * (0.7 + 0.5 * Math.sin(t * 6 + i * 0.7))))) : h;
+      {levels.map((lv, i) => {
+        // Newest sample is on the right; fade the older (left) samples slightly.
+        const recency = i / (WAVE_BARS - 1);
+        const h = playing ? Math.max(0.06, Math.min(1, lv)) : Math.max(0.06, lv);
         return (
           <span
             key={i}
@@ -513,11 +530,10 @@ function Waveform({ progress, dark, playing, getLevel }: { progress: number; dar
               flex: 1,
               minWidth: 1.5,
               maxWidth: 3.5,
-              height: `${Math.round(react * 100)}%`,
+              height: `${Math.round(h * 100)}%`,
               borderRadius: 1,
-              background: isHead ? activeColor : isPlayed ? played : rest,
-              opacity: isHead ? 1 : isPlayed ? 0.85 : 0.45,
-              transition: "height .08s linear, background .12s, opacity .12s",
+              background: playing ? live : rest,
+              opacity: playing ? 0.45 + 0.55 * recency : 0.4,
             }}
           />
         );
@@ -1101,14 +1117,13 @@ const FS_WAVE_HEIGHTS = Array.from({ length: FS_WAVE_BARS }, (_, i) => {
 });
 
 function FullScreenWaveform({ progress, playing, getLevel }: { progress: number; playing: boolean; getLevel?: () => number }) {
-  const { level, t } = useAudioLevel(playing, getLevel);
+  void progress;
+  const levels = useScrollingWave(FS_WAVE_BARS, playing, getLevel, FS_WAVE_HEIGHTS.map((h) => h * 0.5));
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 2, height: 48, padding: "0 4px" }}>
-      {FS_WAVE_HEIGHTS.map((h, i) => {
-        const frac = i / (FS_WAVE_BARS - 1);
-        const isPlayed = frac <= progress;
-        const isHead = playing && Math.abs(frac - progress) < 1 / FS_WAVE_BARS;
-        const react = playing ? Math.max(0.1, Math.min(1, h * (0.4 + level * (0.7 + 0.5 * Math.sin(t * 6 + i * 0.6))))) : h;
+      {levels.map((lv, i) => {
+        const recency = i / (FS_WAVE_BARS - 1);
+        const h = Math.max(0.06, Math.min(1, lv));
         return (
           <span
             key={i}
@@ -1116,11 +1131,10 @@ function FullScreenWaveform({ progress, playing, getLevel }: { progress: number;
               flex: 1,
               minWidth: 2,
               maxWidth: 4,
-              height: `${Math.round(react * 100)}%`,
+              height: `${Math.round(h * 100)}%`,
               borderRadius: 1.5,
-              background: isHead ? "var(--gold)" : isPlayed ? "rgba(239,230,214,0.7)" : "rgba(239,230,214,0.18)",
-              opacity: isHead ? 1 : isPlayed ? 0.9 : 0.5,
-              transition: "height .08s linear, background .12s, opacity .12s",
+              background: playing ? "var(--gold)" : "rgba(239,230,214,0.4)",
+              opacity: playing ? 0.4 + 0.6 * recency : 0.4,
             }}
           />
         );
