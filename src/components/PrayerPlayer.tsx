@@ -51,6 +51,10 @@ export interface Narration {
   duration: number;
   /** Estimated elapsed time, in seconds (0 → duration as it plays). */
   elapsed: number;
+  /** True from pressing play until audio/speech actually begins. */
+  loading: boolean;
+  /** Live audio level 0–1 for a reactive waveform (real on cloud voice). */
+  getLevel: () => number;
   /** Index of the word being spoken within the current segment (−1 if none). */
   wordIndex: number;
   current: NarrationSegment | undefined;
@@ -85,6 +89,7 @@ export function useNarration({
   const [index, setIndex] = useState(0);
   const [frac, setFrac] = useState(0); // playback fraction within the current segment
   const [wordIndex, setWordIndex] = useState(-1); // word being spoken within the segment
+  const [loading, setLoading] = useState(false); // play pressed → audio actually started
   const { voice, speed } = useVoice();
   // The chosen reading speed wins; a page may still pass an explicit rate.
   const rate = rateOption ?? speed;
@@ -99,6 +104,14 @@ export function useNarration({
   // browser's Web Speech API.
   const engineRef = useRef<"browser" | "google">("browser");
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Web Audio analyser for a real, audio-reactive waveform on the cloud voice.
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const srcNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const freqDataRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
+  // Whether speech/audio is currently producing sound (drives the animated
+  // fallback level for the browser voice, which has no analysable stream).
+  const soundingRef = useRef(false);
   // Resolves once we know which engine to use (prevents the first segment
   // falling back to the browser voice while the cloud probe is in-flight).
   const engineReadyRef = useRef<Promise<void>>(Promise.resolve());
@@ -146,6 +159,34 @@ export function useNarration({
   // Core segment player — separated so playSegment can await the engine probe.
   const startSegmentRef = useRef<(text: string, onEnd: () => void, onError: () => void) => void>(() => {});
 
+  // Lazily build the Web Audio graph (audio → analyser → speakers) so the cloud
+  // waveform reacts to the real audio. Created inside a user gesture.
+  const setupAnalyser = useCallback(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    try {
+      if (!audioCtxRef.current) {
+        const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (!Ctx) return;
+        audioCtxRef.current = new Ctx();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === "suspended") void ctx.resume();
+      if (!srcNodeRef.current) {
+        srcNodeRef.current = ctx.createMediaElementSource(a);
+        const an = ctx.createAnalyser();
+        an.fftSize = 64;
+        an.smoothingTimeConstant = 0.8;
+        srcNodeRef.current.connect(an);
+        an.connect(ctx.destination);
+        analyserRef.current = an;
+        freqDataRef.current = new Uint8Array(an.frequencyBinCount);
+      }
+    } catch {
+      /* analyser is best-effort; audio still plays without it */
+    }
+  }, []);
+
   // Speak one segment through the active engine, falling back to the browser
   // voice if the cloud audio can't play.
   const playSegment = useCallback(
@@ -177,6 +218,8 @@ export function useNarration({
       let boundaryFired = false;
       const onBoundary = (ci: number) => {
         boundaryFired = true;
+        setLoading(false);
+        soundingRef.current = true;
         const wi = wordIndexAtChar(starts, ci);
         setWordIndex(wi);
         if (wc > 0) setFrac(Math.min(1, (wi + 1) / wc));
@@ -184,19 +227,22 @@ export function useNarration({
 
       if (engineRef.current === "google" && audioRef.current) {
         const a = audioRef.current;
+        setupAnalyser();
         let settled = false;
-        const finish = () => { if (!settled) { settled = true; onEnd(); } };
+        const finish = () => { if (!settled) { settled = true; soundingRef.current = false; onEnd(); } };
         const fallback = () => {
           if (settled) return;
           settled = true;
           a.onended = null;
           a.onerror = null;
-          if (!speak(text, { rate, onEnd, onError, onBoundary })) onError();
+          if (!speak(text, { rate, onStart: () => { setLoading(false); soundingRef.current = true; }, onEnd, onError, onBoundary })) onError();
         };
+        a.onplaying = () => { setLoading(false); soundingRef.current = true; };
         a.onended = finish;
         a.onerror = fallback;
         a.ontimeupdate = () => {
           if (a.duration > 0) {
+            setLoading(false);
             const f = a.currentTime / a.duration;
             setFrac(f);
             if (wc > 0) setWordIndex(Math.min(wc - 1, Math.floor(f * wc)));
@@ -221,15 +267,17 @@ export function useNarration({
         if (wc > 0) setWordIndex(Math.min(wc - 1, Math.floor(f * wc)));
       }, 120);
 
-      const wrappedEnd = () => { clearEstimate(); setFrac(1); onEnd(); };
-      const wrappedError = () => { clearEstimate(); onError(); };
+      const wrappedStart = () => { setLoading(false); soundingRef.current = true; };
+      const wrappedEnd = () => { clearEstimate(); soundingRef.current = false; setFrac(1); onEnd(); };
+      const wrappedError = () => { clearEstimate(); soundingRef.current = false; setLoading(false); onError(); };
 
-      if (!speak(text, { rate, onEnd: wrappedEnd, onError: wrappedError, onBoundary })) {
+      if (!speak(text, { rate, onStart: wrappedStart, onEnd: wrappedEnd, onError: wrappedError, onBoundary })) {
         clearEstimate();
+        setLoading(false);
         onError();
       }
     },
-    [rate, voice, clearEstimate],
+    [rate, voice, clearEstimate, setupAnalyser],
   );
 
   useEffect(() => { startSegmentRef.current = startSegment; }, [startSegment]);
@@ -246,6 +294,8 @@ export function useNarration({
       setIndex(i);
       setFrac(0);
       setWordIndex(-1);
+      setLoading(true);
+      soundingRef.current = false;
       changeRef.current?.(i);
       setStatus("playing");
       // Warm the next segment's audio so auto-advance is gapless.
@@ -261,7 +311,7 @@ export function useNarration({
           else if (loop) playNextRef.current(0);
           else { setStatus("idle"); completeRef.current?.(); }
         },
-        () => { if (gen === genRef.current) setStatus("idle"); },
+        () => { if (gen === genRef.current) { setStatus("idle"); setLoading(false); } },
       );
     },
     [rate, loop, voice, playSegment],
@@ -286,12 +336,14 @@ export function useNarration({
   const pause = useCallback(() => {
     if (engineRef.current === "google") audioRef.current?.pause();
     else pauseSpeaking();
+    soundingRef.current = false;
     setStatus("paused");
   }, []);
 
   const resume = useCallback(() => {
     if (engineRef.current === "google") audioRef.current?.play().catch(() => {});
     else resumeSpeaking();
+    soundingRef.current = true;
     setStatus("playing");
   }, []);
 
@@ -300,10 +352,31 @@ export function useNarration({
     clearEstimate();
     if (audioRef.current) audioRef.current.pause();
     stopSpeaking();
+    soundingRef.current = false;
     setStatus("idle");
     setFrac(0);
     setWordIndex(-1);
+    setLoading(false);
   }, [clearEstimate]);
+
+  // Live audio level (0–1) for a reactive waveform.
+  const getLevel = useCallback(() => {
+    const an = analyserRef.current;
+    const data = freqDataRef.current;
+    if (engineRef.current === "google" && an && data && soundingRef.current) {
+      an.getByteFrequencyData(data);
+      let sum = 0;
+      for (let i = 0; i < data.length; i++) sum += data[i];
+      return Math.min(1, sum / data.length / 255 * 1.7);
+    }
+    // Animated fallback for the browser voice (no analysable stream).
+    if (soundingRef.current) {
+      const t = performance.now() / 1000;
+      const v = 0.5 + 0.28 * Math.sin(t * 7) + 0.18 * Math.sin(t * 11.7) + 0.12 * Math.sin(t * 3.3);
+      return Math.max(0.18, Math.min(1, v));
+    }
+    return 0;
+  }, []);
 
   const toggle = useCallback(() => {
     if (status === "playing") pause();
@@ -335,11 +408,13 @@ export function useNarration({
     clearEstimate();
     if (audioRef.current) audioRef.current.pause();
     stopSpeaking();
+    soundingRef.current = false;
     setStatus("idle");
     const clamped = Math.max(0, Math.min(segmentsRef.current.length - 1, i));
     setIndex(clamped);
     setFrac(0);
     setWordIndex(-1);
+    setLoading(false);
     changeRef.current?.(clamped);
   }, [clearEstimate]);
 
@@ -364,6 +439,8 @@ export function useNarration({
     progress,
     duration,
     elapsed,
+    loading,
+    getLevel,
     wordIndex,
     current: segments[index],
     play,
@@ -396,16 +473,39 @@ const WAVE_HEIGHTS = Array.from({ length: WAVE_BARS }, (_, i) => {
   return Math.max(0.08, Math.min(1, raw));
 });
 
-function Waveform({ progress, dark, playing }: { progress: number; dark?: boolean; playing?: boolean }) {
+/** Drives a ~25fps re-render with the live audio level + a clock, while playing. */
+function useAudioLevel(playing: boolean, getLevel?: () => number): { level: number; t: number } {
+  const [wave, setWave] = useState({ level: 0, t: 0 });
+  useEffect(() => {
+    // When not playing the consumer falls back to the static base heights, so
+    // there's no need to reset state here (avoids a synchronous setState).
+    if (!playing || !getLevel) return;
+    let raf = 0;
+    let last = 0;
+    const t0 = performance.now();
+    const loop = (t: number) => {
+      if (t - last > 38) { setWave({ level: getLevel(), t: (t - t0) / 1000 }); last = t; }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [playing, getLevel]);
+  return wave;
+}
+
+function Waveform({ progress, dark, playing, getLevel }: { progress: number; dark?: boolean; playing?: boolean; getLevel?: () => number }) {
   const rest = dark ? "rgba(239,230,214,0.12)" : "var(--stone-200)";
   const played = dark ? "var(--gold)" : "var(--gold-deep)";
   const activeColor = "var(--gold)";
+  const { level, t } = useAudioLevel(!!playing, getLevel);
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 1.5, height: 28 }}>
       {WAVE_HEIGHTS.map((h, i) => {
         const frac = i / (WAVE_BARS - 1);
         const isPlayed = frac <= progress;
         const isHead = playing && Math.abs(frac - progress) < 1 / WAVE_BARS;
+        // Reactive height: scale by the live level with a travelling shimmer.
+        const react = playing ? Math.max(0.12, Math.min(1, h * (0.42 + level * (0.7 + 0.5 * Math.sin(t * 6 + i * 0.7))))) : h;
         return (
           <span
             key={i}
@@ -413,12 +513,11 @@ function Waveform({ progress, dark, playing }: { progress: number; dark?: boolea
               flex: 1,
               minWidth: 1.5,
               maxWidth: 3.5,
-              height: `${Math.round(h * 100)}%`,
+              height: `${Math.round(react * 100)}%`,
               borderRadius: 1,
               background: isHead ? activeColor : isPlayed ? played : rest,
               opacity: isHead ? 1 : isPlayed ? 0.85 : 0.45,
-              transition: "background .12s, opacity .12s",
-              transform: playing && isHead ? "scaleY(1.18)" : undefined,
+              transition: "height .08s linear, background .12s, opacity .12s",
             }}
           />
         );
@@ -497,7 +596,9 @@ export function PlayerBar({
           flexShrink: 0,
         }}
       >
-        <LucideIcon name={playing ? "pause" : "play"} size={18} />
+        {narration.loading
+          ? <span style={{ animation: "oraSpin 1s linear infinite", display: "grid", placeItems: "center" }}><LucideIcon name="loader" size={18} /></span>
+          : <LucideIcon name={playing ? "pause" : "play"} size={18} />}
       </button>
 
       {/* Waveform + label */}
@@ -534,7 +635,7 @@ export function PlayerBar({
             </div>
           )}
         </div>
-        <Waveform progress={narration.progress} dark={dark} playing={playing} />
+        <Waveform progress={narration.progress} dark={dark} playing={playing} getLevel={narration.getLevel} />
       </div>
 
       {/* Skip controls */}
@@ -729,21 +830,14 @@ export function ListenButton({
   const active = narration.status !== "idle";
   const accent = dark ? "var(--gold)" : "var(--gold-deep)";
 
-  // Loading state: true between clicking play and audio actually starting.
-  const [loading, setLoading] = useState(false);
-  useEffect(() => {
-    if (narration.status === "playing") setLoading(false);
-  }, [narration.status]);
+  // Loading: true between pressing play and audio/speech actually starting.
+  const loading = narration.loading;
 
   if (!narration.supported) return null;
 
   const handleClick = () => {
-    if (active) {
-      narration.toggle();
-    } else {
-      setLoading(true);
-      narration.play(0);
-    }
+    if (active) narration.toggle();
+    else narration.play(0);
   };
 
   return (
@@ -888,7 +982,9 @@ export function FloatingPlayer() {
             flexShrink: 0,
           }}
         >
-          <LucideIcon name={playing ? "pause" : "play"} size={16} />
+          {narration.loading
+            ? <span style={{ animation: "oraSpin 1s linear infinite", display: "grid", placeItems: "center" }}><LucideIcon name="loader" size={16} /></span>
+            : <LucideIcon name={playing ? "pause" : "play"} size={16} />}
         </button>
 
         {/* Waveform + label */}
@@ -925,7 +1021,7 @@ export function FloatingPlayer() {
               </div>
             )}
           </div>
-          <Waveform progress={narration.progress} playing={playing} />
+          <Waveform progress={narration.progress} playing={playing} getLevel={narration.getLevel} />
         </div>
 
         {/* Skip */}
@@ -1004,13 +1100,15 @@ const FS_WAVE_HEIGHTS = Array.from({ length: FS_WAVE_BARS }, (_, i) => {
   return Math.max(0.06, Math.min(1, raw));
 });
 
-function FullScreenWaveform({ progress, playing }: { progress: number; playing: boolean }) {
+function FullScreenWaveform({ progress, playing, getLevel }: { progress: number; playing: boolean; getLevel?: () => number }) {
+  const { level, t } = useAudioLevel(playing, getLevel);
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 2, height: 48, padding: "0 4px" }}>
       {FS_WAVE_HEIGHTS.map((h, i) => {
         const frac = i / (FS_WAVE_BARS - 1);
         const isPlayed = frac <= progress;
         const isHead = playing && Math.abs(frac - progress) < 1 / FS_WAVE_BARS;
+        const react = playing ? Math.max(0.1, Math.min(1, h * (0.4 + level * (0.7 + 0.5 * Math.sin(t * 6 + i * 0.6))))) : h;
         return (
           <span
             key={i}
@@ -1018,12 +1116,11 @@ function FullScreenWaveform({ progress, playing }: { progress: number; playing: 
               flex: 1,
               minWidth: 2,
               maxWidth: 4,
-              height: `${Math.round(h * 100)}%`,
+              height: `${Math.round(react * 100)}%`,
               borderRadius: 1.5,
               background: isHead ? "var(--gold)" : isPlayed ? "rgba(239,230,214,0.7)" : "rgba(239,230,214,0.18)",
               opacity: isHead ? 1 : isPlayed ? 0.9 : 0.5,
-              transition: "background .12s, opacity .12s",
-              transform: playing && isHead ? "scaleY(1.2)" : undefined,
+              transition: "height .08s linear, background .12s, opacity .12s",
             }}
           />
         );
@@ -1231,7 +1328,7 @@ function FullScreenPlayer({
       }}>
         {/* Waveform progress */}
         <div style={{ marginBottom: 8 }}>
-          <FullScreenWaveform progress={narration.progress} playing={playing} />
+          <FullScreenWaveform progress={narration.progress} playing={playing} getLevel={narration.getLevel} />
         </div>
 
         {/* Running timestamp: elapsed (left) → total length (right) */}
@@ -1289,7 +1386,9 @@ function FullScreenPlayer({
               boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
             }}
           >
-            <LucideIcon name={playing ? "pause" : "play"} size={28} />
+            {narration.loading
+              ? <span style={{ animation: "oraSpin 1s linear infinite", display: "grid", placeItems: "center" }}><LucideIcon name="loader" size={26} /></span>
+              : <LucideIcon name={playing ? "pause" : "play"} size={28} />}
           </button>
 
           {/* Next */}

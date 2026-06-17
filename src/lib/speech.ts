@@ -42,6 +42,8 @@ export interface SpeakOptions {
   pitch?: number;
   onEnd?: () => void;
   onError?: () => void;
+  /** Fires when the utterance actually begins (used to clear the loader). */
+  onStart?: () => void;
   /** Fires as each word is spoken, with the character offset into `text`. */
   onBoundary?: (charIndex: number) => void;
 }
@@ -59,6 +61,7 @@ export function speak(text: string, opts: SpeakOptions = {}): boolean {
   u.lang = voice?.lang ?? "en-US";
   if (opts.onEnd) u.onend = () => opts.onEnd!();
   if (opts.onError) u.onerror = () => opts.onError!();
+  if (opts.onStart) u.onstart = () => opts.onStart!();
   if (opts.onBoundary) {
     u.onboundary = (e: SpeechSynthesisEvent) => {
       // Highlight on word boundaries (some engines also fire sentence ones).
