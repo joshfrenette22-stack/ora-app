@@ -83,7 +83,7 @@ export default function TodayPage() {
       {/* Greeting card */}
       <div style={{ position: "relative", overflow: "hidden", background: "var(--surface-ink)", borderRadius: 22, padding: "26px 26px 24px", marginBottom: 30, boxShadow: "var(--shadow-lg)" }}>
         {/* Layered texture: illustration band + altar watermark + warm gradient */}
-        <Illustration name="today-greeting-band" alt="" width={560} height={140} invertOnDark feather="linear-gradient(to left, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.25) 50%, transparent 80%)" style={{ position: "absolute", right: -20, top: -10, opacity: 0.45, pointerEvents: "none" }} />
+        <Illustration name="today-greeting-band" alt="" width={560} height={140} invertOnDark style={{ position: "absolute", right: -20, top: -10, opacity: 0.45, pointerEvents: "none" }} />
         <div style={{ position: "absolute", right: -30, bottom: -40, pointerEvents: "none" }}>
           <Illustration name="splash-altar" alt="" size={220} invertOnDark opacity={0.4} />
         </div>
