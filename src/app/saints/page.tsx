@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { SaintMedallion, Fleuron } from "@/components/Sacred";
 import { SeasonBadge, Kicker } from "@/components/UI";
-import { PrayerPlayer, type NarrationSegment } from "@/components/PrayerPlayer";
+import { PlayerBar, SpokenText, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
+import { countWords } from "@/lib/words";
 import { badgeSeason } from "@/lib/liturgical";
 import type { Saint } from "@/lib/saints";
 import { localDateISO } from "@/lib/clientDate";
@@ -36,6 +37,13 @@ export default function SaintsPage() {
     if (saint.collect) segs.push({ id: "collect", label: "Collect", text: saint.collect });
     return segs;
   }, [saint]);
+
+  const narration = useNarration({ segments });
+  const speaking = narration.status !== "idle";
+  // The "life" segment reads "<name>. <bio>", so the bio starts after the name.
+  const nameWords = countWords(saint.name);
+  const lifeActive = speaking && narration.current?.id === "life";
+  const collectActive = speaking && narration.current?.id === "collect";
 
   const rankLabel = saint.rank === "feria" ? "Feria" : saint.rank.charAt(0).toUpperCase() + saint.rank.slice(1);
 
@@ -101,7 +109,7 @@ export default function SaintsPage() {
       {/* Voice player */}
       {segments.length > 0 && (
         <div style={{ width: "100%", marginBottom: 28 }}>
-          <PrayerPlayer segments={segments} title={`Listen · ${saint.name}`} />
+          <PlayerBar narration={narration} title={`Listen · ${saint.name}`} />
         </div>
       )}
 
@@ -112,8 +120,13 @@ export default function SaintsPage() {
 
       {/* Hagiography paragraph with drop cap */}
       {saint.bio && (
-        <p
+        <SpokenText
+          as="p"
           className="pw-dropcap"
+          text={saint.bio}
+          active={lifeActive}
+          wordIndex={narration.wordIndex}
+          wordOffset={nameWords}
           style={{
             fontFamily: "var(--font-body)",
             fontSize: 18,
@@ -123,9 +136,7 @@ export default function SaintsPage() {
             margin: "0 0 32px",
             width: "100%",
           }}
-        >
-          {saint.bio}
-        </p>
+        />
       )}
 
       {/* Collect card */}
@@ -140,7 +151,11 @@ export default function SaintsPage() {
           }}
         >
           <Kicker style={{ marginBottom: 12 }}>Collect</Kicker>
-          <p
+          <SpokenText
+            as="p"
+            text={saint.collect}
+            active={collectActive}
+            wordIndex={narration.wordIndex}
             style={{
               fontFamily: "var(--font-serif)",
               fontStyle: "italic",
@@ -149,9 +164,7 @@ export default function SaintsPage() {
               color: "var(--ink-700)",
               margin: 0,
             }}
-          >
-            {saint.collect}
-          </p>
+          />
         </div>
       )}
     </div>

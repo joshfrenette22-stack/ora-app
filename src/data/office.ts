@@ -14,6 +14,74 @@ export interface OfficePart {
 }
 
 export const OFFICE: Record<string, OfficePart[]> = {
+  "Office of Readings": [
+    {
+      "type": "versicle",
+      "text": "O Lord, open thou my lips, and my mouth shall declare thy praise."
+    },
+    {
+      "type": "versicle",
+      "text": "Glory be to the Father, and to the Son, and to the Holy Spirit: as it was in the beginning, is now, and ever shall be, world without end. Amen."
+    },
+    {
+      "type": "psalm",
+      "label": "Invitatory · Psalm 95",
+      "ref": "Psalm 95",
+      "antiphon": "Come, let us worship the Lord, the great King above all gods.",
+      "text": "Come let us praise the Lord with joy: let us joyfully sing to God our saviour. Let us come before his presence with thanksgiving; and make a joyful noise to him with psalms. For the Lord is a great God, and a great King above all gods. For in his hand are all the ends of the earth: and the heights of the mountains are his. For the sea is his, and he made it: and his hands formed the dry land. Come let us adore and fall down: and weep before the Lord that made us. For he is the Lord our God: and we are the people of his pasture and the sheep of his hand."
+    },
+    {
+      "type": "psalm",
+      "label": "Psalm 1",
+      "ref": "Psalm 1",
+      "antiphon": "Blessed is the man whose delight is in the law of the Lord.",
+      "text": "Blessed is the man who hath not walked in the counsel of the ungodly, nor stood in the way of sinners, nor sat in the chair of pestilence. But his will is in the law of the Lord, and on his law he shall meditate day and night. And he shall be like a tree which is planted near the running waters, which shall bring forth its fruit, in due season. And his leaf shall not fall off: and all whosoever he shall do shall prosper. Not so the wicked, not so: but like the dust, which the wind driveth from the face of the earth. Therefore the wicked shall not rise again in judgment: nor sinners in the council of the just. For the Lord knoweth the way of the just: and the way of the wicked shall perish."
+    },
+    {
+      "type": "psalm",
+      "label": "Psalm 103",
+      "ref": "Psalm 103 · 1–5",
+      "antiphon": "Bless the Lord, O my soul, and forget not all his benefits.",
+      "text": "For David himself. Bless the Lord, O my soul: and let all that is within me bless his holy name. Bless the Lord, O my soul, and never forget all he hath done for thee. Who forgiveth all thy iniquities: who healeth all thy diseases. Who redeemeth thy life from destruction: who crowneth thee with mercy and compassion. Who satisfieth thy desire with good things: thy youth shall be renewed like the eagle's."
+    },
+    {
+      "type": "reading",
+      "label": "First Reading",
+      "ref": "Romans 8 · 28–32",
+      "text": "We know that to them that love God all things work together unto good, to such as, according to his purpose, are called to be saints. For whom he foreknew, he also predestinated to be made conformable to the image of his Son, that he might be the firstborn amongst many brethren. What shall we then say to these things? If God be for us, who is against us? He that spared not even his own Son, but delivered him up for us all, how hath he not also, with him, given us all things?"
+    },
+    {
+      "type": "responsory",
+      "label": "Responsory",
+      "text": "If God be for us, who is against us? In him who loved us we are more than conquerors."
+    },
+    {
+      "type": "reading",
+      "label": "Second Reading",
+      "ref": "From the Confessions of Saint Augustine",
+      "text": "Great art thou, O Lord, and greatly to be praised; great is thy power, and of thy wisdom there is no end. And man, being a part of thy creation, desires to praise thee. Thou awakest us to delight in thy praise; for thou madest us for thyself, and our heart is restless, until it rest in thee. Grant me, Lord, to know and understand which is first, to call on thee, or to praise thee; and, again, to know thee, or to call on thee."
+    },
+    {
+      "type": "responsory",
+      "label": "Responsory",
+      "text": "Thou madest us for thyself, O Lord, and our heart is restless until it rest in thee."
+    },
+    {
+      "type": "canticle",
+      "label": "Te Deum",
+      "sub": "A Hymn of Praise",
+      "text": "We praise thee, O God: we acknowledge thee to be the Lord. All the earth doth worship thee, the Father everlasting. To thee all Angels cry aloud, the Heavens and all the Powers therein. To thee Cherubim and Seraphim continually do cry: Holy, Holy, Holy, Lord God of Sabaoth; Heaven and earth are full of the majesty of thy glory. The glorious company of the Apostles praise thee. The goodly fellowship of the Prophets praise thee. The noble army of Martyrs praise thee. The holy Church throughout all the world doth acknowledge thee: the Father, of an infinite majesty; thine adorable, true, and only Son; also the Holy Ghost, the Comforter. Thou art the King of Glory, O Christ. Thou art the everlasting Son of the Father. When thou tookest upon thee to deliver man, thou didst not abhor the Virgin's womb. When thou hadst overcome the sharpness of death, thou didst open the kingdom of heaven to all believers. We therefore pray thee, help thy servants, whom thou hast redeemed with thy precious blood. O Lord, save thy people, and bless thine heritage. Govern them, and lift them up for ever. Day by day we magnify thee; and we worship thy name, ever world without end. O Lord, in thee have I trusted: let me never be confounded."
+    },
+    {
+      "type": "prayer",
+      "label": "Concluding Prayer",
+      "text": "O God, who hast taught the hearts of thy faithful people by sending to them the light of thy Holy Spirit: grant us by the same Spirit to have a right judgment in all things, and evermore to rejoice in his holy comfort. Through Christ our Lord. Amen."
+    },
+    {
+      "type": "versicle",
+      "text": "Let us bless the Lord. Thanks be to God."
+    }
+  ],
   "Lauds": [
     {
       "type": "versicle",

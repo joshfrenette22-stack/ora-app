@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { Fleuron } from "@/components/Sacred";
 import { Kicker } from "@/components/UI";
-import { PrayerPlayer, type NarrationSegment } from "@/components/PrayerPlayer";
+import { PlayerBar, SpokenText, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { LucideIcon } from "@/components/UI";
 import { DEVOTIONS } from "@/data/content";
 
@@ -24,7 +24,7 @@ function segmentsFor(blocks: readonly Block[], title: string): NarrationSegment[
     .map((b, i) => ({ id: `${title}-${i}`, label: title, text: b.text }));
 }
 
-function BlockView({ block }: { block: Block }) {
+function BlockView({ block, active, wordIndex }: { block: Block; active: boolean; wordIndex: number }) {
   if (block.type === "rule") {
     return <div style={{ height: 1, background: "var(--stone-200)", margin: "18px 0" }} />;
   }
@@ -32,28 +32,31 @@ function BlockView({ block }: { block: Block }) {
     return (
       <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 17, lineHeight: 1.6, color: "var(--ink-700)", margin: "0 0 8px", display: "flex", gap: 10 }}>
         <span style={{ color: "var(--gold-deep)", fontStyle: "normal", fontWeight: 600, flexShrink: 0 }}>{block.a}</span>
-        <span>{block.text}</span>
+        <SpokenText as="span" text={block.text} active={active} wordIndex={wordIndex} />
       </p>
     );
   }
   if (block.type === "lead") {
     return (
-      <p className="pw-dropcap" style={{ fontFamily: "var(--font-body)", fontSize: 17.5, lineHeight: 1.72, color: "var(--ink-700)", margin: "0 0 14px" }}>
-        {block.text}
-      </p>
+      <SpokenText as="p" className="pw-dropcap" text={block.text} active={active} wordIndex={wordIndex}
+        style={{ fontFamily: "var(--font-body)", fontSize: 17.5, lineHeight: 1.72, color: "var(--ink-700)", margin: "0 0 14px" }} />
     );
   }
   // body
   return (
-    <p style={{ fontFamily: "var(--font-body)", fontSize: 17, lineHeight: 1.72, color: "var(--ink-700)", margin: "0 0 14px" }}>
-      {block.text}
-    </p>
+    <SpokenText as="p" text={block.text} active={active} wordIndex={wordIndex}
+      style={{ fontFamily: "var(--font-body)", fontSize: 17, lineHeight: 1.72, color: "var(--ink-700)", margin: "0 0 14px" }} />
   );
 }
 
 function DevotionCard({ dkey, lucide }: { dkey: DevotionKey; lucide: string }) {
   const d = DEVOTIONS[dkey];
   const segments = useMemo(() => segmentsFor(d.blocks, d.title), [d]);
+  const narration = useNarration({ segments });
+  const speaking = narration.status !== "idle";
+
+  // Each non-rule block maps to one narration segment, in order.
+  let seg = -1;
 
   return (
     <section id={dkey} style={{ scrollMarginTop: 24, background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 20, padding: "28px 28px 30px", boxShadow: "var(--shadow-sm)" }}>
@@ -70,13 +73,14 @@ function DevotionCard({ dkey, lucide }: { dkey: DevotionKey; lucide: string }) {
       </div>
 
       <div style={{ marginBottom: 22 }}>
-        <PrayerPlayer segments={segments} title={`Pray ${d.title} aloud`} />
+        <PlayerBar narration={narration} title={`Pray ${d.title} aloud`} />
       </div>
 
       <div>
-        {d.blocks.map((b, i) => (
-          <BlockView key={i} block={b} />
-        ))}
+        {d.blocks.map((b, i) => {
+          const si = b.type === "rule" ? -1 : ++seg;
+          return <BlockView key={i} block={b} active={speaking && narration.index === si} wordIndex={narration.wordIndex} />;
+        })}
       </div>
     </section>
   );
