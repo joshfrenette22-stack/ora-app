@@ -119,16 +119,10 @@ function ContentBar({ title, sub }: { title: string; sub: string | null }) {
       </div>
       <div style={{ display: "flex", gap: 10 }}>
         {/* Night toggle — the sidebar's copy is hidden on phones, so surface it here. */}
-        <button className="pw-mobile-only" onClick={() => setNight(!night)} aria-label="Toggle night mode" style={{ ...iconBtn, placeItems: "center" }}>
+        <button className="pw-mobile-only pw-iconbtn" onClick={() => setNight(!night)} aria-label="Toggle night mode" style={{ ...iconBtn, placeItems: "center" }}>
           <LucideIcon name={night ? "sun" : "moon"} size={19} />
         </button>
-        <button className="pw-desktop-only" style={iconBtn} aria-label="Search">
-          <LucideIcon name="search" size={19} />
-        </button>
-        <button className="pw-desktop-only" style={iconBtn} aria-label="Notifications">
-          <LucideIcon name="bell" size={19} />
-        </button>
-        <button style={iconBtn} aria-label="Settings" onClick={() => router.push("/settings")}>
+        <button className="pw-iconbtn" style={iconBtn} aria-label="Settings" onClick={() => router.push("/settings")}>
           <LucideIcon name="settings" size={19} />
         </button>
       </div>

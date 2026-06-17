@@ -197,6 +197,14 @@ html { scroll-behavior: smooth; }
   .pw-scroll > *, .pw-reveal, .pw-reveal-2, .pw-reveal-3 { animation: none; }
 }
 
+/* Circular icon buttons — subtle tint on hover, press on tap */
+.pw-iconbtn { transition: background .15s, color .15s, transform .15s; }
+@media (hover: hover) {
+  .pw-iconbtn:hover { background: var(--gold-faint) !important; color: var(--gold-deep) !important; }
+}
+.pw-iconbtn:active { transform: scale(.94); }
+@media (prefers-reduced-motion: reduce) { .pw-iconbtn:active { transform: none; } }
+
 /* Tappable cards — a gentle lift on hover, a soft press on tap */
 .pw-card { transition: transform .2s var(--ease-sacred), box-shadow .2s var(--ease-sacred); }
 @media (hover: hover) {
