@@ -191,6 +191,16 @@ function OfficePartView({ part, active, speaking, wordIndex, onClick }: { part: 
     );
   }
 
+  if (part.type === "hymn" || part.type === "intercession") {
+    return (
+      <div {...interactive} style={wrap}>
+        <Kicker style={{ marginBottom: 6 }}>{part.label}</Kicker>
+        <SpokenText as="p" text={part.text} active={speaking} wordIndex={wordIndex}
+          style={{ fontFamily: "var(--font-serif)", fontStyle: part.type === "hymn" ? "italic" : "normal", fontSize: 16.5, lineHeight: 1.7, color: "var(--ink-700)", margin: 0, whiteSpace: "pre-line" }} />
+      </div>
+    );
+  }
+
   // reading / responsory / prayer
   return (
     <div {...interactive} style={wrap}>
