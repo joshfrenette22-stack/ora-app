@@ -85,7 +85,7 @@ export function SaintMedallion({ monogram, size = 140, style = {} }: { monogram:
       <svg viewBox="0 0 200 200" width={size} height={size} aria-hidden="true" style={{ position: "absolute", inset: 0 }}>
         <defs>
           <radialGradient id={gid} cx="50%" cy="40%" r="66%">
-            <stop offset="0%" stopColor="var(--bone-raised)" />
+            <stop offset="0%" stopColor="var(--gold-bright)" />
             <stop offset="100%" stopColor="var(--gold-faint)" />
           </radialGradient>
         </defs>
