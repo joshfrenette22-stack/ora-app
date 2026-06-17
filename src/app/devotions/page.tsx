@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { Fleuron } from "@/components/Sacred";
 import { Kicker } from "@/components/UI";
-import { PlayerBar, SpokenText, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
+import { PlayerBar, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { LucideIcon } from "@/components/UI";
 import { Illustration } from "@/components/Illustration";
 import { DEVOTION_ART } from "@/lib/illustrations";
@@ -55,6 +55,7 @@ function DevotionCard({ dkey, lucide }: { dkey: DevotionKey; lucide: string }) {
   const d = DEVOTIONS[dkey];
   const segments = useMemo(() => segmentsFor(d.blocks, d.title), [d]);
   const narration = useNarration({ segments });
+  useRegisterNarration(narration, `Pray ${d.title} aloud`);
   const speaking = narration.status !== "idle";
 
   // Each non-rule block maps to one narration segment, in order.

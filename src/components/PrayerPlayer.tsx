@@ -136,6 +136,10 @@ export function useNarration({
   const playSegment = useCallback(
     (text: string, onEnd: () => void, onError: () => void) => {
       clearEstimate();
+      // Stop any previous playback before starting the new segment.
+      stopSpeaking();
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current.onended = null; audioRef.current.onerror = null; audioRef.current.ontimeupdate = null; }
+
       const starts = wordStarts(text);
       const wc = starts.length;
 
@@ -640,4 +644,160 @@ export function PrayerPlayer({
 }) {
   const narration = useNarration({ segments, rate });
   return <PlayerBar narration={narration} dark={dark} title={title} />;
+}
+
+// ── Floating mini-player (Spotify-style, above bottom nav) ────────────────────
+
+import { useNowPlaying, useNowPlayingState } from "./NowPlayingProvider";
+
+/** Pages call this to register their narration for the floating player. */
+export function useRegisterNarration(narration: Narration, title: string, dark = false) {
+  const { register, unregister } = useNowPlaying();
+  useEffect(() => {
+    register(narration, title, dark);
+    return () => unregister(narration);
+    // Re-register whenever status/progress/wordIndex change so the floating
+    // player stays in sync (the store does a shallow replace).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [narration.status, narration.progress, narration.index, narration.wordIndex, register, unregister, narration, title, dark]);
+}
+
+/** Rendered in AppShell — shows a compact floating player above the bottom nav when audio is active. */
+export function FloatingPlayer() {
+  const { narration, title, dark } = useNowPlayingState();
+
+  if (!narration || narration.status === "idle") return null;
+
+  const { status, index, count } = narration;
+  const accent = "var(--gold-deep)";
+  const playing = status === "playing";
+
+  return (
+    <div
+      className="pw-floating-player"
+      style={{
+        position: "fixed",
+        left: 8,
+        right: 8,
+        bottom: "calc(56px + env(safe-area-inset-bottom, 0px))",
+        zIndex: 45,
+        borderRadius: 16,
+        background: "var(--bone-raised)",
+        border: "1px solid var(--stone-200)",
+        boxShadow: "0 -4px 24px rgba(45,30,18,0.12), 0 2px 8px rgba(45,30,18,0.08)",
+        overflow: "hidden",
+      }}
+    >
+      {/* Progress track */}
+      <div style={{ height: 3, background: "var(--stone-200)", overflow: "hidden" }}>
+        <div style={{
+          height: "100%",
+          width: `${Math.min(100, narration.progress * 100)}%`,
+          background: accent,
+          transition: playing ? "width .3s linear" : "width .15s ease",
+        }} />
+      </div>
+
+      {/* Controls */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "8px 14px 10px",
+      }}>
+        {/* Play/pause */}
+        <button
+          onClick={narration.toggle}
+          aria-label={playing ? "Pause" : "Play"}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            border: "none",
+            background: "var(--gold-faint)",
+            color: accent,
+            cursor: "pointer",
+            display: "grid",
+            placeItems: "center",
+            flexShrink: 0,
+          }}
+        >
+          <LucideIcon name={playing ? "pause" : "play"} size={16} />
+        </button>
+
+        {/* Title */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontFamily: "var(--font-display)",
+            fontSize: 12.5,
+            fontWeight: 600,
+            color: "var(--ink)",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            lineHeight: 1.2,
+          }}>
+            {narration.current?.label ?? title}
+          </div>
+          {count > 1 && (
+            <div style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 10,
+              color: "var(--stone-400)",
+              fontVariantNumeric: "tabular-nums",
+              marginTop: 1,
+            }}>
+              {index + 1}/{count}
+            </div>
+          )}
+        </div>
+
+        {/* Skip */}
+        {count > 1 && (
+          <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+            <button
+              onClick={narration.prev}
+              disabled={index === 0}
+              aria-label="Previous"
+              style={{
+                width: 30, height: 30, borderRadius: "50%", border: "none",
+                background: "transparent", cursor: index === 0 ? "default" : "pointer",
+                color: index === 0 ? "var(--stone-300)" : "var(--ink-500)",
+                display: "grid", placeItems: "center",
+              }}
+            >
+              <LucideIcon name="skip-back" size={14} />
+            </button>
+            <button
+              onClick={narration.next}
+              disabled={index >= count - 1}
+              aria-label="Next"
+              style={{
+                width: 30, height: 30, borderRadius: "50%", border: "none",
+                background: "transparent", cursor: index >= count - 1 ? "default" : "pointer",
+                color: index >= count - 1 ? "var(--stone-300)" : "var(--ink-500)",
+                display: "grid", placeItems: "center",
+              }}
+            >
+              <LucideIcon name="skip-forward" size={14} />
+            </button>
+          </div>
+        )}
+
+        {/* Stop */}
+        <button
+          onClick={narration.stop}
+          aria-label="Stop"
+          style={{
+            width: 30, height: 30, borderRadius: "50%", border: "none",
+            background: "transparent", cursor: "pointer",
+            color: "var(--stone-400)",
+            display: "grid", placeItems: "center",
+          }}
+        >
+          <LucideIcon name="x" size={16} />
+        </button>
+      </div>
+    </div>
+  );
 }

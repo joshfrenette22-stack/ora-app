@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Fleuron } from "@/components/Sacred";
 import { Illustration } from "@/components/Illustration";
 import { SeasonBadge, Kicker } from "@/components/UI";
-import { PlayerBar, SpokenText, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
+import { PlayerBar, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { countWords } from "@/lib/words";
 import { badgeSeason } from "@/lib/liturgical";
 import type { Saint } from "@/lib/saints";
@@ -40,6 +40,7 @@ export default function SaintsPage() {
   }, [saint]);
 
   const narration = useNarration({ segments });
+  useRegisterNarration(narration, `Listen · ${saint.name}`);
   const speaking = narration.status !== "idle";
   // The "life" segment reads "<name>. <bio>", so the bio starts after the name.
   const nameWords = countWords(saint.name);

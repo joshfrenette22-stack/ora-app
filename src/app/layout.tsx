@@ -3,6 +3,7 @@ import "./globals.css";
 import { AppShell } from "@/components/AppShell";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { VoiceProvider } from "@/components/VoiceProvider";
+import { NowPlayingProvider } from "@/components/NowPlayingProvider";
 
 export const metadata: Metadata = {
   title: "Prayer Warrior",
@@ -34,7 +35,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-body)" }}>
         <ThemeProvider>
           <VoiceProvider>
-            <AppShell>{children}</AppShell>
+            <NowPlayingProvider>
+              <AppShell>{children}</AppShell>
+            </NowPlayingProvider>
           </VoiceProvider>
         </ThemeProvider>
       </body>

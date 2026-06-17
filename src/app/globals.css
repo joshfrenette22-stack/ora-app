@@ -239,6 +239,11 @@ h1, h2, h3, p, blockquote, div, span { overflow-wrap: break-word; word-break: br
   .pw-contentbar { padding: 12px 12px !important; }
 }
 
+/* Floating mini-player — on desktop, sits at bottom-right of viewport */
+@media (min-width: 769px) {
+  .pw-floating-player { left: 270px !important; bottom: 12px !important; right: 12px !important; max-width: 480px !important; }
+}
+
 /* Waveform breathing while audio plays */
 @keyframes oraWave { 0%, 100% { transform: scaleY(0.95); } 50% { transform: scaleY(1.05); } }
 .ora-wave-live { animation: oraWave 1.7s var(--ease-inout) infinite; transform-origin: center; }

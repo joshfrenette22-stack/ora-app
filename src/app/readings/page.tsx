@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Fleuron } from "@/components/Sacred";
 import { Kicker } from "@/components/UI";
-import { PlayerBar, SpokenText, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
+import { PlayerBar, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { countWords } from "@/lib/words";
 import type { DailyReadings } from "@/lib/readings";
 import { localDateISO } from "@/lib/clientDate";
@@ -75,6 +75,7 @@ export default function ReadingsPage() {
     segments,
     onSegmentChange: (i) => setActive(order[i]),
   });
+  useRegisterNarration(narration, "Listen to the Readings");
 
   // Word-highlight bookkeeping: the spoken segment reads "<title>. <refrain> <body>",
   // so the body's words start after the title (and refrain, on psalms).

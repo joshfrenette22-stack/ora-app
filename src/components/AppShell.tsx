@@ -5,6 +5,7 @@ import { Cross, Logomark } from "./Sacred";
 import { SeasonBadge, LucideIcon } from "./UI";
 import { useTheme } from "./ThemeProvider";
 import { localDateISO } from "@/lib/clientDate";
+import { FloatingPlayer } from "./PrayerPlayer";
 
 const NAV = [
   { id: "/", label: "Today", short: "Today", lucide: "sun" },
@@ -205,6 +206,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {children}
         </div>
       </div>
+      <FloatingPlayer />
       <BottomNav active={pathname} onChange={(id) => router.push(id)} />
     </div>
   );

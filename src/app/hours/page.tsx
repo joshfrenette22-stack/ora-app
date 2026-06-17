@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Sunrise, Sun, Sunset, Moon, BookOpen } from "lucide-react";
 import { Cross, Fleuron } from "@/components/Sacred";
 import { SeasonBadge, Kicker, Btn } from "@/components/UI";
-import { PlayerBar, SpokenText, useNarration, type NarrationSegment } from "@/components/PrayerPlayer";
+import { PlayerBar, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { countWords } from "@/lib/words";
 import { Illustration } from "@/components/Illustration";
 import { HOURS, currentHourName as getCurrentHour } from "@/data/content";
@@ -40,6 +40,7 @@ export default function HoursPage() {
   );
 
   const narration = useNarration({ segments, onSegmentChange: setActivePart });
+  useRegisterNarration(narration, `Pray ${hour.name} aloud`);
 
   // Switching hours resets the office narration (reset() clears the highlight
   // via onSegmentChange).
