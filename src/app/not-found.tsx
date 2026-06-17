@@ -4,7 +4,7 @@ import { Fleuron } from "@/components/Sacred";
 export default function NotFound() {
   return (
     <div style={{ minHeight: "70vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "48px 24px", gap: 14 }}>
-      <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 56, letterSpacing: ".12em", color: "var(--gold-deep)", lineHeight: 1 }}>
+      <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 56, letterSpacing: ".005em", color: "var(--gold-deep)", lineHeight: 1 }}>
         404
       </div>
       <Fleuron width={200} style={{ margin: "6px auto" }} />
@@ -16,7 +16,7 @@ export default function NotFound() {
       </p>
       <Link
         href="/"
-        style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 12, letterSpacing: ".16em", textTransform: "uppercase", borderRadius: 9, padding: "13px 24px", textDecoration: "none", background: "var(--gilt)", color: "#2A2008", boxShadow: "var(--shadow-gold)" }}
+        style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 12, letterSpacing: ".01em", borderRadius: 9, padding: "13px 24px", textDecoration: "none", background: "var(--gilt)", color: "#2A2008", boxShadow: "var(--shadow-gold)" }}
       >
         Return Home
       </Link>

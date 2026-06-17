@@ -74,11 +74,10 @@ export default function SaintsPage() {
       <div
         style={{
           fontFamily: "var(--font-display)",
-          fontWeight: 600,
+          fontWeight: 700,
           fontSize: 38,
           color: "var(--ink)",
-          textTransform: "uppercase",
-          letterSpacing: ".06em",
+          letterSpacing: "-.015em",
           textAlign: "center",
           lineHeight: 1.1,
           marginBottom: 10,

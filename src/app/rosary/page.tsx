@@ -157,8 +157,7 @@ export default function RosaryPage() {
                   fontFamily: "var(--font-display)",
                   fontWeight: 600,
                   fontSize: 10,
-                  letterSpacing: ".18em",
-                  textTransform: "uppercase",
+                  letterSpacing: ".02em",
                   padding: "7px 13px",
                   borderRadius: 999,
                   border: on ? "none" : "1px solid rgba(216,188,118,.22)",
@@ -179,8 +178,7 @@ export default function RosaryPage() {
           fontFamily: "var(--font-display)",
           fontWeight: 600,
           fontSize: 10,
-          letterSpacing: ".24em",
-          textTransform: "uppercase",
+          letterSpacing: ".02em",
           color: "var(--gold-deep)",
           padding: "0 22px 14px",
         }}>
@@ -244,8 +242,7 @@ export default function RosaryPage() {
           <div style={{
             fontFamily: "var(--font-display)",
             fontSize: 10,
-            letterSpacing: ".18em",
-            textTransform: "uppercase",
+            letterSpacing: ".02em",
             color: "var(--gold-deep)",
             marginBottom: 6,
           }}>
@@ -286,8 +283,7 @@ export default function RosaryPage() {
                 key={key}
                 onClick={() => changeSet(key)}
                 style={{
-                  fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 10, letterSpacing: ".16em",
-                  textTransform: "uppercase", padding: "8px 14px", borderRadius: 999,
+                  fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 10, letterSpacing: ".01em", padding: "8px 14px", borderRadius: 999,
                   border: on ? "none" : "1px solid rgba(216,188,118,.22)", cursor: "pointer",
                   background: on ? "var(--gilt)" : "rgba(216,188,118,0.08)", color: on ? "#2A2008" : "var(--gold-bright)",
                 }}
@@ -302,8 +298,7 @@ export default function RosaryPage() {
         <div style={{
           fontFamily: "var(--font-ornament)",
           fontSize: 12,
-          letterSpacing: ".26em",
-          textTransform: "uppercase",
+          letterSpacing: ".02em",
           color: "var(--gold-deep)",
           marginBottom: 8,
           textAlign: "center",
@@ -357,8 +352,7 @@ export default function RosaryPage() {
           fontFamily: "var(--font-display)",
           fontWeight: 600,
           fontSize: 11,
-          letterSpacing: ".22em",
-          textTransform: "uppercase",
+          letterSpacing: ".02em",
           color: "var(--gold)",
           marginBottom: 16,
           textAlign: "center",
@@ -399,8 +393,7 @@ export default function RosaryPage() {
           <div style={{
             fontFamily: "var(--font-display)",
             fontSize: 10,
-            letterSpacing: ".2em",
-            textTransform: "uppercase",
+            letterSpacing: ".02em",
             color: "rgba(216,188,118,0.38)",
             textAlign: "center",
             marginTop: 12,

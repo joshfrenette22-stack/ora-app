@@ -154,8 +154,7 @@ export default function CalendarPage() {
             fontFamily: "var(--font-display)",
             fontWeight: 700,
             fontSize: 28,
-            letterSpacing: ".12em",
-            textTransform: "uppercase",
+            letterSpacing: ".005em",
             color: "var(--ink)",
           }}>
             {MONTH_NAMES[viewMonth - 1]}
@@ -163,8 +162,7 @@ export default function CalendarPage() {
           <div style={{
             fontFamily: "var(--font-display)",
             fontSize: 11,
-            letterSpacing: ".22em",
-            textTransform: "uppercase",
+            letterSpacing: ".02em",
             color: "var(--stone-400)",
             marginTop: 4,
           }}>
@@ -203,8 +201,7 @@ export default function CalendarPage() {
             fontFamily: "var(--font-display)",
             fontSize: 10.5,
             fontWeight: 600,
-            letterSpacing: ".18em",
-            textTransform: "uppercase",
+            letterSpacing: ".02em",
             color: "var(--stone-400)",
             textAlign: "center",
             padding: "6px 0 10px",
@@ -290,8 +287,7 @@ export default function CalendarPage() {
             <span style={{
               fontFamily: "var(--font-display)",
               fontSize: 10.5,
-              letterSpacing: ".14em",
-              textTransform: "uppercase",
+              letterSpacing: ".02em",
               color: "var(--stone-400)",
             }}>
               {label}
@@ -391,8 +387,7 @@ function DayCell({
             <span style={{
               fontFamily: "var(--font-display)",
               fontSize: 9,
-              letterSpacing: ".14em",
-              textTransform: "uppercase",
+              letterSpacing: ".02em",
               color: feastColor,
               marginLeft: 12,
             }}>
