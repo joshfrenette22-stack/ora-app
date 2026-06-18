@@ -26,6 +26,7 @@ const TITLES: Record<string, [string, string | null]> = {
   "/calendar": ["Liturgical Calendar", "Anno Domini MMXXVI"],
   "/playlist": ["My Playlist", "Build your prayer sequence"],
   "/devotions": ["Devotions", "Prayers for every hour"],
+  "/confession": ["Confession", "Examine · prepare · be cleansed"],
   "/settings": ["Settings", "Voice & display"],
   "/pray": ["Pray", "The Office, the Rosary & devotions"],
   "/focus": ["Enter Into Prayer", null],

@@ -241,6 +241,16 @@ export default function TodayPage() {
           />
         </Link>
 
+        {/* Confession */}
+        <Link href="/confession" style={{ textDecoration: "none" }}>
+          <SurfaceCard
+            kicker="Confession"
+            title="Examine & Prepare"
+            meta="Examination of conscience"
+            lucide="heart"
+          />
+        </Link>
+
       </div>
 
       {/* Bottom date strip */}
