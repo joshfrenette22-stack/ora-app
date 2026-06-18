@@ -282,3 +282,13 @@ export function auxBlockSpeech(b: AuxBlock): string | null {
   if (b.type === "petition") return `${b.text} ${b.r}`;
   return b.text;
 }
+
+/** Flattened text of the prayers said every day (the everyday prayers through
+ *  the Litany of the Most Precious Blood, then the concluding prayer) for the
+ *  playlist catalogue. The weekday propers live on the dedicated /auxilium page. */
+export function auxiliumEverydayText(): string {
+  return [...AUXILIUM_DAILY, ...AUXILIUM_CONCLUDING]
+    .map(auxBlockSpeech)
+    .filter((t): t is string => t !== null)
+    .join(" ");
+}
