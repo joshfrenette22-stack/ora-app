@@ -27,6 +27,7 @@ const TITLES: Record<string, [string, string | null]> = {
   "/playlist": ["My Playlist", "Build your prayer sequence"],
   "/devotions": ["Devotions", "Prayers for every hour"],
   "/confession": ["Confession", "Examine · prepare · be cleansed"],
+  "/auxilium": ["Auxilium Christianorum", "Prayers for spiritual protection"],
   "/settings": ["Settings", "Voice & display"],
   "/pray": ["Pray", "The Office, the Rosary & devotions"],
   "/focus": ["Enter Into Prayer", null],

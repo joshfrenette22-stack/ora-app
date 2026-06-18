@@ -251,6 +251,16 @@ export default function TodayPage() {
           />
         </Link>
 
+        {/* Auxilium Christianorum */}
+        <Link href="/auxilium" style={{ textDecoration: "none" }}>
+          <SurfaceCard
+            kicker="Auxilium Christianorum"
+            title="Prayers of Protection"
+            meta="Mary, Help of Christians"
+            lucide="shield"
+          />
+        </Link>
+
       </div>
 
       {/* Bottom date strip */}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Cross, Fleuron } from "@/components/Sacred";
 import { Illustration } from "@/components/Illustration";
 import { MYSTERY_ART, type IllustrationKey } from "@/lib/illustrations";
@@ -85,6 +86,9 @@ export default function RosaryPage() {
   const [activeSet, setActiveSet] = useState<SetKey>("Glorious");
   const [mysteryIdx, setMysteryIdx] = useState(0);
   const [bead, setBead] = useState(0);
+  // Once the whole Rosary has been prayed we offer the Auxilium Christianorum
+  // prayers as a natural conclusion (their traditional pairing).
+  const [finished, setFinished] = useState(false);
 
   // Default to the day's mysteries (client-side to avoid a hydration mismatch).
   useEffect(() => {
@@ -121,6 +125,7 @@ export default function RosaryPage() {
   const narration = useNarration({
     segments,
     onSegmentChange: (i) => { setMysteryIdx(Math.floor(i / TOTAL_BEADS)); setBead(i % TOTAL_BEADS); },
+    onComplete: () => setFinished(true),
   });
   useRegisterNarration(narration, mode === "guided" ? "Fully guided" : "Listen", true, MYSTERY_ART[activeSet] as IllustrationKey | undefined);
 
@@ -132,12 +137,14 @@ export default function RosaryPage() {
 
   function advance() {
     const g = mysteryIdx * TOTAL_BEADS + bead;
-    narration.seek(g + 1 >= segments.length ? 0 : g + 1);
+    if (g + 1 >= segments.length) { setFinished(true); return; }
+    narration.seek(g + 1);
   }
-  function jumpToMystery(idx: number) { narration.seek(idx * TOTAL_BEADS); }
-  function changeSet(key: SetKey) { setActiveSet(key); narration.reset(0); }
-  function backToMenu() { narration.reset(0); setMysteryIdx(0); setBead(0); setMode("menu"); }
-  function start(m: Mode) { narration.reset(0); setMode(m); }
+  function jumpToMystery(idx: number) { setFinished(false); narration.seek(idx * TOTAL_BEADS); }
+  function changeSet(key: SetKey) { setFinished(false); setActiveSet(key); narration.reset(0); }
+  function backToMenu() { setFinished(false); narration.reset(0); setMysteryIdx(0); setBead(0); setMode("menu"); }
+  function start(m: Mode) { setFinished(false); narration.reset(0); setMode(m); }
+  function prayAgain() { setFinished(false); narration.reset(0); setMysteryIdx(0); setBead(0); }
 
   // ── MODE CHOOSER ──────────────────────────────────────────────────────────
   if (mode === "menu") {
@@ -295,6 +302,33 @@ export default function RosaryPage() {
         <div style={{ marginTop: 32, width: "100%", maxWidth: 460 }}>
           <ListenButton narration={narration} dark label={mode === "guided" ? "Fully guided" : "Listen"} />
         </div>
+
+        {/* Offered after the Rosary — the Auxilium Christianorum prayers */}
+        {finished && (
+          <div className="pw-reveal" style={{ marginTop: 30, width: "100%", maxWidth: 460, background: cream(0.06), border: `1px solid ${cream(0.2)}`, borderRadius: 18, padding: "22px 22px 24px", textAlign: "center" }}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+              <span style={{ width: 44, height: 44, borderRadius: "50%", background: cream(0.08), color: "var(--gold)", display: "grid", placeItems: "center" }}>
+                <LucideIcon name="shield" size={22} />
+              </span>
+            </div>
+            <div style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 21, color: "#F6F0E6", letterSpacing: "-.01em" }}>
+              The Rosary is complete.
+            </div>
+            <p style={{ fontFamily: "var(--font-body)", fontSize: 14.5, color: cream(0.7), lineHeight: 1.6, margin: "8px 0 18px" }}>
+              Conclude with the <span style={{ color: "var(--gold-bright)", fontWeight: 600 }}>Auxilium Christianorum</span> — the daily prayers for protection under Mary, Help of Christians.
+            </p>
+            <Link href="/auxilium" style={{ textDecoration: "none" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 9, background: "var(--gilt)", color: "#2A1A0E", borderRadius: 999, padding: "12px 22px", fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 14.5, boxShadow: "var(--shadow-gold)" }}>
+                Pray the Auxilium <LucideIcon name="arrow-right" size={16} />
+              </span>
+            </Link>
+            <div>
+              <button onClick={prayAgain} style={{ marginTop: 14, fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 13, color: cream(0.7), background: "transparent", border: "none", cursor: "pointer" }}>
+                Pray the Rosary again
+              </button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
