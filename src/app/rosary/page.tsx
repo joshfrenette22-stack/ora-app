@@ -20,38 +20,39 @@ type Mode = "menu" | "interactive" | "guided";
 // Dark-surface palette helpers
 const cream = (a: number) => `rgba(239,230,214,${a})`;
 
-/** One screen of the Rosary — an introductory prayer or a single bead. The whole
- *  Rosary is flattened to an ordered list of these so the introduction (Sign of
- *  the Cross, Creed, offering, the three Hail Marys, …) flows straight into the
- *  five decades. */
+/** One screen of the Rosary — an introductory prayer, a single bead, or a closing
+ *  prayer. The whole Rosary is flattened to an ordered list of these so the
+ *  introduction flows into the five decades and on into the concluding prayers
+ *  (Hail Holy Queen, the closing prayer, the prayer to St. Michael). */
 interface Step {
-  phase: "intro" | "mystery";
+  phase: "intro" | "mystery" | "closing";
   kicker: string;       // small gold label above the title
   title: string;        // large serif heading
   beadLabel: string;    // gold label above the prayer ("" hides it)
   prayer: string;       // text shown on screen
   speech: string;       // text read aloud (may carry a spoken preamble)
   speechOffset: number; // words spoken before `prayer` begins (for highlight sync)
-  mysteryIdx: number;   // -1 for intro, else 0–4
-  bead: number;         // -1 for intro, else 0–11
-  introStep: number;    // index within the introduction, else -1
+  mysteryIdx: number;   // -1 for intro/closing, else 0–4
+  bead: number;         // -1 for intro/closing, else 0–11
+  phaseStep: number;    // index within the intro/closing phase, else -1
   pause?: boolean;      // a moment for the user's own intentions
 }
 
 const INTRO_LEN = 9;
+const CLOSING_LEN = 3;
 
 function buildSteps(activeSet: SetKey): Step[] {
   const P = ROSARY_PRAYERS;
-  const introPrayer = (title: string, prayer: string, introStep: number, extra?: Partial<Step>): Step => ({
+  const introPrayer = (title: string, prayer: string, phaseStep: number, extra?: Partial<Step>): Step => ({
     phase: "intro", kicker: "Introduction", title, beadLabel: "", prayer, speech: prayer,
-    speechOffset: 0, mysteryIdx: -1, bead: -1, introStep, ...extra,
+    speechOffset: 0, mysteryIdx: -1, bead: -1, phaseStep, ...extra,
   });
-  const hailFor = (virtue: string, n: number, introStep: number): Step => {
+  const hailFor = (virtue: string, n: number, phaseStep: number): Step => {
     const preamble = `For an increase of ${virtue.toLowerCase()}.`;
     return {
       phase: "intro", kicker: "Introduction", title: `For an increase of ${virtue}`,
       beadLabel: `Hail Mary · ${n} of 3`, prayer: P.hail, speech: `${preamble} ${P.hail}`,
-      speechOffset: countWords(preamble), mysteryIdx: -1, bead: -1, introStep,
+      speechOffset: countWords(preamble), mysteryIdx: -1, bead: -1, phaseStep,
     };
   };
 
@@ -82,11 +83,21 @@ function buildSteps(activeSet: SetKey): Step[] {
       } else {
         beadLabel = "Glory Be"; prayer = P.glory; speech = `${P.glory} ${P.fatima}`;
       }
-      decades.push({ phase: "mystery", kicker, title: name, beadLabel, prayer, speech, speechOffset, mysteryIdx: mi, bead, introStep: -1 });
+      decades.push({ phase: "mystery", kicker, title: name, beadLabel, prayer, speech, speechOffset, mysteryIdx: mi, bead, phaseStep: -1 });
     }
   });
 
-  return [...intro, ...decades];
+  const closingPrayer = (title: string, beadLabel: string, prayer: string, phaseStep: number): Step => ({
+    phase: "closing", kicker: "Closing Prayers", title, beadLabel, prayer, speech: prayer,
+    speechOffset: 0, mysteryIdx: -1, bead: -1, phaseStep,
+  });
+  const closing: Step[] = [
+    closingPrayer("Hail, Holy Queen", "Salve Regina", P.queen, 0),
+    closingPrayer("Let Us Pray", "", P.closing, 1),
+    closingPrayer("Prayer to St. Michael", "", P.michael, 2),
+  ];
+
+  return [...intro, ...decades, ...closing];
 }
 
 function BeadDots({ current }: { current: number }) {
@@ -100,10 +111,10 @@ function BeadDots({ current }: { current: number }) {
     </div>
   );
 }
-function IntroDots({ current }: { current: number }) {
+function PhaseDots({ current, total }: { current: number; total: number }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 7, justifyContent: "center" }}>
-      {Array.from({ length: INTRO_LEN }).map((_, i) => (
+      {Array.from({ length: total }).map((_, i) => (
         <BeadCircle key={i} filled={current > i} active={current === i} />
       ))}
     </div>
@@ -191,6 +202,7 @@ export default function RosaryPage() {
   }
   function jumpToMystery(i: number) { narration.seek(INTRO_LEN + i * TOTAL_BEADS); }
   function jumpToIntro() { narration.seek(0); }
+  function jumpToClosing() { narration.seek(INTRO_LEN + MYSTERY_SETS[activeSet].length * TOTAL_BEADS); }
   function changeSet(key: SetKey) { setActiveSet(key); narration.reset(0); }
   function backToMenu() { narration.reset(0); setMode("menu"); }
   function start(m: Mode) { narration.reset(0); setMode(m); }
@@ -262,6 +274,8 @@ export default function RosaryPage() {
   }
 
   const isIntro = step.phase === "intro";
+  const isClosing = step.phase === "closing";
+  const isMystery = step.phase === "mystery";
 
   // ── PRAYER (interactive / guided) ───────────────────────────────────────────
   return (
@@ -313,9 +327,23 @@ export default function RosaryPage() {
           })}
         </div>
 
+        {/* Closing Prayers */}
+        <button onClick={jumpToClosing} style={{
+          display: "flex", alignItems: "baseline", gap: 14, padding: "13px 22px", marginTop: 8, border: "none", cursor: "pointer", textAlign: "left",
+          background: isClosing ? "rgba(210,107,67,0.14)" : "transparent",
+          borderLeft: isClosing ? "2px solid var(--gold)" : "2px solid transparent", transition: "all .14s",
+        }}>
+          <span style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, color: isClosing ? "var(--gold)" : cream(0.35), flexShrink: 0, lineHeight: 1 }}>
+            <LucideIcon name="crown" size={13} />
+          </span>
+          <span style={{ fontFamily: "var(--font-body)", fontSize: 15, fontWeight: isClosing ? 600 : 400, color: isClosing ? "#F6F0E6" : cream(0.55), lineHeight: 1.3 }}>
+            Closing Prayers
+          </span>
+        </button>
+
         <div style={{ marginTop: "auto", padding: "24px 22px 0" }}>
           <div style={{ height: 1, background: cream(0.12), marginBottom: 16 }} />
-          {step.phase === "mystery" ? (
+          {isMystery ? (
             <>
               <div style={{ fontFamily: "var(--font-display)", fontSize: 11, letterSpacing: ".01em", color: "var(--gold)", marginBottom: 6 }}>Fruit of this Mystery</div>
               <div style={{ fontFamily: "var(--font-body)", fontStyle: "italic", fontSize: 14, color: cream(0.65), lineHeight: 1.5 }}>
@@ -324,7 +352,9 @@ export default function RosaryPage() {
             </>
           ) : (
             <div style={{ fontFamily: "var(--font-body)", fontStyle: "italic", fontSize: 14, color: cream(0.65), lineHeight: 1.5 }}>
-              We begin with the introductory prayers, offering the Rosary for our intentions and the Holy Father.
+              {isClosing
+                ? "We end with the Hail Holy Queen, the closing prayer, and the prayer to St. Michael."
+                : "We begin with the introductory prayers, offering the Rosary for our intentions and the Holy Father."}
             </div>
           )}
         </div>
@@ -352,7 +382,7 @@ export default function RosaryPage() {
         {/* Ambient illustration behind the prayer */}
         <div style={{ position: "absolute", top: "12%", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", maxWidth: "70%"  }}>
           <Illustration
-            name={isIntro ? "section-rosary" : MYSTERY_ART[activeSet]}
+            name={isMystery ? MYSTERY_ART[activeSet] : "section-rosary"}
             size={240}
             invertOnDark
             opacity={0.25}
@@ -390,11 +420,15 @@ export default function RosaryPage() {
 
         {/* Progress tracker */}
         <div style={{ marginTop: mode === "interactive" ? 44 : 8 }}>
-          {isIntro ? <IntroDots current={step.introStep} /> : <BeadDots current={step.bead} />}
+          {isMystery
+            ? <BeadDots current={step.bead} />
+            : <PhaseDots current={step.phaseStep} total={isIntro ? INTRO_LEN : CLOSING_LEN} />}
           <div style={{ fontFamily: "var(--font-display)", fontSize: 11, letterSpacing: ".01em", color: cream(0.4), textAlign: "center", marginTop: 12 }}>
             {isIntro
               ? "Introductory Prayers"
-              : step.bead === 0 ? "Opening Prayer" : step.bead >= 1 && step.bead <= 10 ? `Hail Mary ${step.bead} of 10` : "Closing Prayer"}
+              : isClosing
+                ? "Closing Prayers"
+                : step.bead === 0 ? "Opening Prayer" : step.bead >= 1 && step.bead <= 10 ? `Hail Mary ${step.bead} of 10` : "Glory Be"}
           </div>
         </div>
 

@@ -62,6 +62,7 @@ export const ROSARY_PRAYERS = {
   offering: "O most holy Virgin Mary, we offer thee this Rosary. Present it, we pray, to thy divine Son for the needs of holy Mother Church, and for the intentions and well-being of our Holy Father, Pope Leo XIV.",
   intentions: "Let us pause, and call to mind the intentions for which we offer this Rosary.",
   closing: "O God, whose only-begotten Son, by his life, death, and resurrection, has purchased for us the rewards of eternal life: grant, we beseech thee, that meditating upon these mysteries of the most holy Rosary, we may imitate what they contain and obtain what they promise. Through the same Christ our Lord. Amen.",
+  michael: "Saint Michael the Archangel, defend us in battle. Be our protection against the wickedness and snares of the devil. May God rebuke him, we humbly pray; and do thou, O Prince of the heavenly host, by the power of God, cast into hell Satan and all the evil spirits who prowl about the world seeking the ruin of souls. Amen.",
 } as const;
 
 export const HOURS = [
