@@ -8,6 +8,8 @@ import { Btn, LucideIcon } from "@/components/UI";
 import { ListenButton, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { countWords } from "@/lib/words";
 import { MYSTERY_SETS, ROSARY_PRAYERS, WEEKDAY_SET } from "@/data/content";
+import { RosarySlide } from "@/components/RosarySlide";
+import { hasSlides } from "@/data/rosarySlides";
 
 type SetKey = keyof typeof MYSTERY_SETS;
 const SET_KEYS: SetKey[] = ["Joyful", "Sorrowful", "Glorious", "Luminous"];
@@ -252,15 +254,19 @@ export default function RosaryPage() {
           {mysteryName}
         </h1>
 
-        {/* Mystery illustration — ambient texture behind the prayer */}
-        <div style={{ position: "absolute", top: "12%", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", maxWidth: "70%"  }}>
-          <Illustration
-            name={MYSTERY_ART[activeSet]}
-            size={240}
-            invertOnDark
-            opacity={0.25}
-          />
-        </div>
+        {/* Slide art for sets with images; ambient illustration fallback for Luminous */}
+        {hasSlides(activeSet) ? (
+          <RosarySlide set={activeSet} mysteryIdx={mysteryIdx} bead={bead} />
+        ) : (
+          <div style={{ position: "absolute", top: "12%", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", maxWidth: "70%" }}>
+            <Illustration
+              name={MYSTERY_ART[activeSet]}
+              size={240}
+              invertOnDark
+              opacity={0.25}
+            />
+          </div>
+        )}
 
         <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 12, letterSpacing: ".02em", color: "var(--gold)", marginBottom: 14, textAlign: "center" }}>
           {beadLabel}
