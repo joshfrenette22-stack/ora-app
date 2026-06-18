@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Cross, Fleuron } from "@/components/Sacred";
 import { Illustration } from "@/components/Illustration";
@@ -10,6 +10,8 @@ import { ListenButton, SpokenText, useNarration, useRegisterNarration, type Narr
 import { countWords } from "@/lib/words";
 import { recordPrayer } from "@/lib/prayerStats";
 import { MYSTERY_SETS, ROSARY_PRAYERS, WEEKDAY_SET } from "@/data/content";
+import { RosarySlide } from "@/components/RosarySlide";
+import { hasSlides, rosarySlide } from "@/data/rosarySlides";
 
 type SetKey = keyof typeof MYSTERY_SETS;
 const SET_KEYS: SetKey[] = ["Joyful", "Sorrowful", "Glorious", "Luminous"];
@@ -182,7 +184,16 @@ export default function RosaryPage() {
   );
 
   const narration = useNarration({ segments });
-  useRegisterNarration(narration, mode === "guided" ? "Fully guided" : "Listen", true, MYSTERY_ART[activeSet] as IllustrationKey | undefined);
+
+  // Stable getter for the current rosary slide (used by the full-screen player).
+  // It reads a ref kept in sync with the active step below; intro/closing steps
+  // carry no slide (mysteryIdx -1) and fall back to the ambient illustration.
+  const slideStateRef = useRef<{ set: SetKey; mysteryIdx: number; bead: number }>({ set: activeSet, mysteryIdx: -1, bead: -1 });
+  const getImageSrc = useCallback(() => {
+    const { set, mysteryIdx: mi, bead: b } = slideStateRef.current;
+    return mi >= 0 ? rosarySlide(set, mi, b) : null;
+  }, []);
+  useRegisterNarration(narration, mode === "guided" ? "Fully guided" : "Listen", true, MYSTERY_ART[activeSet] as IllustrationKey | undefined, getImageSrc);
 
   // Fully-guided mode plays the whole rosary aloud, auto-advancing the text.
   useEffect(() => {
@@ -193,6 +204,9 @@ export default function RosaryPage() {
   const idx = Math.min(narration.index, steps.length - 1);
   const step = steps[idx] ?? steps[0];
   const mysteries = MYSTERY_SETS[activeSet] as readonly (readonly [string, string])[];
+
+  // Feed the current slide (mystery beads only) to the full-screen player.
+  useEffect(() => { slideStateRef.current = { set: activeSet, mysteryIdx: step.mysteryIdx, bead: step.bead }; });
 
   function advance() {
     // Reaching the end of the last decade completes the Rosary — count it as a
@@ -362,15 +376,20 @@ export default function RosaryPage() {
           {step.title}
         </h1>
 
-        {/* Ambient illustration behind the prayer */}
-        <div style={{ position: "absolute", top: "12%", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", maxWidth: "70%"  }}>
-          <Illustration
-            name={isMystery ? MYSTERY_ART[activeSet] : "section-rosary"}
-            size={240}
-            invertOnDark
-            opacity={0.25}
-          />
-        </div>
+        {/* Slide art during the decades (sets with images); ambient illustration
+            during the introduction/closing prayers and for Luminous (no slides). */}
+        {isMystery && hasSlides(activeSet) ? (
+          <RosarySlide set={activeSet} mysteryIdx={step.mysteryIdx} bead={step.bead} />
+        ) : (
+          <div style={{ position: "absolute", top: "12%", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", maxWidth: "70%" }}>
+            <Illustration
+              name={isMystery ? MYSTERY_ART[activeSet] : "section-rosary"}
+              size={240}
+              invertOnDark
+              opacity={0.25}
+            />
+          </div>
+        )}
 
         {step.beadLabel && (
           <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 12, letterSpacing: ".02em", color: "var(--gold)", marginBottom: 14, textAlign: "center" }}>
