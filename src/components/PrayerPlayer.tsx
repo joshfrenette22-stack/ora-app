@@ -387,11 +387,24 @@ export function useNarration({
   }, []);
 
   const resume = useCallback(() => {
-    if (engineRef.current === "google") audioRef.current?.play().catch(() => {});
-    else resumeSpeaking();
-    soundingRef.current = true;
-    setStatus("playing");
-  }, []);
+    if (engineRef.current === "google") {
+      const a = audioRef.current;
+      if (a && a.src) {
+        soundingRef.current = true;
+        setStatus("playing");
+        // If the element was unloaded while backgrounded, play() rejects —
+        // restart the current segment so it always resumes.
+        a.play().catch(() => playIndex(indexRef.current));
+        return;
+      }
+      playIndex(indexRef.current);
+      return;
+    }
+    // Browser speech: resume() after a pause is unreliable — the utterance is
+    // often dropped (especially after the app is backgrounded on iOS). Re-read
+    // the current segment from its start so it reliably picks back up.
+    playIndex(indexRef.current);
+  }, [playIndex]);
 
   const stop = useCallback(() => {
     genRef.current++;
