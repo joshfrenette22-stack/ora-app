@@ -19,15 +19,73 @@ type Mode = "menu" | "interactive" | "guided";
 // Dark-surface palette helpers
 const cream = (a: number) => `rgba(239,230,214,${a})`;
 
-function getBeadLabel(bead: number): string {
-  if (bead === 0) return "Our Father";
-  if (bead >= 1 && bead <= 10) return `Hail Mary · ${bead} of 10`;
-  return "Glory Be";
+/** One screen of the Rosary — an introductory prayer or a single bead. The whole
+ *  Rosary is flattened to an ordered list of these so the introduction (Sign of
+ *  the Cross, Creed, offering, the three Hail Marys, …) flows straight into the
+ *  five decades. */
+interface Step {
+  phase: "intro" | "mystery";
+  kicker: string;       // small gold label above the title
+  title: string;        // large serif heading
+  beadLabel: string;    // gold label above the prayer ("" hides it)
+  prayer: string;       // text shown on screen
+  speech: string;       // text read aloud (may carry a spoken preamble)
+  speechOffset: number; // words spoken before `prayer` begins (for highlight sync)
+  mysteryIdx: number;   // -1 for intro, else 0–4
+  bead: number;         // -1 for intro, else 0–11
+  introStep: number;    // index within the introduction, else -1
+  pause?: boolean;      // a moment for the user's own intentions
 }
-function getBeadPrayer(bead: number): string {
-  if (bead === 0) return ROSARY_PRAYERS.our;
-  if (bead >= 1 && bead <= 10) return ROSARY_PRAYERS.hail;
-  return ROSARY_PRAYERS.glory;
+
+const INTRO_LEN = 9;
+
+function buildSteps(activeSet: SetKey): Step[] {
+  const P = ROSARY_PRAYERS;
+  const introPrayer = (title: string, prayer: string, introStep: number, extra?: Partial<Step>): Step => ({
+    phase: "intro", kicker: "Introduction", title, beadLabel: "", prayer, speech: prayer,
+    speechOffset: 0, mysteryIdx: -1, bead: -1, introStep, ...extra,
+  });
+  const hailFor = (virtue: string, n: number, introStep: number): Step => {
+    const preamble = `For an increase of ${virtue.toLowerCase()}.`;
+    return {
+      phase: "intro", kicker: "Introduction", title: `For an increase of ${virtue}`,
+      beadLabel: `Hail Mary · ${n} of 3`, prayer: P.hail, speech: `${preamble} ${P.hail}`,
+      speechOffset: countWords(preamble), mysteryIdx: -1, bead: -1, introStep,
+    };
+  };
+
+  const intro: Step[] = [
+    introPrayer("The Sign of the Cross", P.signCross, 0),
+    introPrayer("The Offering", P.offering, 1),
+    introPrayer("Your Intentions", P.intentions, 2, { pause: true }),
+    introPrayer("The Apostles’ Creed", P.creed, 3),
+    introPrayer("Our Father", P.our, 4),
+    hailFor("Faith", 1, 5),
+    hailFor("Hope", 2, 6),
+    hailFor("Charity", 3, 7),
+    introPrayer("Glory Be", P.glory, 8),
+  ];
+
+  const mysteries = MYSTERY_SETS[activeSet] as readonly (readonly [string, string])[];
+  const decades: Step[] = [];
+  mysteries.forEach(([name], mi) => {
+    const kicker = `${ORDINALS[mi]} ${activeSet} Mystery`;
+    for (let bead = 0; bead < TOTAL_BEADS; bead++) {
+      let beadLabel: string, prayer: string, speech: string, speechOffset = 0;
+      if (bead === 0) {
+        const preamble = `The ${ORDINALS[mi]} ${activeSet} Mystery. ${name}.`;
+        beadLabel = "Our Father"; prayer = P.our; speech = `${preamble} ${P.our}`;
+        speechOffset = countWords(preamble);
+      } else if (bead <= 10) {
+        beadLabel = `Hail Mary · ${bead} of 10`; prayer = P.hail; speech = P.hail;
+      } else {
+        beadLabel = "Glory Be"; prayer = P.glory; speech = `${P.glory} ${P.fatima}`;
+      }
+      decades.push({ phase: "mystery", kicker, title: name, beadLabel, prayer, speech, speechOffset, mysteryIdx: mi, bead, introStep: -1 });
+    }
+  });
+
+  return [...intro, ...decades];
 }
 
 function BeadDots({ current }: { current: number }) {
@@ -38,6 +96,15 @@ function BeadDots({ current }: { current: number }) {
         <BeadCircle key={i} filled={current > i} active={current === i + 1} />
       ))}
       <BeadDiamond filled={current >= 11} active={current === 11} />
+    </div>
+  );
+}
+function IntroDots({ current }: { current: number }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 7, justifyContent: "center" }}>
+      {Array.from({ length: INTRO_LEN }).map((_, i) => (
+        <BeadCircle key={i} filled={current > i} active={current === i} />
+      ))}
     </div>
   );
 }
@@ -84,8 +151,6 @@ function SetPills({ activeSet, onChange, className, style }: { activeSet: SetKey
 export default function RosaryPage() {
   const [mode, setMode] = useState<Mode>("menu");
   const [activeSet, setActiveSet] = useState<SetKey>("Glorious");
-  const [mysteryIdx, setMysteryIdx] = useState(0);
-  const [bead, setBead] = useState(0);
 
   // Default to the day's mysteries (client-side to avoid a hydration mismatch).
   useEffect(() => {
@@ -93,36 +158,18 @@ export default function RosaryPage() {
     setActiveSet(WEEKDAY_SET[new Date().getDay()] as SetKey);
   }, []);
 
-  const mysteries = MYSTERY_SETS[activeSet];
-  const [mysteryName, mysteryFruit] = mysteries[mysteryIdx] as [string, string];
-  const ordinal = ORDINALS[mysteryIdx];
-  const beadLabel = getBeadLabel(bead);
-  const prayer = getBeadPrayer(bead);
-  // On the opening bead the segment reads "The Nth <Set> Mystery. <Name>." before
-  // the Our Father, so the displayed prayer's words start after that preamble.
-  const prayerOffset = bead === 0
-    ? countWords(`The ${ordinal} ${activeSet} Mystery. ${mysteryName}.`)
-    : 0;
+  const steps = useMemo(() => buildSteps(activeSet), [activeSet]);
 
-  // Full sequence: 5 mysteries × 12 beads, narrated in order.
-  const segments = useMemo<NarrationSegment[]>(() => {
-    const segs: NarrationSegment[] = [];
-    (mysteries as readonly (readonly [string, string])[]).forEach(([name], mi) => {
-      for (let b = 0; b < TOTAL_BEADS; b++) {
-        let text: string;
-        if (b === 0) text = `The ${ORDINALS[mi]} ${activeSet} Mystery. ${name}. ${ROSARY_PRAYERS.our}`;
-        else if (b <= 10) text = ROSARY_PRAYERS.hail;
-        else text = `${ROSARY_PRAYERS.glory} ${ROSARY_PRAYERS.fatima}`;
-        segs.push({ id: `${mi}-${b}`, label: `${ORDINALS[mi]} · ${getBeadLabel(b)}`, text });
-      }
-    });
-    return segs;
-  }, [mysteries, activeSet]);
+  const segments = useMemo<NarrationSegment[]>(
+    () => steps.map((s, i) => ({
+      id: String(i),
+      label: s.phase === "intro" ? `Introduction · ${s.title}` : `${ORDINALS[s.mysteryIdx]} · ${s.beadLabel}`,
+      text: s.speech,
+    })),
+    [steps],
+  );
 
-  const narration = useNarration({
-    segments,
-    onSegmentChange: (i) => { setMysteryIdx(Math.floor(i / TOTAL_BEADS)); setBead(i % TOTAL_BEADS); },
-  });
+  const narration = useNarration({ segments });
   useRegisterNarration(narration, mode === "guided" ? "Fully guided" : "Listen", true, MYSTERY_ART[activeSet] as IllustrationKey | undefined);
 
   // Fully-guided mode plays the whole rosary aloud, auto-advancing the text.
@@ -131,13 +178,15 @@ export default function RosaryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
-  function advance() {
-    const g = mysteryIdx * TOTAL_BEADS + bead;
-    narration.seek(g + 1 >= segments.length ? 0 : g + 1);
-  }
-  function jumpToMystery(idx: number) { narration.seek(idx * TOTAL_BEADS); }
+  const idx = Math.min(narration.index, steps.length - 1);
+  const step = steps[idx] ?? steps[0];
+  const mysteries = MYSTERY_SETS[activeSet] as readonly (readonly [string, string])[];
+
+  function advance() { narration.seek(idx + 1 >= steps.length ? 0 : idx + 1); }
+  function jumpToMystery(i: number) { narration.seek(INTRO_LEN + i * TOTAL_BEADS); }
+  function jumpToIntro() { narration.seek(0); }
   function changeSet(key: SetKey) { setActiveSet(key); narration.reset(0); }
-  function backToMenu() { narration.reset(0); setMysteryIdx(0); setBead(0); setMode("menu"); }
+  function backToMenu() { narration.reset(0); setMode("menu"); }
   function start(m: Mode) { narration.reset(0); setMode(m); }
 
   // ── MODE CHOOSER ──────────────────────────────────────────────────────────
@@ -206,6 +255,8 @@ export default function RosaryPage() {
     );
   }
 
+  const isIntro = step.phase === "intro";
+
   // ── PRAYER (interactive / guided) ───────────────────────────────────────────
   return (
     <div style={{ height: "100%", display: "flex", color: "var(--gold-bright)", background: "var(--surface-ink)", overflow: "hidden" }}>
@@ -218,13 +269,27 @@ export default function RosaryPage() {
 
         <SetPills activeSet={activeSet} onChange={changeSet} style={{ padding: "0 20px 22px" }} />
 
-        <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 11, letterSpacing: ".01em", color: "var(--gold)", padding: "0 22px 12px" }}>
+        {/* Introduction */}
+        <button onClick={jumpToIntro} style={{
+          display: "flex", alignItems: "baseline", gap: 14, padding: "13px 22px", border: "none", cursor: "pointer", textAlign: "left",
+          background: isIntro ? "rgba(210,107,67,0.14)" : "transparent",
+          borderLeft: isIntro ? "2px solid var(--gold)" : "2px solid transparent", transition: "all .14s",
+        }}>
+          <span style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, color: isIntro ? "var(--gold)" : cream(0.35), flexShrink: 0, lineHeight: 1 }}>
+            <LucideIcon name="sparkles" size={13} />
+          </span>
+          <span style={{ fontFamily: "var(--font-body)", fontSize: 15, fontWeight: isIntro ? 600 : 400, color: isIntro ? "#F6F0E6" : cream(0.55), lineHeight: 1.3 }}>
+            Introductory Prayers
+          </span>
+        </button>
+
+        <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 11, letterSpacing: ".01em", color: "var(--gold)", padding: "16px 22px 12px" }}>
           {activeSet} Mysteries
         </div>
 
         <div style={{ display: "flex", flexDirection: "column" }}>
-          {(mysteries as readonly (readonly [string, string])[]).map(([name], i) => {
-            const on = i === mysteryIdx;
+          {mysteries.map(([name], i) => {
+            const on = step.phase === "mystery" && i === step.mysteryIdx;
             return (
               <button key={i} onClick={() => jumpToMystery(i)} style={{
                 display: "flex", alignItems: "baseline", gap: 14, padding: "13px 22px", border: "none", cursor: "pointer", textAlign: "left",
@@ -244,10 +309,18 @@ export default function RosaryPage() {
 
         <div style={{ marginTop: "auto", padding: "24px 22px 0" }}>
           <div style={{ height: 1, background: cream(0.12), marginBottom: 16 }} />
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 11, letterSpacing: ".01em", color: "var(--gold)", marginBottom: 6 }}>Fruit of this Mystery</div>
-          <div style={{ fontFamily: "var(--font-body)", fontStyle: "italic", fontSize: 14, color: cream(0.65), lineHeight: 1.5 }}>
-            {mysteryFruit.replace(/^.*— Fruit: /, "")}
-          </div>
+          {step.phase === "mystery" ? (
+            <>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 11, letterSpacing: ".01em", color: "var(--gold)", marginBottom: 6 }}>Fruit of this Mystery</div>
+              <div style={{ fontFamily: "var(--font-body)", fontStyle: "italic", fontSize: 14, color: cream(0.65), lineHeight: 1.5 }}>
+                {(mysteries[step.mysteryIdx][1]).replace(/^.*— Fruit: /, "")}
+              </div>
+            </>
+          ) : (
+            <div style={{ fontFamily: "var(--font-body)", fontStyle: "italic", fontSize: 14, color: cream(0.65), lineHeight: 1.5 }}>
+              We begin with the introductory prayers, offering the Rosary for our intentions and the Holy Father.
+            </div>
+          )}
         </div>
       </aside>
 
@@ -263,36 +336,44 @@ export default function RosaryPage() {
         </div>
 
         <div style={{ fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 600, letterSpacing: ".02em", color: "var(--gold)", marginBottom: 8, textAlign: "center" }}>
-          {ordinal} {activeSet} Mystery
+          {step.kicker}
         </div>
 
         <h1 className="pw-reveal pw-mystery-name" style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 34, color: "#F6F0E6", margin: "0 0 34px", textAlign: "center", lineHeight: 1.18, letterSpacing: "-.015em", maxWidth: 560 }}>
-          {mysteryName}
+          {step.title}
         </h1>
 
-        {/* Mystery illustration — ambient texture behind the prayer */}
+        {/* Ambient illustration behind the prayer */}
         <div style={{ position: "absolute", top: "12%", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", maxWidth: "70%"  }}>
           <Illustration
-            name={MYSTERY_ART[activeSet]}
+            name={isIntro ? "section-rosary" : MYSTERY_ART[activeSet]}
             size={240}
             invertOnDark
             opacity={0.25}
           />
         </div>
 
-        <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 12, letterSpacing: ".02em", color: "var(--gold)", marginBottom: 14, textAlign: "center" }}>
-          {beadLabel}
-        </div>
+        {step.beadLabel && (
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 12, letterSpacing: ".02em", color: "var(--gold)", marginBottom: 14, textAlign: "center" }}>
+            {step.beadLabel}
+          </div>
+        )}
 
         <SpokenText
           as="p"
           dark
-          text={prayer}
+          text={step.prayer}
           active={narration.status !== "idle"}
           wordIndex={narration.wordIndex}
-          wordOffset={prayerOffset}
+          wordOffset={step.speechOffset}
           style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 23, lineHeight: 1.58, color: cream(0.85), textAlign: "center", maxWidth: 580, margin: "0 0 36px", width: "100%" }}
         />
+
+        {step.pause && mode === "interactive" && (
+          <div style={{ fontFamily: "var(--font-body)", fontSize: 14, fontStyle: "italic", color: cream(0.5), marginTop: -18, marginBottom: 30, textAlign: "center" }}>
+            Take a moment in silence, then continue when you are ready.
+          </div>
+        )}
 
         <Fleuron width={170} style={{ marginBottom: 32 }} />
 
@@ -301,11 +382,13 @@ export default function RosaryPage() {
           <Btn variant="primary" onClick={advance} style={{ minWidth: 180 }}>Continue</Btn>
         )}
 
-        {/* Bead tracker */}
+        {/* Progress tracker */}
         <div style={{ marginTop: mode === "interactive" ? 44 : 8 }}>
-          <BeadDots current={bead} />
+          {isIntro ? <IntroDots current={step.introStep} /> : <BeadDots current={step.bead} />}
           <div style={{ fontFamily: "var(--font-display)", fontSize: 11, letterSpacing: ".01em", color: cream(0.4), textAlign: "center", marginTop: 12 }}>
-            {bead === 0 ? "Opening Prayer" : bead >= 1 && bead <= 10 ? `Hail Mary ${bead} of 10` : "Closing Prayer"}
+            {isIntro
+              ? "Introductory Prayers"
+              : step.bead === 0 ? "Opening Prayer" : step.bead >= 1 && step.bead <= 10 ? `Hail Mary ${step.bead} of 10` : "Closing Prayer"}
           </div>
         </div>
 
