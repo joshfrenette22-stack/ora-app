@@ -297,6 +297,29 @@ h1, h2, h3, p, blockquote, div, span { overflow-wrap: break-word; word-break: br
   .pw-card, .pw-card:hover, .pw-card:active { transform: none; transition: none; }
 }
 
+/* ── First-run splash ──────────────────────────────────────────────────────── */
+@keyframes oraSplashBg { from { opacity: 0; } to { opacity: 1; } }
+@keyframes oraSplashEmblem {
+  from { opacity: 0; transform: scale(.8); filter: blur(4px); }
+  to { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+@keyframes oraSplashGlow {
+  0%, 100% { opacity: .4; transform: scale(1); }
+  50% { opacity: .85; transform: scale(1.1); }
+}
+@keyframes oraSpinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes oraSplashBar { from { width: 0; } to { width: 100%; } }
+@keyframes oraSplashHint { 0%, 100% { opacity: .3; } 50% { opacity: .65; } }
+
+.pw-splash-emblem { animation: oraSplashEmblem 1.1s var(--ease-sacred) both; }
+.pw-splash-glow { animation: oraSplashGlow 3.6s var(--ease-inout) infinite; transform-origin: center; }
+.pw-splash-ring { animation: oraSpinSlow 60s linear infinite; transform-origin: center; }
+.pw-splash-bar { animation: oraSplashBar var(--ease-inout) both; }
+.pw-splash-hint { animation: oraSplashHint 2.2s var(--ease-inout) infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .pw-splash-glow, .pw-splash-ring, .pw-splash-hint { animation: none !important; }
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
