@@ -187,6 +187,11 @@ function OfficePartView({ part, active, speaking, wordIndex, onClick }: { part: 
         )}
         <SpokenText as="p" text={part.text} active={speaking} wordIndex={wordIndex} wordOffset={antiphonWords}
           style={{ fontFamily: "var(--font-body)", fontSize: 17, lineHeight: 1.72, color: "var(--ink)", margin: 0 }} />
+        {part.type === "psalm" && part.antiphon && (
+          <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 15, lineHeight: 1.55, color: "var(--gold-deep)", opacity: 0.75, margin: "12px 0 0" }}>
+            {part.antiphon}
+          </p>
+        )}
       </div>
     );
   }

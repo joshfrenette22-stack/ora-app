@@ -34,7 +34,7 @@ export const OFFICE: Record<string, OfficePart[]> = {
       "label": "Invitatory · Psalm 95",
       "ref": "Psalm 95",
       "antiphon": "Come, let us worship the Lord, the great King above all gods.",
-      "text": "Come let us praise the Lord with joy: let us joyfully sing to God our saviour. Let us come before his presence with thanksgiving; and make a joyful noise to him with psalms. For the Lord is a great God, and a great King above all gods. For in his hand are all the ends of the earth: and the heights of the mountains are his. For the sea is his, and he made it: and his hands formed the dry land. Come let us adore and fall down: and weep before the Lord that made us. For he is the Lord our God: and we are the people of his pasture and the sheep of his hand."
+      "text": "Come let us praise the Lord with joy: let us joyfully sing to God our saviour. Let us come before his presence with thanksgiving; and make a joyful noise to him with psalms. For the Lord is a great God, and a great King above all gods. For in his hand are all the ends of the earth: and the heights of the mountains are his. For the sea is his, and he made it: and his hands formed the dry land. Come let us adore and fall down: and weep before the Lord that made us. For he is the Lord our God: and we are the people of his pasture and the sheep of his hand. To day if you shall hear his voice, harden not your hearts: As in the provocation, according to the day of temptation in the wilderness: where your fathers tempted me, they proved me, and saw my works. Forty years long was I offended with that generation, and I said: These always err in heart. And these men have not known my ways: so I swore in my wrath that they shall not enter into my rest."
     },
     {
       "type": "psalm",
@@ -46,9 +46,9 @@ export const OFFICE: Record<string, OfficePart[]> = {
     {
       "type": "psalm",
       "label": "Psalm 103",
-      "ref": "Psalm 103 · 1–5",
+      "ref": "Psalm 103",
       "antiphon": "Bless the Lord, O my soul, and forget not all his benefits.",
-      "text": "For David himself. Bless the Lord, O my soul: and let all that is within me bless his holy name. Bless the Lord, O my soul, and never forget all he hath done for thee. Who forgiveth all thy iniquities: who healeth all thy diseases. Who redeemeth thy life from destruction: who crowneth thee with mercy and compassion. Who satisfieth thy desire with good things: thy youth shall be renewed like the eagle's."
+      "text": "For David himself. Bless the Lord, O my soul: and let all that is within me bless his holy name. Bless the Lord, O my soul, and never forget all he hath done for thee. Who forgiveth all thy iniquities: who healeth all thy diseases. Who redeemeth thy life from destruction: who crowneth thee with mercy and compassion. Who satisfieth thy desire with good things: thy youth shall be renewed like the eagle's. The Lord doth mercies, and judgment for all that suffer wrong. He hath made his ways known to Moses: his wills to the children of Israel. The ford is compassionate and merciful: longsuffering and plenteous in mercy. He will not always be angry: nor will he threaten for ever. He hath not dealt with us according to our sins: nor rewarded us according to our iniquities. For according to the height of the heaven above the earth: he hath strengthened his mercy towards them that fear him. As far as the east is from the west, so far hath he removed our iniquities from us. As a father hath compassion on his children, so hath the Lord compassion on them that fear him: for he knoweth our frame. He remembereth that we are dust: man's days are as grass, as the flower of the field so shall he flourish. For the spirit shall pass in him, and he shall not be: and he shall know his place no more. But the mercy of the Lord is from eternity and unto eternity upon them that fear him: And his justice unto children's children, to such as keep his covenant, And are mindful of his commandments to do them. The Lord hath prepared his throne in heaven: and his kingdom shall rule over all. Bless the Lord, all ye his angels: you that are mighty in strength, and execute his word, hearkening to the voice of his orders. Bless the Lord, all ye his hosts: you ministers of his that do his will. Bless the Lord, all his works: in every place of his dominion, O my soul, bless thou the Lord."
     },
     {
       "type": "reading",
@@ -105,9 +105,9 @@ export const OFFICE: Record<string, OfficePart[]> = {
     {
       "type": "psalm",
       "label": "Psalm 63",
-      "ref": "Psalm 63 · 1–8",
+      "ref": "Psalm 63",
       "antiphon": "O God, my God, to thee do I watch at the break of day.",
-      "text": "A psalm of David when he was in the desert of Edom. O God, my God, to thee do I watch at break of day. For thee my soul hath thirsted; for thee my flesh, O how many ways! In a desert land, and where there is no way, and no water: so in the sanctuary have I come before thee, to see thy power and thy glory. For thy mercy is better than lives: thee my lips shall praise. Thus will I bless thee all my life long: and in thy name I will lift up my hands. Let my soul be filled as with marrow and fatness: and my mouth shall praise thee with joyful lips. If I have remembered thee upon my bed, I will meditate on thee in the morning: because thou hast been my helper. And I will rejoice under the covert of thy wings:"
+      "text": "O God, my God, to thee do I watch at break of day. For thee my soul hath thirsted; for thee my flesh, O how many ways! In a desert land, and where there is no way, and no water: so in the sanctuary have I come before thee, to see thy power and thy glory. For thy mercy is better than lives: thee my lips shall praise. Thus will I bless thee all my life long: and in thy name I will lift up my hands. Let my soul be filled as with marrow and fatness: and my mouth shall praise thee with joyful lips. If I have remembered thee upon my bed, I will meditate on thee in the morning: because thou hast been my helper. And I will rejoice under the covert of thy wings: my soul hath stuck close to thee: thy right hand hath received me. But they have sought my soul in vain, they shall go into the lower parts of the earth: They shall be delivered into the hands of the sword, they shall be the portions of foxes. But the king shall rejoice in God, all they shall be praised that swear by him: because the mouth is stopped of them that speak wicked things."
     },
     {
       "type": "psalm",
@@ -115,6 +115,13 @@ export const OFFICE: Record<string, OfficePart[]> = {
       "ref": "Psalm 100",
       "antiphon": "Serve the Lord with gladness; come before him with joyful song.",
       "text": "Sing joyfully to God, all the earth: serve ye the Lord with gladness. Come in before his presence with exceeding great joy. Know ye that the Lord he is God: he made us, and not we ourselves. We are his people and the sheep of his pasture. Go ye into his gates with praise, into his courts with hymns: and give glory to him. Praise ye his name: for the Lord is sweet, his mercy endureth for ever, and his truth to generation and generation."
+    },
+    {
+      "type": "psalm",
+      "label": "Psalm 148",
+      "ref": "Psalm 148",
+      "antiphon": "Praise the Lord from the heavens; praise him in the heights.",
+      "text": "Praise ye the Lord from the heavens: praise ye him in the high places. Praise ye him , all his angels: praise ye him, all his hosts. Praise ye him, O sun and moon: praise him, all ye stars and light. Praise him, ye heavens of heavens: and let all the waters that are above the heavens praise the name of the Lord. For he spoke, and they were made: he commanded, and they were created. He hath established them for ever, and for ages of ages: he hath made a decree, and it shall not pass away. Praise the Lord from the earth, ye dragons, and all ye deeps: Fire, hail, snow, ice, stormy winds which fulfil his word: Mountains and all hills, fruitful trees and all cedars: Beasts and all cattle: serpents and feathered fowls: Kings of the earth and all people: princes and all judges of the earth: Young men and maidens: let the old with the younger, praise the name of the Lord: for his name alone is exalted. The praise of him is above heaven and earth: and he hath exalted the horn of his people. A hymn to all his saints: to the children of Israel, a people approaching to him. Alleluia."
     },
     {
       "type": "reading",
@@ -174,14 +181,21 @@ export const OFFICE: Record<string, OfficePart[]> = {
       "label": "Psalm 67",
       "ref": "Psalm 67",
       "antiphon": "May God have mercy on us, and bless us.",
-      "text": "May God have mercy on us, and bless us: may he cause the light of his countenance to shine upon us, and may he have mercy on us. That we may know thy way upon earth: thy salvation in all nations. Let people confess to thee, O God: let all people give praise to thee. Let the nations be glad and rejoice: for thou judgest the people with justice, and directest the nations upon earth. Let the people, O God, confess to thee: let all the people give praise to thee: the earth hath yielded her fruit. May God, our God bless us,"
+      "text": "May God have mercy on us, and bless us: may he cause the light of his countenance to shine upon us, and may he have mercy on us. That we may know thy way upon earth: thy salvation in all nations. Let people confess to thee, O God: let all people give praise to thee. Let the nations be glad and rejoice: for thou judgest the people with justice, and directest the nations upon earth. Let the people, O God, confess to thee: let all the people give praise to thee: the earth hath yielded her fruit. May God, our God bless us, may God bless us: and all the ends of the earth fear him."
     },
     {
       "type": "psalm",
       "label": "Psalm 8",
       "ref": "Psalm 8",
       "antiphon": "O Lord, our Lord, how admirable is thy name in all the earth!",
-      "text": "O Lord our Lord, how admirable is thy name in the whole earth! For thy magnificence is elevated above the heavens. Out of the mouth of infants and of sucklings thou hast perfected praise, because of thy enemies, that thou mayst destroy the enemy and the avenger. For I will behold thy heavens, the works of thy fingers: the moon and the stars which thou hast founded. What is man that thou art mindful of him? or the son of man that thou visitest hi? Thou hast made him a little less than the angels, thou hast crowned him with glory and honour: and hast set him over the works of thy hands. Thou hast subjected all things under his feet, all sheep and oxen: moreover the beasts also of the fields. The birds of the air, and the fishes of the sea, that pass through the paths of the sea."
+      "text": "O Lord our Lord, how admirable is thy name in the whole earth! For thy magnificence is elevated above the heavens. Out of the mouth of infants and of sucklings thou hast perfected praise, because of thy enemies, that thou mayst destroy the enemy and the avenger. For I will behold thy heavens, the works of thy fingers: the moon and the stars which thou hast founded. What is man that thou art mindful of him? or the son of man that thou visitest hi? Thou hast made him a little less than the angels, thou hast crowned him with glory and honour: and hast set him over the works of thy hands. Thou hast subjected all things under his feet, all sheep and oxen: moreover the beasts also of the fields. The birds of the air, and the fishes of the sea, that pass through the paths of the sea. O Lord our Lord, how admirable is thy name in all the earth!"
+    },
+    {
+      "type": "psalm",
+      "label": "Psalm 19",
+      "ref": "Psalm 19",
+      "antiphon": "The heavens declare the glory of God.",
+      "text": "The heavens shew forth the glory of God, and the firmament declareth the work of his hands. Day to day uttereth speech, and night to night sheweth knowledge. There are no speeches nor languages, where their voices are not heard. Their sound hath gone forth into all the earth: and their words unto the ends of the world. He hath set his tabernacle in the sun: and he, as a bridegroom coming out of his bride chamber, Hath rejoiced as a giant to run the way: His going out is from the end of heaven, And his circuit even to the end thereof: and there is no one that can hide himself from his heat. The law of the Lord is unspotted, converting souls: the testimony of the Lord is faithful, giving wisdom to little ones. The justices of the Lord are right, rejoicing hearts: the commandment of the Lord is lightsome, enlightening the eyes. The fear of the Lord is holy, enduring for ever and ever: the judgments of the Lord are true, justified in themselves. More to be desired than gold and many precious stones: and sweeter than honey and the honeycomb. For thy servant keepeth them, and in keeping them there is a great reward. Who can understand sins? from my secret ones cleanse me, O Lord: and from those of others spare thy servant. If they shall have no dominion over me, then shall I be without spot: and I shall be cleansed from the greatest sin. And the words of my mouth shall be such as may please: and the meditation of my heart always in thy sight. O Lord, my helper, and my redeemer."
     },
     {
       "type": "reading",
@@ -230,7 +244,14 @@ export const OFFICE: Record<string, OfficePart[]> = {
       "label": "Psalm 122",
       "ref": "Psalm 122",
       "antiphon": "I rejoiced when they said to me: Let us go to the house of the Lord.",
-      "text": "I rejoiced at the things that were said to me: We shall go into the house of the Lord. Our feet were standing in thy courts, O Jerusalem. Jerusalem, which is built as a city, which is compact together. For thither did the tribes go up, the tribes of the Lord: the testimony of Israel, to praise the name of the Lord. Because their seats have sat in judgment, seats upon the house of David."
+      "text": "I rejoiced at the things that were said to me: We shall go into the house of the Lord. Our feet were standing in thy courts, O Jerusalem. Jerusalem, which is built as a city, which is compact together. For thither did the tribes go up, the tribes of the Lord: the testimony of Israel, to praise the name of the Lord. Because their seats have sat in judgment, seats upon the house of David. Pray ye for the things that are for the peace of Jerusalem: and abundance for them that love thee. Let peace be in thy strength: and abundance in thy towers. For the sake of my brethren, and of my neighbours, I spoke peace of thee. Because of the house of the Lord our God, I have sought good things for thee."
+    },
+    {
+      "type": "psalm",
+      "label": "Psalm 84",
+      "ref": "Psalm 84",
+      "antiphon": "How lovely is thy dwelling place, O Lord of hosts!",
+      "text": "How lovely are thy tabernacles, O Lord of host! my soul longeth and fainteth for the courts of the Lord. My heart and my flesh have rejoiced in the living God. For the sparrow hath found herself a house, and the turtle a nest for herself where she may lay her young ones: Thy altars, O Lord of hosts, my king and my God. Blessed are they that dwell in thy house, O Lord: they shall praise thee for ever and ever. Blessed is the man whose help is from thee: in his heart he hath disposed to ascend by steps, in the vale of tears, in the place which be hath set. For the lawgiver shall give a blessing, they shall go from virtue to virtue: the God of gods shall be seen in Sion. O Lord God of hosts, hear my prayer: give ear, O God of Jacob. Behold, O God our protector: and look on the face of thy Christ. For better is one day in thy courts above thousands. I have chosen to be an abject in the house of my God, rather than to dwell in the tabernacles of sinners. For God loveth mercy and truth: the Lord will give grace and glory. He will not deprive of good things them that walk in innocence : O Lord of hosts, blessed is the man that trusteth in thee."
     },
     {
       "type": "reading",
@@ -282,6 +303,13 @@ export const OFFICE: Record<string, OfficePart[]> = {
       "text": "Out of the depths I have cried to thee, O Lord: Lord, hear my voice. Let thy ears be attentive to the voice of my supplication. If thou, O Lord, wilt mark iniquities: Lord, who shall stand it. For with thee there is merciful forgiveness: and by reason of thy law, I have waited for thee, O Lord. My soul hath relied on his word: my soul hath hoped in the Lord. From the morning watch even until night, let Israel hope in the Lord. Because with the Lord there is mercy: and with him plentiful redemption. And he shall redeem Israel from all his iniquities."
     },
     {
+      "type": "psalm",
+      "label": "Psalm 16",
+      "ref": "Psalm 16",
+      "antiphon": "Preserve me, O God, for in thee have I taken refuge.",
+      "text": "The inscription of a title to David himself. Preserve me, O Lord, for I have put trust in thee. I have said to the Lord, thou art my God, for thou hast no need of my goods. To the saints, who are in his land, he hath made wonderful all my desires in them. Their infirmities were multiplied: afterwards they made haste. I will not gather together their meetings for blood offerings: nor will I be mindful of their names by my lips. The Lord is the portion of my inheritance and of my cup: it is thou that wilt restore my inheritance to me. The lines are fallen unto me in goodly places: for my inheritance is goodly to me. I will bless the Lord, who hath given me understanding: moreover my reins also have corrected me even till night. I set the Lord always in my sight: for he is at my right hand, that I be not moved. Therefore my heart hath been glad, and my tongue hath rejoiced: moreover my flesh also shall rest in hope. Because thou wilt not leave my soul in hell; nor wilt then give thy holy one to see corruption. Thou hast made known to me the ways of life, thou shalt fill me with joy with thy countenance: at thy right hand are delights even to the end."
+    },
+    {
       "type": "reading",
       "label": "Reading",
       "ref": "Colossians 3 · 17",
@@ -322,6 +350,13 @@ export const OFFICE: Record<string, OfficePart[]> = {
       "ref": "Psalm 113",
       "antiphon": "Praise the Lord, ye servants of the Lord; blessed be the name of the Lord.",
       "text": "Praise the Lord, ye children: praise ye the name of the Lord. Blessed be the name of the Lord, from henceforth now and for ever. From the rising of the sun unto the going down of the same, the name of the Lord is worthy of praise. The Lord is high above all nations; and his glory above the heavens. Who is as the Lord our God, who dwelleth on high: and looketh down on the low things in heaven and in earth? Raising up the needy from the earth, and lifting up the poor out of the dunghill:: That he may place him with princes, with the princes of his people. Who maketh a barren woman to dwell in a house, the joyful mother of children."
+    },
+    {
+      "type": "psalm",
+      "label": "Psalm 23",
+      "ref": "Psalm 23",
+      "antiphon": "The Lord is my shepherd; there is nothing I shall want.",
+      "text": "A psalm for David. The Lord ruleth me: and I shall want nothing. He hath set me in a place of pasture. He hath brought me up, on the water of refreshment: he hath converted my soul. He hath led me on the paths of justice, for his own name's sake. For though I should walk in the midst of the shadow of death, I will fear no evils, for thou art with me. Thy rod and thy staff, they have comforted me. Thou hast prepared a table before me against them that afflict me. Thou hast anointed my head with oil; and my chalice which inebriateth me, how goodly is it! And thy mercy will follow me all the days of my life. And that I may dwell in the house of the Lord unto length of days."
     },
     {
       "type": "psalm",
@@ -388,14 +423,21 @@ export const OFFICE: Record<string, OfficePart[]> = {
       "label": "Psalm 4",
       "ref": "Psalm 4",
       "antiphon": "Have mercy on me, O Lord, and hear my prayer.",
-      "text": "When I called upon him, the God of my justice heard me: when I was in distress, thou hast enlarged me. Have mercy on me: and hear my prayer. O ye sons of men, how long will you be dull of heart? why do you love vanity, and seek after lying? Know ye also that the Lord hath made his holy one wonderful: the Lord will hear me when I shall cry unto him. Be angry, and sin not: the things you say in your hearts, be sorry for them upon your beds. Offer up the sacrifice of justice, and trust in the Lord: many say, Who sheweth us good things? The light of thy countenance O Lord, is signed upon us: thou hast given gladness in my heart. By the fruit of their corn, their wine and oil, they are multiplied. In peace in the selfsame I will sleep, and I will rest:"
+      "text": "When I called upon him, the God of my justice heard me: when I was in distress, thou hast enlarged me. Have mercy on me: and hear my prayer. O ye sons of men, how long will you be dull of heart? why do you love vanity, and seek after lying? Know ye also that the Lord hath made his holy one wonderful: the Lord will hear me when I shall cry unto him. Be angry, and sin not: the things you say in your hearts, be sorry for them upon your beds. Offer up the sacrifice of justice, and trust in the Lord: many say, Who sheweth us good things? The light of thy countenance O Lord, is signed upon us: thou hast given gladness in my heart. By the fruit of their corn, their wine and oil, they are multiplied. In peace in the selfsame I will sleep, and I will rest: for thou, O Lord, singularly hast settled me in hope."
     },
     {
       "type": "psalm",
       "label": "Psalm 91",
-      "ref": "Psalm 91 · 1–11",
+      "ref": "Psalm 91",
       "antiphon": "He that dwelleth in the aid of the Most High shall abide under the protection of the God of heaven.",
-      "text": "The praise of a canticle for David. He that dwelleth in the aid of the most High, shall abide under the protection of the God of Jacob. He shall say to the Lord: Thou art my protector, and my refuge: my God, in him will I trust. For he hath delivered me from the snare of the hunters: and from the sharp word. He will overshadow thee with his shoulders: and under his wings thou shalt trust. His truth shall compass thee with a shield: thou shalt not be afraid of the terror of the night. Of the arrow that flieth in the day, of the business that walketh about in the dark: of invasion, or of the noonday devil. A thousand shall fall at thy side, and ten thousand at thy right hand: but it shall not come nigh thee. But thou shalt consider with thy eyes: and shalt see the reward of the wicked. Because thou, O Lord, art my hope: thou hast made the most High thy refuge. There shall no evil come to thee: nor shall the scourge come near thy dwelling. For he hath given his angels charge over thee; to keep thee in all thy ways."
+      "text": "The praise of a canticle for David. He that dwelleth in the aid of the most High, shall abide under the protection of the God of Jacob. He shall say to the Lord: Thou art my protector, and my refuge: my God, in him will I trust. For he hath delivered me from the snare of the hunters: and from the sharp word. He will overshadow thee with his shoulders: and under his wings thou shalt trust. His truth shall compass thee with a shield: thou shalt not be afraid of the terror of the night. Of the arrow that flieth in the day, of the business that walketh about in the dark: of invasion, or of the noonday devil. A thousand shall fall at thy side, and ten thousand at thy right hand: but it shall not come nigh thee. But thou shalt consider with thy eyes: and shalt see the reward of the wicked. Because thou, O Lord, art my hope: thou hast made the most High thy refuge. There shall no evil come to thee: nor shall the scourge come near thy dwelling. For he hath given his angels charge over thee; to keep thee in all thy ways. In their hands they shall bear thee up: lest thou dash thy foot against a stone. Thou shalt walk upon the asp and the basilisk: and thou shalt trample under foot the lion and the dragon. Because he hoped in me I will deliver him: I will protect him because he hath known my name. He shall cry to me, and I will hear him: I am with him in tribulation, I will deliver him, and I will glorify him. I will fill him with length of days; and I will shew him my salvation."
+    },
+    {
+      "type": "psalm",
+      "label": "Psalm 133",
+      "ref": "Psalm 133",
+      "antiphon": "Behold how good and pleasant it is for brethren to dwell together in unity.",
+      "text": "Behold how good and how pleasant it is for brethren to dwell in unity. Like the precious ointment on the head, that ran down upon the beard, the beard of Aaron, Which ran down to the skirt of his garment: as the dew of Hermon, which descendeth upon mount Sion. For there the Lord hath commandeth blessing, and life for evermore."
     },
     {
       "type": "reading",
