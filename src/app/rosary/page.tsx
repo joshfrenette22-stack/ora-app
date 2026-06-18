@@ -8,6 +8,7 @@ import { MYSTERY_ART, type IllustrationKey } from "@/lib/illustrations";
 import { Btn, LucideIcon } from "@/components/UI";
 import { ListenButton, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { countWords } from "@/lib/words";
+import { recordPrayer } from "@/lib/prayerStats";
 import { MYSTERY_SETS, ROSARY_PRAYERS, WEEKDAY_SET } from "@/data/content";
 
 type SetKey = keyof typeof MYSTERY_SETS;
@@ -182,7 +183,12 @@ export default function RosaryPage() {
   const step = steps[idx] ?? steps[0];
   const mysteries = MYSTERY_SETS[activeSet] as readonly (readonly [string, string])[];
 
-  function advance() { narration.seek(idx + 1 >= steps.length ? 0 : idx + 1); }
+  function advance() {
+    // Reaching the end of the last decade completes the Rosary — count it as a
+    // prayer prayed (the guided/audio path is counted on narration completion).
+    if (idx + 1 >= steps.length) { recordPrayer(); narration.seek(0); }
+    else narration.seek(idx + 1);
+  }
   function jumpToMystery(i: number) { narration.seek(INTRO_LEN + i * TOTAL_BEADS); }
   function jumpToIntro() { narration.seek(0); }
   function changeSet(key: SetKey) { setActiveSet(key); narration.reset(0); }

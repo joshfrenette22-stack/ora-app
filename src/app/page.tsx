@@ -7,6 +7,8 @@ import { Illustration } from "@/components/Illustration";
 import { SurfaceCard, FeatureCard } from "@/components/UI";
 import { Sun, Sparkles } from "lucide-react";
 import { localDateISO } from "@/lib/clientDate";
+import { useUserName, displayName } from "@/lib/userName";
+import { PrayerCountToday } from "@/components/PrayerCountToday";
 import { HOURS, currentHourName, WEEKDAY_SET } from "@/data/content";
 
 type Hour = typeof HOURS[number];
@@ -58,6 +60,7 @@ export default function TodayPage() {
   const [rosarySet, setRosarySet] = useState<string | null>(null);
   const [weekday, setWeekday] = useState<string | null>(null);
   const [church, setChurch] = useState<ChurchItem[] | null>(null);
+  const name = useUserName();
 
   useEffect(() => {
     let alive = true;
@@ -98,7 +101,9 @@ export default function TodayPage() {
         </div>
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 88% 0%, rgba(210,107,67,0.18) 0%, transparent 58%)", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, color: "rgba(239,230,214,0.6)" }}>{greeting ?? "Welcome"}</div>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, color: "rgba(239,230,214,0.6)" }}>
+            {greeting ?? "Welcome"}{name ? `, ${displayName(name)}` : ""}
+          </div>
           <h1 className="pw-reveal pw-greeting-heading" style={{ fontFamily: "var(--font-serif)", fontSize: 28, fontWeight: 500, color: "#F6F0E6", lineHeight: 1.2, letterSpacing: "-.01em", margin: "8px 0 0" }}>
             How would you like to pray today?
           </h1>
@@ -121,6 +126,9 @@ export default function TodayPage() {
           </div>
         </div>
       </div>
+
+      {/* Prayers prayed today */}
+      <PrayerCountToday />
 
       {/* Today in the Church */}
       <div className="pw-card" style={{ background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 18, padding: "22px 24px", marginBottom: 30, boxShadow: "var(--shadow-sm)" }}>

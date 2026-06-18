@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LucideIcon } from "./UI";
 import { useVoice } from "./VoiceProvider";
 import { wordStarts, wordIndexAtChar, countWords } from "@/lib/words";
+import { recordPrayer } from "@/lib/prayerStats";
 import {
   ensureVoices,
   isSpeechSupported,
@@ -354,7 +355,7 @@ export function useNarration({
           const nextIdx = i + 1;
           if (nextIdx < segmentsRef.current.length) playNextRef.current(nextIdx);
           else if (loop) playNextRef.current(0);
-          else { setStatus("idle"); completeRef.current?.(); }
+          else { setStatus("idle"); recordPrayer(); completeRef.current?.(); }
         },
         () => { if (gen === genRef.current) { setStatus("idle"); setLoading(false); } },
       );
