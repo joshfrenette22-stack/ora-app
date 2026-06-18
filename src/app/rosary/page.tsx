@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Cross, Fleuron } from "@/components/Sacred";
 import { Illustration } from "@/components/Illustration";
 import { MYSTERY_ART, type IllustrationKey } from "@/lib/illustrations";
@@ -9,7 +9,7 @@ import { ListenButton, SpokenText, useNarration, useRegisterNarration, type Narr
 import { countWords } from "@/lib/words";
 import { MYSTERY_SETS, ROSARY_PRAYERS, WEEKDAY_SET } from "@/data/content";
 import { RosarySlide } from "@/components/RosarySlide";
-import { hasSlides } from "@/data/rosarySlides";
+import { hasSlides, rosarySlide } from "@/data/rosarySlides";
 
 type SetKey = keyof typeof MYSTERY_SETS;
 const SET_KEYS: SetKey[] = ["Joyful", "Sorrowful", "Glorious", "Luminous"];
@@ -124,7 +124,14 @@ export default function RosaryPage() {
     segments,
     onSegmentChange: (i) => { setMysteryIdx(Math.floor(i / TOTAL_BEADS)); setBead(i % TOTAL_BEADS); },
   });
-  useRegisterNarration(narration, mode === "guided" ? "Fully guided" : "Listen", true, MYSTERY_ART[activeSet] as IllustrationKey | undefined);
+  // Stable getter for the current rosary slide (used by the full-screen player).
+  const slideStateRef = useRef({ set: activeSet, mysteryIdx, bead });
+  useEffect(() => { slideStateRef.current = { set: activeSet, mysteryIdx, bead }; });
+  const getImageSrc = useCallback(() => {
+    const { set, mysteryIdx: mi, bead: b } = slideStateRef.current;
+    return rosarySlide(set, mi, b);
+  }, []);
+  useRegisterNarration(narration, mode === "guided" ? "Fully guided" : "Listen", true, MYSTERY_ART[activeSet] as IllustrationKey | undefined, getImageSrc);
 
   // Fully-guided mode plays the whole rosary aloud, auto-advancing the text.
   useEffect(() => {

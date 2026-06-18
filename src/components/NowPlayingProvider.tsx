@@ -9,13 +9,15 @@ interface NowPlaying {
   title: string;
   dark: boolean;
   illustration?: IllustrationKey;
+  /** Live image path that overrides the illustration card (e.g. rosary slides). */
+  imageSrc?: string | null;
 }
 
-interface NowPlayingMeta { title: string; dark: boolean; illustration?: IllustrationKey }
+interface NowPlayingMeta { title: string; dark: boolean; illustration?: IllustrationKey; getImageSrc?: () => string | null }
 
 interface NowPlayingCtx {
   /** Store a getter that returns the LIVE narration (avoids snapshot staleness). */
-  register: (getter: () => Narration, title: string, dark?: boolean, illustration?: IllustrationKey) => void;
+  register: (getter: () => Narration, title: string, dark?: boolean, illustration?: IllustrationKey, getImageSrc?: () => string | null) => void;
   unregister: (getter: () => Narration) => void;
   /** Read current live narration + metadata. */
   get: () => NowPlaying;
@@ -37,9 +39,9 @@ export function NowPlayingProvider({ children }: { children: ReactNode }) {
 
   const notify = useCallback(() => { listenersRef.current.forEach((l) => l()); }, []);
 
-  const register = useCallback((getter: () => Narration, title: string, dark = false, illustration?: IllustrationKey) => {
+  const register = useCallback((getter: () => Narration, title: string, dark = false, illustration?: IllustrationKey, getImageSrc?: () => string | null) => {
     getterRef.current = getter;
-    metaRef.current = { title, dark, illustration };
+    metaRef.current = { title, dark, illustration, getImageSrc };
     notify();
   }, [notify]);
 
@@ -53,7 +55,8 @@ export function NowPlayingProvider({ children }: { children: ReactNode }) {
   const get = useCallback((): NowPlaying => {
     const getter = getterRef.current;
     if (!getter) return { narration: null, title: "", dark: false };
-    return { narration: getter(), ...metaRef.current };
+    const { getImageSrc, ...rest } = metaRef.current;
+    return { narration: getter(), ...rest, imageSrc: getImageSrc?.() };
   }, []);
 
   const subscribe = useCallback((l: () => void) => {

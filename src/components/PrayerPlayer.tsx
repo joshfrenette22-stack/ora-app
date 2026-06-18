@@ -875,7 +875,7 @@ import { useNowPlaying, useNowPlayingLive } from "./NowPlayingProvider";
 import type { IllustrationKey } from "@/lib/illustrations";
 
 /** Pages call this to register their narration for the floating player. */
-export function useRegisterNarration(narration: Narration, title: string, dark = false, illustration?: IllustrationKey) {
+export function useRegisterNarration(narration: Narration, title: string, dark = false, illustration?: IllustrationKey, getImageSrc?: () => string | null) {
   const { register, unregister } = useNowPlaying();
   // Keep a mutable ref so the getter always returns the latest narration
   // without needing to re-register on every render.
@@ -883,9 +883,9 @@ export function useRegisterNarration(narration: Narration, title: string, dark =
   useEffect(() => { narrationRef.current = narration; });
   const getterRef = useRef(() => narrationRef.current);
   useEffect(() => {
-    register(getterRef.current, title, dark, illustration);
+    register(getterRef.current, title, dark, illustration, getImageSrc);
     return () => unregister(getterRef.current);
-  }, [register, unregister, title, dark, illustration]);
+  }, [register, unregister, title, dark, illustration, getImageSrc]);
 }
 
 /** A "Listen to X" button that pages render instead of an inline PlayerBar. */
@@ -1003,7 +1003,7 @@ export function ListenButton({
 
 /** Rendered in AppShell — floating player above bottom nav with waveform. */
 export function FloatingPlayer() {
-  const { narration, title, illustration } = useNowPlayingLive();
+  const { narration, title, illustration, imageSrc } = useNowPlayingLive();
   const [expanded, setExpanded] = useState(false);
 
   // Close full-screen when playback stops (must use effect, not during render).
@@ -1017,7 +1017,7 @@ export function FloatingPlayer() {
   const playing = status === "playing";
 
   if (expanded) {
-    return <FullScreenPlayer narration={narration} title={title} illustration={illustration} onCollapse={() => setExpanded(false)} />;
+    return <FullScreenPlayer narration={narration} title={title} illustration={illustration} imageSrc={imageSrc} onCollapse={() => setExpanded(false)} />;
   }
 
   return (
@@ -1155,6 +1155,7 @@ export function FloatingPlayer() {
 
 // ── Full-screen "Now Playing" view ────────────────────────────────────────────
 
+import Image from "next/image";
 import { Illustration } from "./Illustration";
 import { Cross, Fleuron } from "./Sacred";
 
@@ -1210,11 +1211,13 @@ function FullScreenPlayer({
   narration,
   title,
   illustration,
+  imageSrc,
   onCollapse,
 }: {
   narration: Narration;
   title: string;
   illustration?: IllustrationKey;
+  imageSrc?: string | null;
   onCollapse: () => void;
 }) {
   const { speed, setSpeed } = useVoice();
@@ -1330,21 +1333,31 @@ function FullScreenPlayer({
         position: "relative",
         zIndex: 1,
       }}>
-        {/* Illustration card */}
+        {/* Illustration card — rosary slides override when available */}
         <div style={{
           width: "100%",
           aspectRatio: "1",
           maxWidth: 320,
           borderRadius: 20,
           background: "rgba(239,230,214,0.04)",
-          border: "1px solid rgba(239,230,214,0.08)",
+          border: imageSrc ? "1px solid rgba(210,107,67,0.18)" : "1px solid rgba(239,230,214,0.08)",
           display: "grid",
           placeItems: "center",
           marginBottom: 36,
           overflow: "hidden",
           boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
+          position: "relative",
         }}>
-          {illustration ? (
+          {imageSrc ? (
+            <Image
+              src={imageSrc}
+              alt=""
+              fill
+              sizes="320px"
+              style={{ objectFit: "cover", transition: "opacity 500ms var(--ease-sacred)" }}
+              draggable={false}
+            />
+          ) : illustration ? (
             <Illustration
               name={illustration}
               size={260}
