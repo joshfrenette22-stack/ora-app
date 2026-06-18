@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { Fleuron } from "@/components/Sacred";
 import { Kicker } from "@/components/UI";
 import { ListenButton, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
@@ -113,6 +114,26 @@ export default function DevotionsPage() {
       {ORDER.map(({ key, lucide }) => (
         <DevotionCard key={key} dkey={key} lucide={lucide} />
       ))}
+
+      {/* The Auxilium Christianorum is a longer daily rule with a proper for each
+          weekday — link out to its dedicated page rather than inline it here. */}
+      <Link href="/auxilium" style={{ textDecoration: "none", color: "var(--stone-400)" }}>
+        <section style={{ position: "relative", overflow: "hidden", background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 20, padding: "24px 26px", boxShadow: "var(--shadow-sm)", display: "flex", alignItems: "center", gap: 16 }}>
+          <span style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--gold-faint)", color: "var(--gold-deep)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+            <LucideIcon name="shield" size={22} />
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <Kicker>Help of Christians · Daily Prayers</Kicker>
+            <h2 style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 22, color: "var(--ink)", margin: "2px 0 0", letterSpacing: "-.01em" }}>
+              Auxilium Christianorum
+            </h2>
+            <p style={{ fontFamily: "var(--font-body)", fontSize: 14, color: "var(--stone-400)", margin: "3px 0 0", lineHeight: 1.45 }}>
+              A daily rule for spiritual protection, with a proper for every day of the week.
+            </p>
+          </div>
+          <LucideIcon name="arrow-right" size={18} />
+        </section>
+      </Link>
     </div>
   );
 }

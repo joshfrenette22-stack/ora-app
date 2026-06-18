@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Cross, Fleuron } from "@/components/Sacred";
 import { Illustration } from "@/components/Illustration";
 import { MYSTERY_ART, type IllustrationKey } from "@/lib/illustrations";
@@ -183,6 +184,23 @@ export default function RosaryPage() {
               <span style={{ display: "block", fontFamily: "var(--font-body)", fontSize: 13.5, color: cream(0.7), marginTop: 1 }}>Pray at your own pace, tapping through.</span>
             </span>
           </button>
+
+          {/* After the Rosary, the St. Michael prayer and Marian protection are
+              traditionally said — continue into the Auxilium Christianorum. */}
+          <Link href="/auxilium" style={{
+            display: "flex", alignItems: "center", gap: 12, textDecoration: "none",
+            marginTop: 4, padding: "13px 16px", borderRadius: 14,
+            border: `1px solid ${cream(0.14)}`, background: "transparent", color: cream(0.5),
+          }}>
+            <span style={{ width: 34, height: 34, borderRadius: "50%", background: cream(0.06), color: "var(--gold)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+              <LucideIcon name="shield" size={17} />
+            </span>
+            <span style={{ flex: 1 }}>
+              <span style={{ display: "block", fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 11, letterSpacing: ".02em", color: "var(--gold)" }}>After the Rosary</span>
+              <span style={{ display: "block", fontFamily: "var(--font-body)", fontSize: 14, color: cream(0.75), marginTop: 1 }}>Pray the Auxilium Christianorum</span>
+            </span>
+            <LucideIcon name="arrow-right" size={16} />
+          </Link>
         </div>
       </div>
     );
