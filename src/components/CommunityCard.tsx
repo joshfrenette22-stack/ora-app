@@ -34,7 +34,7 @@ export function CommunityCard() {
         color: "rgba(239,230,214,0.5)",
         marginBottom: 12,
       }}>
-        PRAYING TOGETHER · ALL TIME
+        PRAYING TOGETHER
       </div>
 
       {stats === null ? (
