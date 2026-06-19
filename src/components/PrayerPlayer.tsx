@@ -39,6 +39,9 @@ export interface UseNarrationOptions {
   loop?: boolean;
   onSegmentChange?: (index: number) => void;
   onComplete?: () => void;
+  /** If set, the current position is remembered under this key so playback
+   *  resumes where it left off after the app is closed. */
+  storageKey?: string;
 }
 
 export interface Narration {
@@ -86,6 +89,7 @@ export function useNarration({
   loop = false,
   onSegmentChange,
   onComplete,
+  storageKey,
 }: UseNarrationOptions): Narration {
   // Optimistic: render controls on the server and at hydration (matching markup),
   // then downgrade after mount only if the browser truly lacks speech support.
@@ -132,6 +136,15 @@ export function useNarration({
   // Whether speech/audio is currently producing sound (drives the animated
   // fallback level for the browser voice, which has no analysable stream).
   const soundingRef = useRef(false);
+  // ── Prayer-time tracking ──────────────────────────────────────────────────
+  // Wall-clock time the current playing stretch began (0 when not timing). We
+  // log the listened seconds to the community stats whenever playback stops,
+  // pauses, or the app is backgrounded/closed — so prayer time is recorded even
+  // when a prayer isn't played all the way to the end.
+  const playStartTsRef = useRef(0);
+  const prayerCountedRef = useRef(false); // counted one prayer for this sitting?
+  const storageKeyRef = useRef(storageKey);
+  useEffect(() => { storageKeyRef.current = storageKey; }, [storageKey]);
   // Resolves once we know which engine to use (prevents the first segment
   // falling back to the browser voice while the cloud probe is in-flight).
   const engineReadyRef = useRef<Promise<void>>(Promise.resolve());
@@ -175,6 +188,65 @@ export function useNarration({
   const clearEstimate = useCallback(() => {
     if (estimateRef.current) { clearInterval(estimateRef.current); estimateRef.current = null; }
   }, []);
+
+  // Record the time listened since playback (re)started to the community stats.
+  // Called on pause / stop / completion / background / unmount, so prayer time
+  // is captured even when the screen locks mid-prayer.
+  const flushListened = useCallback(() => {
+    const start = playStartTsRef.current;
+    playStartTsRef.current = 0;
+    if (!start) return;
+    const secs = Math.round((Date.now() - start) / 1000);
+    if (secs < 5) return; // ignore trivial blips
+    const counted = prayerCountedRef.current;
+    prayerCountedRef.current = true; // count the prayer once per sitting; minutes always
+    void logPrayer({ prayer_type: "prayer", segments_count: counted ? 0 : 1, duration_seconds: secs }).catch(() => {});
+  }, []);
+
+  // Remember the current position so closing the app doesn't lose her place.
+  useEffect(() => {
+    if (!storageKeyRef.current) return;
+    try { localStorage.setItem(`pw-pos:${storageKeyRef.current}`, String(index)); } catch { /* ignore */ }
+  }, [index]);
+
+  // Restore the saved position once, on mount.
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current || !storageKeyRef.current) return;
+    restoredRef.current = true;
+    try {
+      const saved = parseInt(localStorage.getItem(`pw-pos:${storageKeyRef.current}`) ?? "", 10);
+      if (Number.isFinite(saved) && saved > 0 && saved < segmentsRef.current.length) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setIndex(saved);
+        changeRef.current?.(saved);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Flush time on background/close, and resume cloud audio when the screen
+  // comes back on (iOS pauses the <audio> element when the device locks).
+  useEffect(() => {
+    const onVis = () => {
+      if (document.hidden) {
+        flushListened();
+      } else if (statusRef.current === "playing") {
+        if (playStartTsRef.current === 0) playStartTsRef.current = Date.now();
+        if (engineRef.current === "google") {
+          const a = audioRef.current;
+          if (a && a.paused && a.src) a.play().catch(() => {});
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("pagehide", flushListened);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("pagehide", flushListened);
+      flushListened();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flushListened]);
 
   // Core segment player — separated so playSegment can await the engine probe.
   const startSegmentRef = useRef<(text: string, onEnd: () => void, onError: () => void) => void>(() => {});
@@ -370,6 +442,7 @@ export function useNarration({
       soundingRef.current = false;
       changeRef.current?.(i);
       setStatus("playing");
+      if (playStartTsRef.current === 0) playStartTsRef.current = Date.now();
       // Warm the next segment's audio so auto-advance is gapless.
       if (engineRef.current === "google" && i + 1 < list.length) {
         void fetch(ttsUrl(list[i + 1].text, rate, voice)).catch(() => {});
@@ -383,18 +456,18 @@ export function useNarration({
           else if (loop) playNextRef.current(0);
           else {
             setStatus("idle");
-            // A prayer was prayed to the end — record it for the community stats.
-            const segs = segmentsRef.current;
-            const words = segs.reduce((n, s) => n + countWords(s.text), 0);
-            const secs = Math.max(1, Math.round(words / ((160 * (rate || 1)) / 60)));
-            void logPrayer({ prayer_type: "prayer", segments_count: 1, duration_seconds: secs }).catch(() => {});
+            // Reached the end — record the listened time and clear the saved spot.
+            flushListened();
+            if (storageKeyRef.current) {
+              try { localStorage.removeItem(`pw-pos:${storageKeyRef.current}`); } catch { /* ignore */ }
+            }
             completeRef.current?.();
           }
         },
         () => { if (gen === genRef.current) { setStatus("idle"); setLoading(false); } },
       );
     },
-    [rate, loop, voice, playSegment],
+    [rate, loop, voice, playSegment, flushListened],
   );
 
   useEffect(() => { playNextRef.current = playIndex; }, [playIndex]);
@@ -412,20 +485,25 @@ export function useNarration({
     if (statusRef.current === "playing") playIndex(indexRef.current);
   }, [speed, playIndex]);
 
-  const play = useCallback((from?: number) => playIndex(from ?? index), [playIndex, index]);
+  const play = useCallback((from?: number) => {
+    prayerCountedRef.current = false; // a fresh sitting
+    playIndex(from ?? index);
+  }, [playIndex, index]);
 
   const pause = useCallback(() => {
     if (engineRef.current === "google") audioRef.current?.pause();
     else pauseSpeaking();
     soundingRef.current = false;
+    flushListened();
     setStatus("paused");
-  }, []);
+  }, [flushListened]);
 
   const resume = useCallback(() => {
     if (engineRef.current === "google") {
       const a = audioRef.current;
       if (a && a.src) {
         soundingRef.current = true;
+        if (playStartTsRef.current === 0) playStartTsRef.current = Date.now();
         setStatus("playing");
         // If the element was unloaded while backgrounded, play() rejects —
         // restart the current segment so it always resumes.
@@ -447,11 +525,13 @@ export function useNarration({
     if (audioRef.current) audioRef.current.pause();
     stopSpeaking();
     soundingRef.current = false;
+    flushListened();
+    prayerCountedRef.current = false;
     setStatus("idle");
     setFrac(0);
     setWordIndex(-1);
     setLoading(false);
-  }, [clearEstimate]);
+  }, [clearEstimate, flushListened]);
 
   // Animated level (0–1) for the device/Siri voice, which gives no audio stream
   // to analyse. The cloud voice instead renders its decoded waveform (`peaks`).
@@ -478,8 +558,8 @@ export function useNarration({
   const toggle = useCallback(() => {
     if (status === "playing") pause();
     else if (status === "paused") resume();
-    else playIndex(index);
-  }, [status, pause, resume, playIndex, index]);
+    else play(index);
+  }, [status, pause, resume, play, index]);
 
   const seek = useCallback(
     (i: number) => {
@@ -506,6 +586,8 @@ export function useNarration({
     if (audioRef.current) audioRef.current.pause();
     stopSpeaking();
     soundingRef.current = false;
+    flushListened();
+    prayerCountedRef.current = false;
     setStatus("idle");
     const clamped = Math.max(0, Math.min(segmentsRef.current.length - 1, i));
     setIndex(clamped);
@@ -513,7 +595,7 @@ export function useNarration({
     setWordIndex(-1);
     setLoading(false);
     changeRef.current?.(clamped);
-  }, [clearEstimate]);
+  }, [clearEstimate, flushListened]);
 
   const count = segments.length;
   const progress = count > 0 ? Math.min(1, (index + frac) / count) : 0;
