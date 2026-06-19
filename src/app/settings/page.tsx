@@ -5,7 +5,6 @@ import { Kicker, LucideIcon } from "@/components/UI";
 import { useVoice } from "@/components/VoiceProvider";
 import { useTheme } from "@/components/ThemeProvider";
 import { VOICES, VOICE_TIERS, TIER_NOTE, type Voice } from "@/lib/voices";
-import { getUserName, setUserName } from "@/lib/userName";
 
 const PREVIEW_TEXT = "The Lord be with you, and with your spirit.";
 
@@ -33,12 +32,7 @@ export default function SettingsPage() {
   const [cloud, setCloud] = useState(true);
   const [previewing, setPreviewing] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [name, setName] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setName(getUserName()); }, []);
-  function saveName(v: string) { setName(v); setUserName(v); }
 
   // Force the freshest deployed build: drop any cached service worker / caches,
   // then reload so the latest version comes down from the server.
@@ -81,33 +75,6 @@ export default function SettingsPage() {
 
   return (
     <div className="pw-settings-pad" style={{ padding: "40px 28px 80px", maxWidth: 640, margin: "0 auto" }}>
-
-      {/* Personalize section */}
-      <Kicker style={{ marginBottom: 6 }}>Your Name</Kicker>
-      <p style={{ fontFamily: "var(--font-body)", fontSize: 15, color: "var(--stone-400)", margin: "0 0 14px", lineHeight: 1.6 }}>
-        Used to greet you on the home screen. This stays on your device.
-      </p>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 8px 8px 16px", borderRadius: 12, background: "var(--bone-raised)", border: "1px solid var(--stone-200)", marginBottom: 30 }}>
-        <span style={{ width: 38, height: 38, borderRadius: "50%", background: "var(--gold-faint)", color: "var(--gold-deep)", display: "grid", placeItems: "center", flexShrink: 0 }}>
-          <LucideIcon name="user" size={18} />
-        </span>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => saveName(e.target.value)}
-          placeholder="Add your name"
-          aria-label="Your name"
-          maxLength={40}
-          style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-body)", fontSize: 16, color: "var(--ink)", background: "transparent", border: "none", outline: "none", padding: "10px 6px" }}
-        />
-        {name && (
-          <button onClick={() => saveName("")} aria-label="Clear name" style={{ width: 34, height: 34, borderRadius: "50%", border: "none", background: "transparent", color: "var(--stone-400)", cursor: "pointer", display: "grid", placeItems: "center", flexShrink: 0 }}>
-            <LucideIcon name="x" size={16} />
-          </button>
-        )}
-      </div>
-
-      <div style={{ height: 1, background: "var(--stone-200)", margin: "0 0 26px" }} />
 
       {/* Voice section */}
       <Kicker style={{ marginBottom: 6 }}>Narration Voice</Kicker>
