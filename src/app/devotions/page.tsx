@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Fleuron } from "@/components/Sacred";
 import { Kicker } from "@/components/UI";
@@ -45,115 +45,112 @@ function BlockView({ block, active, wordIndex }: { block: Block; active: boolean
         style={{ fontFamily: "var(--font-body)", fontSize: 17.5, lineHeight: 1.72, color: "var(--ink-700)", margin: "0 0 14px" }} />
     );
   }
-  // body
   return (
     <SpokenText as="p" text={block.text} active={active} wordIndex={wordIndex}
       style={{ fontFamily: "var(--font-body)", fontSize: 17, lineHeight: 1.72, color: "var(--ink-700)", margin: "0 0 14px" }} />
   );
 }
 
-function DevotionCard({ dkey, lucide }: { dkey: DevotionKey; lucide: string }) {
+const ROW: React.CSSProperties = {
+  position: "relative", overflow: "hidden",
+  background: "var(--bone-raised)", border: "1px solid var(--stone-200)",
+  borderRadius: 18, boxShadow: "var(--shadow-sm)",
+};
+const HEADER: React.CSSProperties = {
+  display: "flex", alignItems: "center", gap: 14, width: "100%", textAlign: "left",
+  padding: "15px 18px", background: "transparent", border: "none", cursor: "pointer",
+};
+const ICON: React.CSSProperties = {
+  width: 44, height: 44, borderRadius: "50%", background: "var(--gold-faint)",
+  color: "var(--gold-deep)", display: "grid", placeItems: "center", flexShrink: 0,
+};
+const TITLE: React.CSSProperties = {
+  fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 20, color: "var(--ink)",
+  margin: "1px 0 0", letterSpacing: "-.01em",
+};
+
+/** A devotion shown collapsed by default; tapping the row expands the full
+ *  prayer with the Listen button. Controlled so only one is open at a time. */
+function DevotionRow({ dkey, lucide, open, onToggle }: { dkey: DevotionKey; lucide: string; open: boolean; onToggle: () => void }) {
   const d = DEVOTIONS[dkey];
   const segments = useMemo(() => segmentsFor(d.blocks, d.title), [d]);
   const narration = useNarration({ segments });
   useRegisterNarration(narration, `Pray ${d.title} aloud`, false, DEVOTION_ART[dkey] as IllustrationKey | undefined);
   const speaking = narration.status !== "idle";
-
-  // Each non-rule block maps to one narration segment, in order.
   let seg = -1;
 
   return (
-    <section id={dkey} className="pw-devotion-card" style={{ scrollMarginTop: 24, position: "relative", overflow: "hidden", background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 20, padding: "28px 28px 30px", boxShadow: "var(--shadow-sm)" }}>
-      {DEVOTION_ART[dkey] && (
-        <div style={{ position: "absolute", right: -10, top: -10, pointerEvents: "none", zIndex: 0 }}>
-          <Illustration name={DEVOTION_ART[dkey]} size={200} invertOnDark opacity={0.5} />
+    <section id={dkey} style={{ ...ROW, scrollMarginTop: 16 }}>
+      <button onClick={onToggle} aria-expanded={open} style={HEADER}>
+        <span style={ICON}><LucideIcon name={lucide} size={21} /></span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <Kicker>{d.sub}</Kicker>
+          <span style={{ ...TITLE, display: "block" }} className="pw-devotion-title">{d.title}</span>
+        </span>
+        <LucideIcon name={open ? "chevron-up" : "chevron-down"} size={18} />
+      </button>
+
+      {open && (
+        <div style={{ padding: "0 20px 24px", position: "relative" }}>
+          {DEVOTION_ART[dkey] && (
+            <div style={{ position: "absolute", right: -10, top: -40, pointerEvents: "none", zIndex: 0 }}>
+              <Illustration name={DEVOTION_ART[dkey]} size={170} invertOnDark opacity={0.4} />
+            </div>
+          )}
+          <div style={{ marginBottom: 20, position: "relative" }}>
+            <ListenButton narration={narration} label={`Pray ${d.title}`} />
+          </div>
+          <div style={{ position: "relative" }}>
+            {d.blocks.map((b, i) => {
+              const si = b.type === "rule" ? -1 : ++seg;
+              return <BlockView key={i} block={b} active={speaking && narration.index === si} wordIndex={narration.wordIndex} />;
+            })}
+          </div>
         </div>
       )}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18, position: "relative" }}>
-        <span style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--gold-faint)", color: "var(--gold-deep)", display: "grid", placeItems: "center", flexShrink: 0 }}>
-          <LucideIcon name={lucide} size={22} />
-        </span>
-        <div>
-          <Kicker>{d.sub}</Kicker>
-          <h2 className="pw-devotion-title" style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 27, color: "var(--ink)", margin: "2px 0 0", letterSpacing: "-.01em" }}>
-            {d.title}
-          </h2>
-        </div>
-      </div>
-
-      <div style={{ marginBottom: 22 }}>
-        <ListenButton narration={narration} label={`Pray ${d.title}`} />
-      </div>
-
-      <div>
-        {d.blocks.map((b, i) => {
-          const si = b.type === "rule" ? -1 : ++seg;
-          return <BlockView key={i} block={b} active={speaking && narration.index === si} wordIndex={narration.wordIndex} />;
-        })}
-      </div>
     </section>
   );
 }
 
-export default function DevotionsPage() {
+/** A devotion that lives on its own page — a compact row that links out. */
+function DevotionLink({ href, lucide, kicker, title }: { href: string; lucide: string; kicker: string; title: string }) {
   return (
-    <div className="pw-devotions-pad" style={{ maxWidth: 600, margin: "0 auto", padding: "32px 18px 64px", display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ textAlign: "center", marginBottom: 4 }}>
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-          <Illustration name="section-devotions" size={160} invertOnDark opacity={0.6} />
+    <Link href={href} style={{ textDecoration: "none", color: "var(--stone-400)" }}>
+      <section style={ROW}>
+        <div style={HEADER}>
+          <span style={ICON}><LucideIcon name={lucide} size={21} /></span>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <Kicker>{kicker}</Kicker>
+            <span style={{ ...TITLE, display: "block" }}>{title}</span>
+          </span>
+          <LucideIcon name="arrow-right" size={18} />
         </div>
-        <h1 className="pw-reveal" style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 34, color: "var(--ink)", margin: 0, letterSpacing: "-.015em" }}>
-          Daily Devotions
+      </section>
+    </Link>
+  );
+}
+
+export default function DevotionsPage() {
+  const [open, setOpen] = useState<DevotionKey | null>(null);
+
+  return (
+    <div className="pw-devotions-pad" style={{ maxWidth: 600, margin: "0 auto", padding: "26px 18px 64px", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ textAlign: "center", marginBottom: 10 }}>
+        <h1 className="pw-reveal" style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 30, color: "var(--ink)", margin: 0, letterSpacing: "-.015em" }}>
+          Devotions
         </h1>
-        <p style={{ fontFamily: "var(--font-body)", fontSize: 15.5, color: "var(--stone-400)", margin: "8px 0 0", lineHeight: 1.5 }}>
-          A few words to lift the heart — at noon, at three, in time of trial.
+        <p style={{ fontFamily: "var(--font-body)", fontSize: 14.5, color: "var(--stone-400)", margin: "6px 0 0", lineHeight: 1.5 }}>
+          Tap a prayer to open it.
         </p>
-        <Fleuron width={200} style={{ margin: "20px auto 0" }} />
+        <Fleuron width={160} style={{ margin: "14px auto 4px" }} />
       </div>
 
       {ORDER.map(({ key, lucide }) => (
-        <DevotionCard key={key} dkey={key} lucide={lucide} />
+        <DevotionRow key={key} dkey={key} lucide={lucide} open={open === key} onToggle={() => setOpen(open === key ? null : key)} />
       ))}
 
-      {/* The Auxilium Christianorum is a longer daily rule with a proper for each
-          weekday — link out to its dedicated page rather than inline it here. */}
-      <Link href="/auxilium" style={{ textDecoration: "none", color: "var(--stone-400)" }}>
-        <section style={{ position: "relative", overflow: "hidden", background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 20, padding: "24px 26px", boxShadow: "var(--shadow-sm)", display: "flex", alignItems: "center", gap: 16 }}>
-          <span style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--gold-faint)", color: "var(--gold-deep)", display: "grid", placeItems: "center", flexShrink: 0 }}>
-            <LucideIcon name="shield" size={22} />
-          </span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <Kicker>Help of Christians · Daily Prayers</Kicker>
-            <h2 style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 22, color: "var(--ink)", margin: "2px 0 0", letterSpacing: "-.01em" }}>
-              Auxilium Christianorum
-            </h2>
-            <p style={{ fontFamily: "var(--font-body)", fontSize: 14, color: "var(--stone-400)", margin: "3px 0 0", lineHeight: 1.45 }}>
-              A daily rule for spiritual protection, with a proper for every day of the week.
-            </p>
-          </div>
-          <LucideIcon name="arrow-right" size={18} />
-        </section>
-      </Link>
-
-      {/* The Chaplet of the Holy Face — a bead-by-bead chaplet with guided &
-          interactive modes, like the Rosary. */}
-      <Link href="/holy-face" style={{ textDecoration: "none", color: "var(--stone-400)" }}>
-        <section style={{ position: "relative", overflow: "hidden", background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 20, padding: "24px 26px", boxShadow: "var(--shadow-sm)", display: "flex", alignItems: "center", gap: 16 }}>
-          <span style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--gold-faint)", color: "var(--gold-deep)", display: "grid", placeItems: "center", flexShrink: 0 }}>
-            <LucideIcon name="cross" size={22} />
-          </span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <Kicker>Chaplet · Guided or Interactive</Kicker>
-            <h2 style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 22, color: "var(--ink)", margin: "2px 0 0", letterSpacing: "-.01em" }}>
-              Chaplet of the Holy Face
-            </h2>
-            <p style={{ fontFamily: "var(--font-body)", fontSize: 14, color: "var(--stone-400)", margin: "3px 0 0", lineHeight: 1.45 }}>
-              In reparation for blasphemy, honoring the Holy Face of Jesus.
-            </p>
-          </div>
-          <LucideIcon name="arrow-right" size={18} />
-        </section>
-      </Link>
+      <DevotionLink href="/holy-face" lucide="cross" kicker="Chaplet · Guided or Interactive" title="Chaplet of the Holy Face" />
+      <DevotionLink href="/auxilium" lucide="shield" kicker="Help of Christians · Daily" title="Auxilium Christianorum" />
     </div>
   );
 }
