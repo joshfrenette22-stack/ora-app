@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LucideIcon } from "./UI";
 import { useVoice } from "./VoiceProvider";
 import { wordStarts, wordIndexAtChar, countWords } from "@/lib/words";
+import { logPrayer } from "@/lib/prayers";
 import {
   ensureVoices,
   isSpeechSupported,
@@ -122,6 +123,12 @@ export function useNarration({
   // Infinity/NaN for streamed MP3, which froze the position at 0 (flat wave,
   // stuck timestamp). The decoded duration is always reliable.
   const decodedDurRef = useRef(0);
+  // Fraction of the decoded clip that is actual speech, used to keep word
+  // highlighting in sync. Cloud TTS pads each clip with leading/trailing
+  // silence; mapping words linearly across the *whole* clip makes the highlight
+  // drift behind. We trim to the spoken region (computed from the envelope).
+  const speechStartFracRef = useRef(0);
+  const speechEndFracRef = useRef(1);
   // Whether speech/audio is currently producing sound (drives the animated
   // fallback level for the browser voice, which has no analysable stream).
   const soundingRef = useRef(false);
@@ -214,6 +221,15 @@ export function useNarration({
           // Expand the dynamic range (gamma > 1) so syllables spike and pauses
           // drop near zero — a lively, speech-shaped wave rather than a flat band.
           const norm = env.map((v) => Math.max(0.03, Math.min(1, (v / max) ** 1.5)));
+          // Trim leading/trailing silence so word highlighting maps to the spoken
+          // region (the TTS pads clips, which otherwise makes the highlight lag).
+          const SIL = 0.12; // amplitude below this (of the peak) counts as silence
+          let s = 0;
+          while (s < env.length - 1 && env[s] / max < SIL) s++;
+          let e = env.length - 1;
+          while (e > s && env[e] / max < SIL) e--;
+          speechStartFracRef.current = s / env.length;
+          speechEndFracRef.current = (e + 1) / env.length;
           if (gen === envGenRef.current) setEnvelope(norm);
         })
         .catch(() => {});
@@ -267,6 +283,8 @@ export function useNarration({
         const gen = ++envGenRef.current;
         setEnvelope(null);
         decodedDurRef.current = 0;
+        speechStartFracRef.current = 0;
+        speechEndFracRef.current = 1;
         decodeEnvelope(url, gen);
         let settled = false;
         const finish = () => { if (!settled) { settled = true; soundingRef.current = false; onEnd(); } };
@@ -289,8 +307,17 @@ export function useNarration({
           const dur = decodedDurRef.current > 0 ? decodedDurRef.current : (Number.isFinite(a.duration) ? a.duration : 0);
           if (dur > 0) {
             const f = Math.min(1, a.currentTime / dur);
-            setFrac(f);
-            if (wc > 0) setWordIndex(Math.min(wc - 1, Math.floor(f * wc)));
+            setFrac(f); // waveform/progress use the true position
+            if (wc > 0) {
+              // Map words across the spoken region only (trimming TTS silence),
+              // with a small lead so the highlight lands on the word being said
+              // rather than trailing it.
+              const start = speechStartFracRef.current;
+              const span = Math.max(0.02, speechEndFracRef.current - start);
+              const lead = 0.18 / dur; // ~0.18s of anticipation
+              const wf = Math.min(1, Math.max(0, (f + lead - start) / span));
+              setWordIndex(Math.min(wc - 1, Math.floor(wf * wc)));
+            }
           }
         };
         a.src = url;
@@ -354,7 +381,15 @@ export function useNarration({
           const nextIdx = i + 1;
           if (nextIdx < segmentsRef.current.length) playNextRef.current(nextIdx);
           else if (loop) playNextRef.current(0);
-          else { setStatus("idle"); completeRef.current?.(); }
+          else {
+            setStatus("idle");
+            // A prayer was prayed to the end — record it for the community stats.
+            const segs = segmentsRef.current;
+            const words = segs.reduce((n, s) => n + countWords(s.text), 0);
+            const secs = Math.max(1, Math.round(words / ((160 * (rate || 1)) / 60)));
+            void logPrayer({ prayer_type: "prayer", segments_count: 1, duration_seconds: secs }).catch(() => {});
+            completeRef.current?.();
+          }
         },
         () => { if (gen === genRef.current) { setStatus("idle"); setLoading(false); } },
       );
@@ -823,7 +858,10 @@ export function SpokenText({
     const el = activeRef.current;
     if (!el) return;
     const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    el.scrollIntoView({ block: "nearest", inline: "nearest", behavior: reduce ? "auto" : "smooth" });
+    // Keep the active word comfortably in view — "center" prevents it from
+    // sliding under the bottom nav / player on long readings. Pages that fit
+    // without scrolling won't move.
+    el.scrollIntoView({ block: "center", inline: "nearest", behavior: reduce ? "auto" : "smooth" });
   }, [local, active, autoScroll]);
 
   const hi: React.CSSProperties = dark
