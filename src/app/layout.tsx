@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { VoiceProvider } from "@/components/VoiceProvider";
 import { NowPlayingProvider } from "@/components/NowPlayingProvider";
 import { SplashScreen } from "@/components/SplashScreen";
+import { UpdateChecker } from "@/components/UpdateChecker";
 
 export const metadata: Metadata = {
   title: "Prayer Warrior",
@@ -44,6 +45,7 @@ export default function RootLayout({
             </NowPlayingProvider>
           </VoiceProvider>
           <SplashScreen />
+          <UpdateChecker />
         </ThemeProvider>
       </body>
     </html>
