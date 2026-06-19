@@ -1071,8 +1071,8 @@ export function MediaSessionManager() {
     try {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: title || "Prayer",
-        artist: segLabel && segLabel !== title ? segLabel : "ORA Prayer Warrior",
-        album: "ORA Prayer Warrior",
+        artist: segLabel && segLabel !== title ? segLabel : "Prayer Warrior",
+        album: "Prayer Warrior",
         artwork: art ? [{ src: art, sizes: "512x512", type: "image/webp" }] : [],
       });
     } catch { /* MediaMetadata unavailable */ }

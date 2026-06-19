@@ -12,7 +12,7 @@ export function Cross({ size = 18, style = {} }: { size?: number; style?: React.
 
 export function Logomark({ size = 40, style = {} }: { size?: number; style?: React.CSSProperties }) {
   return (
-    <svg viewBox="0 0 120 120" fill="currentColor" style={{ width: size, height: size, display: "block", ...style }} aria-label="ORA Prayer Warrior">
+    <svg viewBox="0 0 120 120" fill="currentColor" style={{ width: size, height: size, display: "block", ...style }} aria-label="Prayer Warrior">
       <circle cx="60" cy="60" r="53" fill="none" stroke="currentColor" strokeWidth="2.4" opacity=".9" />
       <circle cx="60" cy="60" r="46" fill="none" stroke="currentColor" strokeWidth="1" opacity=".4" />
       <path d="M55.4 26 L64.6 26 L64.6 88 L60 104 L55.4 88 Z" />

@@ -26,7 +26,7 @@ export default async function Icon() {
           src={dataUri}
           width={400}
           height={400}
-          alt="ORA"
+          alt="Prayer Warrior"
           style={{ filter: "invert(1) brightness(1.05) sepia(0.08)" }}
         />
       </div>
