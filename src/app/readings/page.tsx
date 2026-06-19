@@ -74,6 +74,7 @@ export default function ReadingsPage() {
   const narration = useNarration({
     segments,
     onSegmentChange: (i) => setActive(order[i]),
+    storageKey: "readings",
   });
   useRegisterNarration(narration, "Listen to the Readings", false, "section-daily-mass");
 

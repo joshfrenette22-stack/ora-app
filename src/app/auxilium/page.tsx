@@ -88,7 +88,7 @@ export default function AuxiliumPage() {
     return segs;
   }, [blocks]);
 
-  const narration = useNarration({ segments });
+  const narration = useNarration({ segments, storageKey: `auxilium:${day}` });
   useRegisterNarration(narration, "Pray the Auxilium Christianorum", false, "devotion-st-michael");
   const speaking = narration.status !== "idle";
 
