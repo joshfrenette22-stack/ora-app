@@ -146,10 +146,10 @@ export default function SettingsPage() {
                       {/* Name + meta */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 17, color: "var(--ink)" }}>
-                          {v.gender} &middot; {v.desc}
+                          {v.name}
                         </div>
                         <div style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--stone-400)", marginTop: 1 }}>
-                          {v.tier} &middot; {v.free ? "Free" : "Premium"}
+                          {v.desc} &middot; {v.gender} &middot; {v.free ? "Free" : "Premium"}
                         </div>
                       </div>
 
