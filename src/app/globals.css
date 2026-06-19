@@ -252,7 +252,10 @@ h1, h2, h3, p, blockquote, div, span { overflow-wrap: break-word; word-break: br
   .pw-saint-name { font-size: 26px !important; }
   .pw-mystery-name { font-size: 22px !important; }
   .pw-rosary-main { padding: 20px 12px 28px !important; }
-  .pw-contentbar { padding: 12px 12px !important; }
+  /* Keep the top bar (and its Settings button) clear of the status bar /
+     Dynamic Island — these phones (e.g. iPhone 15 Pro at 393px) fall under this
+     breakpoint, so the safe-area inset must be preserved here too. */
+  .pw-contentbar { padding: calc(12px + env(safe-area-inset-top, 0px)) 12px 12px !important; }
 }
 
 /* Floating mini-player — on desktop, sits at bottom-right of viewport */
