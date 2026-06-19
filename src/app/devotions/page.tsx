@@ -134,6 +134,26 @@ export default function DevotionsPage() {
           <LucideIcon name="arrow-right" size={18} />
         </section>
       </Link>
+
+      {/* The Chaplet of the Holy Face — a bead-by-bead chaplet with guided &
+          interactive modes, like the Rosary. */}
+      <Link href="/holy-face" style={{ textDecoration: "none", color: "var(--stone-400)" }}>
+        <section style={{ position: "relative", overflow: "hidden", background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 20, padding: "24px 26px", boxShadow: "var(--shadow-sm)", display: "flex", alignItems: "center", gap: 16 }}>
+          <span style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--gold-faint)", color: "var(--gold-deep)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+            <LucideIcon name="cross" size={22} />
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <Kicker>Chaplet · Guided or Interactive</Kicker>
+            <h2 style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 22, color: "var(--ink)", margin: "2px 0 0", letterSpacing: "-.01em" }}>
+              Chaplet of the Holy Face
+            </h2>
+            <p style={{ fontFamily: "var(--font-body)", fontSize: 14, color: "var(--stone-400)", margin: "3px 0 0", lineHeight: 1.45 }}>
+              In reparation for blasphemy, honoring the Holy Face of Jesus.
+            </p>
+          </div>
+          <LucideIcon name="arrow-right" size={18} />
+        </section>
+      </Link>
     </div>
   );
 }
