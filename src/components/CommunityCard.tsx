@@ -15,8 +15,8 @@ export function CommunityCard() {
     return () => clearInterval(t);
   }, []);
 
-  const prayers = stats?.prayers_today ?? 0;
-  const minutes = stats?.minutes_today ?? 0;
+  const prayers = stats?.prayers ?? 0;
+  const minutes = stats?.minutes ?? 0;
 
   return (
     <div style={{
@@ -34,7 +34,7 @@ export function CommunityCard() {
         color: "rgba(239,230,214,0.5)",
         marginBottom: 12,
       }}>
-        PRAYING TOGETHER TODAY
+        PRAYING TOGETHER · ALL TIME
       </div>
 
       {stats === null ? (
