@@ -20,14 +20,14 @@ export async function logPrayer(log: PrayerLog) {
 }
 
 export interface CommunityStats {
-  prayers_today: number;
-  minutes_today: number;
-  users_today: number;
+  prayers: number;
+  minutes: number;
+  users: number;
 }
 
-/** Fetch today's community prayer stats. */
+/** Fetch all-time community prayer stats. */
 export async function getCommunityStats(): Promise<CommunityStats> {
-  const { data, error } = await supabase.rpc("community_stats_today");
-  if (error || !data) return { prayers_today: 0, minutes_today: 0, users_today: 0 };
+  const { data, error } = await supabase.rpc("community_stats_all_time");
+  if (error || !data) return { prayers: 0, minutes: 0, users: 0 };
   return data as CommunityStats;
 }
