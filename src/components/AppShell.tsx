@@ -22,6 +22,7 @@ const TITLES: Record<string, [string, string | null]> = {
   "/readings": ["Daily Mass Readings", "Lectionary · Year C"],
   "/hours": ["Liturgy of the Hours", "The Divine Office"],
   "/rosary": ["The Holy Rosary", null],
+  "/holy-face": ["Chaplet of the Holy Face", null],
   "/saints": ["Saint of the Day", "June IX"],
   "/calendar": ["Liturgical Calendar", "Anno Domini MMXXVI"],
   "/playlist": ["My Playlist", "Build your prayer sequence"],
@@ -198,7 +199,7 @@ function BottomNav({ active, onChange }: { active: string; onChange: (id: string
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const immersive = pathname === "/rosary" || pathname === "/focus";
+  const immersive = pathname === "/rosary" || pathname === "/focus" || pathname === "/holy-face";
   const titleEntry = TITLES[pathname] || ["Prayer Warrior", null];
 
   return (
