@@ -241,6 +241,17 @@ export default function TodayPage() {
           />
         </Link>
 
+        {/* Chaplet of the Holy Face */}
+        <Link href="/holy-face" style={{ textDecoration: "none" }}>
+          <SurfaceCard
+            kicker="Chaplet"
+            title="Holy Face of Jesus"
+            meta="Guided or interactive"
+            lucide="cross"
+            motif={<Illustration name="section-devotions" alt="" size={180} invertOnDark opacity={0.55} />}
+          />
+        </Link>
+
         {/* Saint of the Day */}
         <Link href="/saints" style={{ textDecoration: "none" }}>
           <SurfaceCard
@@ -256,8 +267,8 @@ export default function TodayPage() {
         <Link href="/devotions" style={{ textDecoration: "none" }}>
           <SurfaceCard
             kicker="Devotions"
-            title="The Angelus"
-            meta="Recited at noon"
+            title="Prayers & Chaplets"
+            meta="Angelus, Holy Face, Divine Mercy & more"
             lucide="bell"
             motif={<Illustration name="section-devotions" alt="" size={180} invertOnDark opacity={0.55} />}
           />
