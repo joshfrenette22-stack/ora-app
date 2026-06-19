@@ -199,7 +199,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const immersive = pathname === "/rosary" || pathname === "/focus";
-  const titleEntry = TITLES[pathname] || ["ORA", null];
+  const titleEntry = TITLES[pathname] || ["Prayer Warrior", null];
 
   return (
     <div style={{ height: "100vh", display: "flex", fontFamily: "var(--font-body)" }}>

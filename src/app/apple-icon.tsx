@@ -27,7 +27,7 @@ export default async function AppleIcon() {
           src={dataUri}
           width={140}
           height={140}
-          alt="ORA"
+          alt="Prayer Warrior"
           style={{ filter: "invert(1) brightness(1.05) sepia(0.08)" }}
         />
       </div>

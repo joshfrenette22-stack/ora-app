@@ -55,7 +55,7 @@ export function WelcomeOverlay({ onComplete }: WelcomeOverlayProps) {
         textAlign: "center",
         letterSpacing: "-.015em",
       }}>
-        Welcome to Ora
+        Welcome to Prayer Warrior
       </h1>
 
       <p style={{

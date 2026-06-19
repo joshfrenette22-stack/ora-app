@@ -189,7 +189,7 @@ export const ILLUSTRATIONS: Record<IllustrationKey, IllustrationEntry> = {
   },
   "og-share": {
     src: "/illustrations/og-share.webp",
-    alt: "ORA Prayer Warrior",
+    alt: "Prayer Warrior",
     defaultWidth: 1200,
     defaultHeight: 630,
   },
