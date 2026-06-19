@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LucideIcon } from "./UI";
 import { useVoice } from "./VoiceProvider";
+import { VOICES, voiceName } from "@/lib/voices";
 import { wordStarts, wordIndexAtChar, countWords } from "@/lib/words";
 import { logPrayer } from "@/lib/prayers";
 import {
@@ -476,6 +477,7 @@ export function useNarration({
   const statusRef = useRef(status);
   const indexRef = useRef(index);
   const speedRef = useRef(speed);
+  const voiceRef = useRef(voice);
   useEffect(() => { statusRef.current = status; }, [status]);
   useEffect(() => { fracRef.current = frac; }, [frac]);
   useEffect(() => { indexRef.current = index; }, [index]);
@@ -484,6 +486,12 @@ export function useNarration({
     speedRef.current = speed;
     if (statusRef.current === "playing") playIndex(indexRef.current);
   }, [speed, playIndex]);
+  // Re-read the current segment in the new voice when it changes mid-prayer.
+  useEffect(() => {
+    if (voiceRef.current === voice) return;
+    voiceRef.current = voice;
+    if (statusRef.current === "playing") playIndex(indexRef.current);
+  }, [voice, playIndex]);
 
   const play = useCallback((from?: number) => {
     prayerCountedRef.current = false; // a fresh sitting
@@ -1420,13 +1428,14 @@ function FullScreenPlayer({
   imageSrc?: string | null;
   onCollapse: () => void;
 }) {
-  const { speed, setSpeed } = useVoice();
+  const { speed, setSpeed, voice, setVoice } = useVoice();
   const SPEEDS = [0.75, 1, 1.25, 1.5];
   const cycleSpeed = () => {
     const i = SPEEDS.indexOf(speed);
     setSpeed(SPEEDS[(i + 1) % SPEEDS.length] ?? 1);
   };
   const speedLabel = `${Number.isInteger(speed) ? speed : speed.toString().replace(/0+$/, "")}×`;
+  const [voiceOpen, setVoiceOpen] = useState(false);
 
   const { status, index, count, current } = narration;
   const playing = status === "playing";
@@ -1498,26 +1507,92 @@ function FullScreenPlayer({
         }}>
           NOW PLAYING
         </div>
-        <button
-          onClick={cycleSpeed}
-          aria-label={`Speed ${speedLabel}`}
-          style={{
-            fontFamily: "var(--font-display)",
-            fontSize: 12,
-            fontWeight: 700,
-            color: "var(--gold)",
-            cursor: "pointer",
-            border: "1px solid rgba(239,230,214,0.12)",
-            background: "rgba(239,230,214,0.06)",
-            borderRadius: 999,
-            padding: "7px 14px",
-            fontVariantNumeric: "tabular-nums",
-            lineHeight: 1,
-          }}
-        >
-          {speedLabel}
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {/* Voice */}
+          <button
+            onClick={() => setVoiceOpen(true)}
+            aria-label={`Voice: ${voiceName(voice)}`}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 700,
+              color: "var(--gold)", cursor: "pointer",
+              border: "1px solid rgba(239,230,214,0.12)", background: "rgba(239,230,214,0.06)",
+              borderRadius: 999, padding: "7px 12px", lineHeight: 1,
+            }}
+          >
+            <LucideIcon name="mic" size={13} />
+            {voiceName(voice)}
+          </button>
+          {/* Speed */}
+          <button
+            onClick={cycleSpeed}
+            aria-label={`Speed ${speedLabel}`}
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 12,
+              fontWeight: 700,
+              color: "var(--gold)",
+              cursor: "pointer",
+              border: "1px solid rgba(239,230,214,0.12)",
+              background: "rgba(239,230,214,0.06)",
+              borderRadius: 999,
+              padding: "7px 14px",
+              fontVariantNumeric: "tabular-nums",
+              lineHeight: 1,
+            }}
+          >
+            {speedLabel}
+          </button>
+        </div>
       </div>
+
+      {/* Voice picker sheet */}
+      {voiceOpen && (
+        <div
+          onClick={() => setVoiceOpen(false)}
+          style={{ position: "absolute", inset: 0, zIndex: 10, background: "rgba(0,0,0,0.5)", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "var(--bone-raised, #221E1A)", borderTopLeftRadius: 22, borderTopRightRadius: 22,
+              maxHeight: "72%", display: "flex", flexDirection: "column",
+              padding: "10px 0 max(env(safe-area-inset-bottom, 16px), 16px)",
+              boxShadow: "0 -10px 40px rgba(0,0,0,0.5)",
+            }}
+          >
+            <div style={{ width: 38, height: 4, borderRadius: 2, background: "var(--stone-300)", alignSelf: "center", margin: "6px 0 10px" }} />
+            <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 12, letterSpacing: ".03em", color: "var(--stone-400)", padding: "0 22px 8px", textTransform: "uppercase" }}>
+              Reading Voice
+            </div>
+            <div style={{ overflowY: "auto", padding: "0 12px" }}>
+              {VOICES.map((v) => {
+                const on = v.id === voice;
+                return (
+                  <button
+                    key={v.id}
+                    onClick={() => { setVoice(v.id); setVoiceOpen(false); }}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12, width: "100%", textAlign: "left",
+                      padding: "12px 14px", borderRadius: 12, border: "none", cursor: "pointer",
+                      background: on ? "var(--gold-faint)" : "transparent",
+                    }}
+                  >
+                    <span style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", background: on ? "var(--gilt)" : "var(--stone-100)", color: on ? "#2A2008" : "var(--stone-400)" }}>
+                      <LucideIcon name="mic" size={16} />
+                    </span>
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ display: "block", fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 16, color: "var(--ink)" }}>{v.name}</span>
+                      <span style={{ display: "block", fontFamily: "var(--font-body)", fontSize: 13, color: "var(--stone-400)", marginTop: 1 }}>{v.desc} · {v.gender}{v.free ? "" : " · Premium"}</span>
+                    </span>
+                    {on && <span style={{ color: "var(--gold-deep)", display: "grid", placeItems: "center" }}><LucideIcon name="check" size={18} /></span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Central artwork area */}
       <div style={{
