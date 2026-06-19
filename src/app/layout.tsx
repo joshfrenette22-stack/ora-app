@@ -4,6 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { VoiceProvider } from "@/components/VoiceProvider";
 import { NowPlayingProvider } from "@/components/NowPlayingProvider";
+import { SplashScreen } from "@/components/SplashScreen";
 
 export const metadata: Metadata = {
   title: "Prayer Warrior",
@@ -42,6 +43,7 @@ export default function RootLayout({
               <AppShell>{children}</AppShell>
             </NowPlayingProvider>
           </VoiceProvider>
+          <SplashScreen />
         </ThemeProvider>
       </body>
     </html>

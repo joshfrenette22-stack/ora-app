@@ -5,7 +5,7 @@ import { Cross, Logomark } from "./Sacred";
 import { SeasonBadge, LucideIcon } from "./UI";
 import { useTheme } from "./ThemeProvider";
 import { localDateISO } from "@/lib/clientDate";
-import { FloatingPlayer } from "./PrayerPlayer";
+import { FloatingPlayer, MediaSessionManager } from "./PrayerPlayer";
 
 const NAV = [
   { id: "/", label: "Today", short: "Today", lucide: "sun" },
@@ -26,6 +26,7 @@ const TITLES: Record<string, [string, string | null]> = {
   "/calendar": ["Liturgical Calendar", "Anno Domini MMXXVI"],
   "/playlist": ["My Playlist", "Build your prayer sequence"],
   "/devotions": ["Devotions", "Prayers for every hour"],
+  "/auxilium": ["Auxilium Christianorum", "Help of Christians · Daily Prayers"],
   "/confession": ["Confession", "Examine · prepare · be cleansed"],
   "/settings": ["Settings", "Voice & display"],
   "/pray": ["Pray", "The Office, the Rosary & devotions"],
@@ -210,6 +211,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </div>
       <FloatingPlayer />
+      <MediaSessionManager />
       <BottomNav active={pathname} onChange={(id) => router.push(id)} />
     </div>
   );

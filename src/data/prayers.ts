@@ -3,6 +3,7 @@
  *  an optional `category` for the picker UI, and an optional illustration. */
 
 import { ROSARY_PRAYERS, DEVOTIONS } from "./content";
+import { auxiliumEverydayText } from "./auxilium";
 import type { IllustrationKey } from "@/lib/illustrations";
 
 export interface Prayer {
@@ -107,6 +108,15 @@ export const PRAYER_CATALOG: Prayer[] = [
     category: "Devotion",
     lucide: "flower",
     illustration: "devotion-memorare",
+  },
+  {
+    id: "auxilium-christianorum",
+    title: "Auxilium Christianorum",
+    sub: "Help of Christians · daily prayers",
+    text: auxiliumEverydayText(),
+    category: "Devotion",
+    lucide: "shield",
+    illustration: "devotion-st-michael",
   },
 
   // ── Additional prayers ────────────────────────────────────────────────────

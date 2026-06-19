@@ -61,6 +61,7 @@ export default function TodayPage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hour, setHour] = useState<Hour | null>(null);
   const [rosarySet, setRosarySet] = useState<string | null>(null);
+  const [weekday, setWeekday] = useState<string | null>(null);
   const [church, setChurch] = useState<ChurchItem[] | null>(null);
 
   useEffect(() => {
@@ -84,16 +85,12 @@ export default function TodayPage() {
     setGreeting(h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening");
     setHour(HOURS.find((x) => x.name === currentHourName()) ?? null);
     setRosarySet(WEEKDAY_SET[new Date().getDay()]);
+    setWeekday(new Date().toLocaleDateString("en-US", { weekday: "long" }));
 
-    // Check onboarding status
-    const name = getCachedName();
-    if (name) {
-      setUserName(name);
-    } else {
-      setShowOnboarding(true);
-    }
-
-    // Ensure anonymous auth session
+    // Onboarding status (Supabase-backed name) + anonymous auth session.
+    const cached = getCachedName();
+    if (cached) setUserName(cached);
+    else setShowOnboarding(true);
     ensureSession().catch(() => {});
   }, []);
 
@@ -263,6 +260,17 @@ export default function TodayPage() {
             meta="Recited at noon"
             lucide="bell"
             motif={<Illustration name="section-devotions" alt="" size={180} invertOnDark opacity={0.55} />}
+          />
+        </Link>
+
+        {/* Auxilium Christianorum — daily prayers for spiritual protection */}
+        <Link href="/auxilium" style={{ textDecoration: "none" }}>
+          <SurfaceCard
+            kicker="Spiritual Protection"
+            title="Auxilium Christianorum"
+            meta={weekday ? `Help of Christians · ${weekday}` : "Help of Christians"}
+            lucide="shield"
+            motif={<Illustration name="devotion-st-michael" alt="" size={180} invertOnDark opacity={0.5} />}
           />
         </Link>
 

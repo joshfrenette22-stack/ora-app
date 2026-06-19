@@ -873,6 +873,7 @@ export function PrayerPlayer({
 
 import { useNowPlaying, useNowPlayingLive } from "./NowPlayingProvider";
 import type { IllustrationKey } from "@/lib/illustrations";
+import { ILLUSTRATIONS } from "@/lib/illustrations";
 
 /** Pages call this to register their narration for the floating player. */
 export function useRegisterNarration(narration: Narration, title: string, dark = false, illustration?: IllustrationKey, getImageSrc?: () => string | null) {
@@ -886,6 +887,85 @@ export function useRegisterNarration(narration: Narration, title: string, dark =
     register(getterRef.current, title, dark, illustration, getImageSrc);
     return () => unregister(getterRef.current);
   }, [register, unregister, title, dark, illustration, getImageSrc]);
+}
+
+/**
+ * Bridges the active narration to the OS Media Session so playback continues
+ * when the screen locks or the app is backgrounded, and the lock-screen / media
+ * notification shows the prayer with working play/pause/skip controls.
+ *
+ * This only helps the cloud-voice engine, which plays through a real <audio>
+ * element the OS can keep alive in the background. The device voice
+ * (speechSynthesis) is suspended by the OS on lock and cannot be revived by any
+ * web API — there is nothing to bridge there.
+ *
+ * Rendered once, globally (in AppShell). Renders no DOM.
+ */
+export function MediaSessionManager() {
+  const np = useNowPlayingLive();
+  // Keep the latest narration in a ref so the (once-registered) OS action
+  // handlers always drive the live controls.
+  const narrationRef = useRef(np.narration);
+  useEffect(() => { narrationRef.current = np.narration; });
+
+  const supported = typeof navigator !== "undefined" && "mediaSession" in navigator;
+
+  // Register OS action handlers once.
+  useEffect(() => {
+    if (!supported) return;
+    const ms = navigator.mediaSession;
+    const withNarration = (fn: (n: Narration) => void) => () => {
+      const n = narrationRef.current;
+      if (n) fn(n);
+    };
+    const handlers: [MediaSessionAction, () => void][] = [
+      ["play", withNarration((n) => (n.status === "paused" ? n.resume() : n.play()))],
+      ["pause", withNarration((n) => n.pause())],
+      ["previoustrack", withNarration((n) => n.prev())],
+      ["nexttrack", withNarration((n) => n.next())],
+      ["stop", withNarration((n) => n.stop())],
+    ];
+    for (const [action, handler] of handlers) {
+      try { ms.setActionHandler(action, handler); } catch { /* unsupported action */ }
+    }
+    return () => {
+      for (const [action] of handlers) {
+        try { ms.setActionHandler(action, null); } catch { /* ignore */ }
+      }
+    };
+  }, [supported]);
+
+  const status = np.narration?.status ?? "idle";
+  const title = np.title;
+  const segLabel = np.narration?.current?.label;
+  const illustration = np.illustration;
+
+  // Refresh the now-playing metadata when the prayer or segment changes.
+  const lastMetaKey = useRef("");
+  useEffect(() => {
+    if (!supported || status === "idle") return;
+    const key = `${title}|${segLabel ?? ""}|${illustration ?? ""}`;
+    if (key === lastMetaKey.current) return;
+    lastMetaKey.current = key;
+    const art = illustration ? ILLUSTRATIONS[illustration].src : undefined;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: title || "Prayer",
+        artist: segLabel && segLabel !== title ? segLabel : "ORA Prayer Warrior",
+        album: "ORA Prayer Warrior",
+        artwork: art ? [{ src: art, sizes: "512x512", type: "image/webp" }] : [],
+      });
+    } catch { /* MediaMetadata unavailable */ }
+  }, [supported, status, title, segLabel, illustration]);
+
+  // Mirror playback state so the OS shows the right play/pause affordance.
+  useEffect(() => {
+    if (!supported) return;
+    navigator.mediaSession.playbackState =
+      status === "playing" ? "playing" : status === "paused" ? "paused" : "none";
+  }, [supported, status]);
+
+  return null;
 }
 
 /** A "Listen to X" button that pages render instead of an inline PlayerBar. */

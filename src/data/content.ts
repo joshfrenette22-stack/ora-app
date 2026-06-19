@@ -59,7 +59,10 @@ export const ROSARY_PRAYERS = {
   glory: "Glory be to the Father, and to the Son, and to the Holy Spirit: as it was in the beginning, is now, and ever shall be, world without end. Amen.",
   fatima: "O my Jesus, forgive us our sins, save us from the fires of hell; lead all souls to heaven, especially those in most need of thy mercy.",
   queen: "Hail, holy Queen, Mother of mercy, our life, our sweetness, and our hope. To thee do we cry, poor banished children of Eve; to thee do we send up our sighs, mourning and weeping in this valley of tears. Turn then, most gracious advocate, thine eyes of mercy toward us; and after this our exile, show unto us the blessed fruit of thy womb, Jesus. O clement, O loving, O sweet Virgin Mary. Pray for us, O holy Mother of God, that we may be made worthy of the promises of Christ. Amen.",
+  offering: "O most holy Virgin Mary, we offer thee this Rosary. Present it, we pray, to thy divine Son for the needs of holy Mother Church, and for the intentions and well-being of our Holy Father, Pope Leo XIV.",
+  intentions: "Let us pause, and call to mind the intentions for which we offer this Rosary.",
   closing: "O God, whose only-begotten Son, by his life, death, and resurrection, has purchased for us the rewards of eternal life: grant, we beseech thee, that meditating upon these mysteries of the most holy Rosary, we may imitate what they contain and obtain what they promise. Through the same Christ our Lord. Amen.",
+  michael: "Saint Michael the Archangel, defend us in battle. Be our protection against the wickedness and snares of the devil. May God rebuke him, we humbly pray; and do thou, O Prince of the heavenly host, by the power of God, cast into hell Satan and all the evil spirits who prowl about the world seeking the ruin of souls. Amen.",
 } as const;
 
 export const HOURS = [
