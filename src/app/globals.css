@@ -278,8 +278,10 @@ h1, h2, h3, p, blockquote, div, span { overflow-wrap: break-word; word-break: br
 .pw-reveal { animation: oraReveal .85s var(--ease-sacred) .08s both; }
 .pw-reveal-2 { animation: oraReveal .85s var(--ease-sacred) .18s both; }
 .pw-reveal-3 { animation: oraReveal .85s var(--ease-sacred) .28s both; }
+@keyframes oraShimmer { 0%, 100% { opacity: .55; } 50% { opacity: .9; } }
+.pw-shimmer { animation: oraShimmer 1.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .pw-scroll > *, .pw-reveal, .pw-reveal-2, .pw-reveal-3 { animation: none; }
+  .pw-scroll > *, .pw-reveal, .pw-reveal-2, .pw-reveal-3, .pw-shimmer { animation: none; }
 }
 
 /* Circular icon buttons — subtle tint on hover, press on tap */

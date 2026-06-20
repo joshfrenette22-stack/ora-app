@@ -259,6 +259,7 @@ export default function TodayPage() {
             title={saint.name}
             meta={saint.title ?? ""}
             lucide="flame"
+            cta={saint.name && saint.name !== "Feria" ? "Learn more" : undefined}
             motif={<Illustration name="splash-altar" alt="" size={180} invertOnDark opacity={0.5} />}
           />
         </Link>
