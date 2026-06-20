@@ -98,13 +98,15 @@ export function FeatureCard({ kicker, title, meta, onClick, motif }: {
   );
 }
 
-export function SurfaceCard({ kicker, title, meta, onClick, lucide, motif }: {
+export function SurfaceCard({ kicker, title, meta, onClick, lucide, motif, cta }: {
   kicker: string;
   title: string;
   meta: string;
   onClick?: () => void;
   lucide?: string;
   motif?: ReactNode;
+  /** Optional call-to-action shown at the foot of the card, e.g. "Learn more". */
+  cta?: string;
 }) {
   return (
     <button className="pw-card" onClick={onClick} style={{ textAlign: "left", cursor: "pointer", background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 18, padding: "24px 26px", boxShadow: "var(--shadow-sm)", display: "flex", flexDirection: "column", gap: 14, width: "100%", position: "relative", overflow: "hidden" }}>
@@ -116,6 +118,11 @@ export function SurfaceCard({ kicker, title, meta, onClick, lucide, motif }: {
         <Kicker>{kicker}</Kicker>
         <div style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 22, color: "var(--ink)", marginTop: 3 }}>{title}</div>
         <div style={{ fontFamily: "var(--font-body)", fontSize: 14, color: "var(--stone-400)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis" }}>{meta}</div>
+        {cta && (
+          <div style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 5, marginTop: 12, fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 12, letterSpacing: ".01em", color: "var(--gold-deep)" }}>
+            {cta}<LucideIcon name="arrow-right" size={14} />
+          </div>
+        )}
       </div>
     </button>
   );

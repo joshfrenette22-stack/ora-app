@@ -23,7 +23,7 @@ const TAB_LABEL: Record<Tab, string> = {
 const TAB_ORDER: Tab[] = ["first", "psalm", "second", "gospel"];
 
 const ALSO_TODAY = [
-  { icon: <Flame size={16} strokeWidth={1.6} />, label: "Saint of the Day", sub: "The day’s memorial" },
+  { icon: <Flame size={16} strokeWidth={1.6} />, label: "Saint of the Day", sub: "Life, patronage & feast", href: "/saints" },
   { icon: <Clock size={16} strokeWidth={1.6} />, label: "Sext · Midday", sub: "12:00 Prayer" },
   { icon: <BookOpen size={16} strokeWidth={1.6} />, label: "Office of Readings", sub: "Breviary" },
 ];
@@ -308,9 +308,12 @@ export default function ReadingsPage() {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-            {ALSO_TODAY.map((item, i) => (
-              <button
+            {ALSO_TODAY.map((item, i) => {
+              const Tag = (item.href ? "a" : "button") as React.ElementType;
+              return (
+              <Tag
                 key={i}
+                {...(item.href ? { href: item.href } : {})}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -323,6 +326,7 @@ export default function ReadingsPage() {
                   textAlign: "left",
                   width: "100%",
                   color: "var(--ink)",
+                  textDecoration: "none",
                 }}
               >
                 <span style={{
@@ -345,8 +349,9 @@ export default function ReadingsPage() {
                     {item.sub}
                   </div>
                 </div>
-              </button>
-            ))}
+              </Tag>
+              );
+            })}
           </div>
         </div>
 
