@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Fleuron } from "@/components/Sacred";
 import { Kicker } from "@/components/UI";
 import { ListenButton, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
@@ -46,15 +46,35 @@ const FALLBACK: DailyReadings = {
 export default function ReadingsPage() {
   const [active, setActive] = useState<Tab>("first");
   const [data, setData] = useState<DailyReadings>(FALLBACK);
+  // On Saturday, the evening Mass is the anticipated (vigil) Sunday Mass — it
+  // uses the upcoming Sunday's readings, not Saturday's weekday Mass. Offer a
+  // toggle, defaulting to the vigil from mid-afternoon on. `null` means the user
+  // hasn't overridden the default for this visit.
+  const [vigilOverride, setVigilOverride] = useState<boolean | null>(null);
+
+  // Read the client clock without a hydration mismatch: both server and client
+  // first render see `mounted = false`, then the client re-renders with `true`.
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
+  // Captured once at mount; the day/hour checks don't need a live clock.
+  const now = useMemo(() => new Date(), []);
+  const isSaturday = mounted && now.getDay() === 6;
+  const vigil = vigilOverride ?? (isSaturday && now.getHours() >= 15);
+
+  // The calendar day whose readings we show — Saturday + 1 when reading the vigil.
+  const readingDate = useMemo(() => {
+    const d = new Date();
+    if (vigil) d.setDate(d.getDate() + 1);
+    return d;
+  }, [vigil]);
 
   useEffect(() => {
     let alive = true;
-    fetch(`/api/readings?date=${localDateISO()}`)
+    fetch(`/api/readings?date=${localDateISO(readingDate)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (alive && d) setData(d); })
       .catch(() => {});
     return () => { alive = false; };
-  }, []);
+  }, [readingDate]);
 
   // Tabs present today (second reading is omitted on weekdays).
   const order = useMemo<Tab[]>(() => TAB_ORDER.filter((k) => data[k]), [data]);
@@ -90,6 +110,47 @@ export default function ReadingsPage() {
 
       {/* Main reading column */}
       <div className="pw-readings-main" style={{ flex: 1, padding: "40px 48px 72px", minWidth: 0, maxWidth: "100%", overflowX: "hidden" }}>
+
+        {/* Saturday: choose the Saturday weekday Mass or the anticipated Sunday (vigil) Mass */}
+        {isSaturday && (
+          <div style={{
+            display: "flex",
+            flexWrap: "wrap",
+            background: "var(--paper-edge)",
+            borderRadius: 12,
+            padding: 4,
+            gap: 2,
+            marginBottom: 16,
+            width: "fit-content",
+            maxWidth: "100%",
+          }}>
+            {[
+              { on: !vigil, label: "Saturday", set: () => setVigilOverride(false) },
+              { on: vigil, label: "Sunday Vigil", set: () => setVigilOverride(true) },
+            ].map(({ on, label, set }) => (
+              <button
+                key={label}
+                onClick={set}
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontWeight: on ? 600 : 500,
+                  fontSize: 11.5,
+                  letterSpacing: ".01em",
+                  padding: "9px 20px",
+                  borderRadius: 9,
+                  border: "none",
+                  cursor: "pointer",
+                  background: on ? "var(--ink)" : "transparent",
+                  color: on ? "var(--gold-bright)" : "var(--stone-400)",
+                  transition: "background 0.18s, color 0.18s",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Segmented control */}
         <div className="pw-reading-tabs" style={{
@@ -335,7 +396,8 @@ export default function ReadingsPage() {
             color: "var(--stone-400)",
             lineHeight: 1.6,
           }}>
-            {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+            {readingDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+            {vigil && " · Vigil Mass"}
             {data.source && <><br /><span style={{ fontStyle: "italic", fontSize: 12 }}>{data.source}</span></>}
           </div>
         </div>
