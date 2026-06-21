@@ -5,13 +5,16 @@ import { saintForDate, saintExtras } from "@/lib/saints";
 import { supabase } from "@/lib/supabase";
 import {
   generateSaintProfile,
-  geminiEnabled,
+  aiEnabled,
   saintSlug,
   type SaintProfile,
   type SaintSource,
 } from "@/lib/saintProfile";
 
 export const dynamic = "force-dynamic";
+// Claude web search can take 20–40s; give it room so the page gets the grounded
+// profile rather than falling back to the curated bio.
+export const maxDuration = 60;
 
 // One generation per saint is plenty — cache the result in memory for the life
 // of the server. Durable storage (and human corrections) live in Supabase.
@@ -110,7 +113,7 @@ export async function GET(request: NextRequest) {
   }
 
   // 3) No AI configured → hand back the curated bio so the page still enriches.
-  if (!geminiEnabled()) {
+  if (!aiEnabled()) {
     const fallback: SaintProfile = {
       slug, name, feastDay: monthDay,
       canonization: "", history: extras.bio ?? saint.bio ?? "",
