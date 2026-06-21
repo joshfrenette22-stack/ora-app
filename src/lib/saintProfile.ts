@@ -54,6 +54,32 @@ export function aiEnabled(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY);
 }
 
+// Only surface citations from credible Catholic sources. Anything else Claude
+// consulted for corroboration (Wikipedia, Britannica, encyclopedia.com, …) is
+// dropped from what we store and show.
+const CATHOLIC_HOSTS = [
+  "vatican.va", "vaticannews.va", "vaticanstate.va",
+  "usccb.org", "newadvent.org", "ewtn.com", "franciscanmedia.org",
+  "catholic.org", "catholicnewsagency.com", "catholicculture.org",
+  "catholicsaints.info", "catholic.com", "osv.com", "osvnews.com",
+  "aleteia.org", "sanctoral.com", "osb.org", "americancatholic.org",
+  "simplycatholic.com", "ucatholic.com", "magnificat.com",
+  "catholicism.org", "catholicexchange.com", "mycatholic.life",
+];
+
+function hostOf(url: string): string {
+  try { return new URL(url).hostname.replace(/^www\./, "").toLowerCase(); }
+  catch { return ""; }
+}
+
+/** Keep only citations from credible Catholic domains. */
+export function filterCatholicSources(sources: SaintSource[]): SaintSource[] {
+  return sources.filter((s) => {
+    const host = hostOf(s.url);
+    return host && CATHOLIC_HOSTS.some((d) => host === d || host.endsWith("." + d));
+  });
+}
+
 const SYSTEM =
   "You are a meticulous Catholic hagiographer compiling an accurate, reverent profile of a saint or feast for a Catholic prayer app. " +
   "Use the web_search tool to consult credible Catholic sources — strongly prefer Vatican.va and Vatican News, USCCB.org, the Catholic Encyclopedia (newadvent.org), Butler's Lives of the Saints, Franciscan Media's 'Saint of the Day', EWTN, Catholic News Agency, and the Roman Martyrology. " +
@@ -141,7 +167,7 @@ export async function generateSaintProfile(
     const raw = JSON.parse(json) as RawProfile;
     if (!raw.history && !raw.summary) return null;
 
-    const sources = [...cited, ...consulted].slice(0, 8);
+    const sources = filterCatholicSources([...cited, ...consulted]).slice(0, 8);
 
     return {
       slug: saintSlug(name),

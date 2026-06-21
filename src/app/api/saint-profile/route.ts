@@ -7,6 +7,7 @@ import {
   generateSaintProfile,
   aiEnabled,
   saintSlug,
+  filterCatholicSources,
   type SaintProfile,
   type SaintSource,
 } from "@/lib/saintProfile";
@@ -45,7 +46,7 @@ function rowToProfile(r: ProfileRow): SaintProfile {
     patronage: r.patronage ?? "",
     feastEngagement: r.feast_engagement ?? "",
     summary: r.summary ?? "",
-    sources: Array.isArray(r.sources) ? r.sources : [],
+    sources: filterCatholicSources(Array.isArray(r.sources) ? r.sources : []),
     source: "stored",
   };
 }
