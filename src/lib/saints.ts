@@ -74,6 +74,15 @@ export function saintKey(month: number, day: number): string {
   return `${month}-${day}`;
 }
 
+/** Every curated saint/feast with its calendar date — used to pre-generate the
+ *  saint-of-the-day profiles ("pull all the pages"). */
+export function allCuratedSaints(): { name: string; month: number; day: number }[] {
+  return Object.entries(SAINTS).map(([key, s]) => {
+    const [m, d] = key.split("-").map(Number);
+    return { name: s.name, month: m, day: d };
+  });
+}
+
 export const FERIA_BIO =
   "No obligatory memorial falls today. The Church keeps a feria — an ordinary weekday — on which the Mass and Office of the season are prayed. A fitting day to take up a votive Mass or a saint of personal devotion.";
 

@@ -1,19 +1,16 @@
 // Server-side: generate an accurate, source-grounded profile of the saint or
-// feast of the day with Gemini + Google Search grounding.
+// feast of the day with Claude + web search.
 //
-// SETUP: set GEMINI_API_KEY to a key from Google AI Studio
-// (https://aistudio.google.com/apikey). Without it, the saint page degrades to
-// the curated bio. Generation is grounded in live web search so every claim is
-// drawn from credible Catholic sources (Vatican.va, USCCB, the Catholic
-// Encyclopedia, Butler's Lives, Franciscan Media, EWTN, CNA, the Roman
-// Martyrology) and returned with its citations.
+// Uses ANTHROPIC_API_KEY (already configured for the "Today in the Church"
+// briefing). Claude searches the live web, grounds every claim in credible
+// Catholic sources (Vatican.va, USCCB, the Catholic Encyclopedia, Butler's
+// Lives, Franciscan Media, EWTN, CNA, the Roman Martyrology) and returns the
+// pages it consulted as citations. Without the key the saint page degrades to
+// the curated bio.
 
-import { GoogleGenAI } from "@google/genai";
+import Anthropic from "@anthropic-ai/sdk";
 
-// Flash supports Google Search grounding and is fast enough to stay well within
-// serverless time limits; grounding — not the model's memory — does the factual
-// work, and every profile is generated once then cached/persisted.
-const MODEL = "gemini-2.5-flash";
+const MODEL = "claude-opus-4-8";
 
 export interface SaintSource {
   title: string;
@@ -53,15 +50,16 @@ export function saintSlug(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export function geminiEnabled(): boolean {
-  return Boolean(process.env.GEMINI_API_KEY);
+export function aiEnabled(): boolean {
+  return Boolean(process.env.ANTHROPIC_API_KEY);
 }
 
 const SYSTEM =
   "You are a meticulous Catholic hagiographer compiling an accurate, reverent profile of a saint or feast for a Catholic prayer app. " +
-  "You MUST ground every claim in credible Catholic sources found via Google Search — strongly prefer Vatican.va and Vatican News, USCCB.org, the Catholic Encyclopedia (newadvent.org), Butler's Lives of the Saints, Franciscan Media's 'Saint of the Day', EWTN, Catholic News Agency, and the Roman Martyrology. " +
+  "Use the web_search tool to consult credible Catholic sources — strongly prefer Vatican.va and Vatican News, USCCB.org, the Catholic Encyclopedia (newadvent.org), Butler's Lives of the Saints, Franciscan Media's 'Saint of the Day', EWTN, Catholic News Agency, and the Roman Martyrology. " +
   "Do not invent facts, dates, or patronages. If a detail is genuinely unknown or not applicable, say so plainly — for ancient saints, canonization is often 'Pre-Congregation (by immemorial cult)' rather than a formal date; for feasts of the Lord or Our Lady, give the origin of the feast instead of a canonization. " +
-  "Distinguish documented history from pious tradition when it matters. Be concise and reverent.";
+  "Distinguish documented history from pious tradition when it matters. Be concise and reverent. " +
+  "Your final message must be ONLY the JSON object requested — no preamble, no markdown, no code fences.";
 
 interface RawProfile {
   name?: string;
@@ -76,7 +74,7 @@ interface RawProfile {
 
 /** Pull the first balanced JSON object out of a model response. */
 function extractJson(text: string): string | null {
-  const fenced = text.replace(/^```(?:json)?\s*|\s*```$/g, "").trim();
+  const fenced = text.replace(/```(?:json)?/gi, "").trim();
   const start = fenced.indexOf("{");
   const end = fenced.lastIndexOf("}");
   if (start === -1 || end === -1 || end <= start) return null;
@@ -89,15 +87,14 @@ export async function generateSaintProfile(
   title: string | null,
   monthDay: string,
 ): Promise<SaintProfile | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
+  if (!process.env.ANTHROPIC_API_KEY) return null;
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    const client = new Anthropic();
     const user =
       `Compile a profile of the saint or feast the Catholic Church celebrates: ${name}` +
       `${title ? ` (${title})` : ""}. Feast day: ${monthDay}.\n\n` +
-      "Return ONLY a JSON object (no markdown, no code fences) with these string fields:\n" +
+      "Search credible Catholic sources, then return ONLY a JSON object with these string fields:\n" +
       '- "name": the proper name of the saint or feast\n' +
       '- "feastDay": the feast day (e.g. "June 20")\n' +
       '- "canonization": when and by whom they were canonized; for pre-Congregation saints explain that; for feasts give the feast\'s origin\n' +
@@ -107,35 +104,44 @@ export async function generateSaintProfile(
       '- "feastEngagement": 2–3 sentences on how a Catholic can keep this feast day (customs, prayers, practices)\n' +
       '- "summary": a 2–3 sentence overview suitable to be read aloud';
 
-    const resp = await ai.models.generateContent({
+    const resp = await client.messages.create({
       model: MODEL,
-      contents: user,
-      config: {
-        systemInstruction: SYSTEM,
-        temperature: 0.2,
-        tools: [{ googleSearch: {} }],
-      },
+      max_tokens: 1400,
+      system: SYSTEM,
+      tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }],
+      messages: [{ role: "user", content: user }],
     });
 
-    const text = resp.text ?? "";
+    // Accumulate the answer text, the sources Claude actually cited, and (as a
+    // fallback) the pages it consulted.
+    let text = "";
+    const cited: SaintSource[] = [];
+    const consulted: SaintSource[] = [];
+    const seen = new Set<string>();
+    const add = (list: SaintSource[], url?: string, t?: string) => {
+      if (!url || seen.has(url)) return;
+      seen.add(url);
+      list.push({ url, title: t || url });
+    };
+
+    for (const block of resp.content as unknown as Array<Record<string, unknown>>) {
+      if (block.type === "text") {
+        text += block.text as string;
+        for (const c of (block.citations as Array<Record<string, string>> | undefined) ?? []) {
+          add(cited, c.url, c.title);
+        }
+      } else if (block.type === "web_search_tool_result") {
+        const content = block.content as Array<Record<string, string>> | undefined;
+        if (Array.isArray(content)) for (const r of content) add(consulted, r.url, r.title);
+      }
+    }
+
     const json = extractJson(text);
     if (!json) return null;
     const raw = JSON.parse(json) as RawProfile;
     if (!raw.history && !raw.summary) return null;
 
-    // Citations from the grounding search.
-    const chunks =
-      (resp.candidates?.[0]?.groundingMetadata?.groundingChunks ?? []) as Array<{
-        web?: { uri?: string; title?: string };
-      }>;
-    const seen = new Set<string>();
-    const sources: SaintSource[] = [];
-    for (const c of chunks) {
-      const url = c.web?.uri;
-      if (!url || seen.has(url)) continue;
-      seen.add(url);
-      sources.push({ url, title: c.web?.title || url });
-    }
+    const sources = [...cited, ...consulted].slice(0, 8);
 
     return {
       slug: saintSlug(name),
