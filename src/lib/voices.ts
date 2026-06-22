@@ -21,9 +21,17 @@ export interface Voice {
   provider?: VoiceProvider;
 }
 
-export const DEFAULT_VOICE = "en-US-Neural2-D";
+export const DEFAULT_VOICE = "JBFqnCBsd6RMkjVDRZzb";
 
 export const VOICES: Voice[] = [
+  // ElevenLabs — most natural; premium (uses ElevenLabs credits). These are
+  // ElevenLabs' stock "default" voice_ids, present in every account.
+  { id: "JBFqnCBsd6RMkjVDRZzb", short: "George", name: "Francis", gender: "Male", tier: "ElevenLabs", desc: "Warm & reverent", free: false, provider: "elevenlabs" },
+  { id: "nPczCjzI2devNBz1zQrb", short: "Brian", name: "Thomas", gender: "Male", tier: "ElevenLabs", desc: "Deep & resonant", free: false, provider: "elevenlabs" },
+  { id: "onwK4e9ZLuTAKqWW03F9", short: "Daniel", name: "Ignatius", gender: "Male", tier: "ElevenLabs", desc: "Calm & steady", free: false, provider: "elevenlabs" },
+  { id: "EXAVITQu4vr4xnSDxMaL", short: "Sarah", name: "Teresa", gender: "Female", tier: "ElevenLabs", desc: "Soft & warm", free: false, provider: "elevenlabs" },
+  { id: "Xb7hH8MSUJpSbSDYk0k2", short: "Alice", name: "Agnes", gender: "Female", tier: "ElevenLabs", desc: "Clear & gentle", free: false, provider: "elevenlabs" },
+  { id: "XrExE9yKIg1WjnnlVkGX", short: "Matilda", name: "Rose", gender: "Female", tier: "ElevenLabs", desc: "Bright & graceful", free: false, provider: "elevenlabs" },
   // Neural2 — natural and free (1M characters/month).
   { id: "en-US-Neural2-D", short: "D", name: "Gabriel", gender: "Male", tier: "Neural2", desc: "Calm & clear", free: true },
   { id: "en-US-Neural2-J", short: "J", name: "Raphael", gender: "Male", tier: "Neural2", desc: "Deep & steady", free: true },
