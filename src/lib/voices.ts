@@ -21,7 +21,7 @@ export interface Voice {
   provider?: VoiceProvider;
 }
 
-export const DEFAULT_VOICE = "JBFqnCBsd6RMkjVDRZzb";
+export const DEFAULT_VOICE = "en-US-Neural2-D";
 
 export const VOICES: Voice[] = [
   // ElevenLabs — most natural; premium (uses ElevenLabs credits). These are
