@@ -2,10 +2,12 @@
 // exposing all ~40 Google voices. Shared by the picker UI and the TTS route
 // (which validates the requested voice against this allowlist).
 
-export type VoiceTier = "Neural2" | "Chirp3-HD" | "Studio";
+export type VoiceTier = "ElevenLabs" | "Neural2" | "Chirp3-HD" | "Studio";
+
+export type VoiceProvider = "google" | "elevenlabs";
 
 export interface Voice {
-  id: string; // Google voice name, e.g. "en-US-Neural2-D"
+  id: string; // provider voice id: Google name "en-US-Neural2-D" or an ElevenLabs voice_id
   short: string; // display identifier, e.g. "D" or "Charon"
   /** Distinct display name shown in the pickers. */
   name: string;
@@ -15,6 +17,8 @@ export interface Voice {
   desc: string;
   /** Covered by the generous free tier for typical use (Neural2). */
   free: boolean;
+  /** TTS backend. Omitted = Google (the original provider). */
+  provider?: VoiceProvider;
 }
 
 export const DEFAULT_VOICE = "en-US-Neural2-D";
@@ -37,9 +41,10 @@ export const VOICES: Voice[] = [
   { id: "en-US-Studio-O", short: "O", name: "Monica", gender: "Female", tier: "Studio", desc: "Studio narration", free: false },
 ];
 
-export const VOICE_TIERS: VoiceTier[] = ["Neural2", "Chirp3-HD", "Studio"];
+export const VOICE_TIERS: VoiceTier[] = ["ElevenLabs", "Neural2", "Chirp3-HD", "Studio"];
 
 export const TIER_NOTE: Record<VoiceTier, string> = {
+  "ElevenLabs": "Most natural · ElevenLabs",
   "Neural2": "Natural & free",
   "Chirp3-HD": "Most lifelike · premium",
   "Studio": "Narration · premium",
@@ -47,6 +52,11 @@ export const TIER_NOTE: Record<VoiceTier, string> = {
 
 export function isValidVoice(id: string): boolean {
   return VOICES.some((v) => v.id === id);
+}
+
+/** Which TTS backend serves a given voice id (defaults to Google). */
+export function voiceProvider(id: string): VoiceProvider {
+  return VOICES.find((v) => v.id === id)?.provider ?? "google";
 }
 
 /** The display name for a voice id (falls back to a generic label). */

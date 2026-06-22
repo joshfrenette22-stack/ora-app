@@ -95,6 +95,7 @@ export default function SettingsPage() {
 
       {VOICE_TIERS.map((tier) => {
         const voices = VOICES.filter((v) => v.tier === tier);
+        if (voices.length === 0) return null;
         return (
           <div key={tier} style={{ marginBottom: 26 }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 10 }}>
