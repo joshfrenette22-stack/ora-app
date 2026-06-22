@@ -26,7 +26,17 @@ export async function GET(request: NextRequest) {
       {
         method: "POST",
         headers: { "xi-api-key": key, "Content-Type": "application/json", Accept: "audio/mpeg" },
-        body: JSON.stringify({ text: "Hail Mary", model_id: model }),
+        body: JSON.stringify({
+          text: "Hail Mary",
+          model_id: model,
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.8,
+            style: 0,
+            use_speaker_boost: true,
+            speed: 1,
+          },
+        }),
       },
     );
     out.status = res.status;
