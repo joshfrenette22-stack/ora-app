@@ -66,17 +66,26 @@ async function synthChunk(text: string, voiceId: string, speed: number): Promise
         },
       }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`[elevenlabs] HTTP ${res.status} voice=${voiceId} model=${MODEL} body=${body.slice(0, 500)}`);
+      return null;
+    }
     const buf = Buffer.from(await res.arrayBuffer());
     return buf.length ? buf : null;
-  } catch {
+  } catch (err) {
+    console.error(`[elevenlabs] fetch threw voice=${voiceId}:`, err);
     return null;
   }
 }
 
 /** Synthesise text to MP3 bytes via ElevenLabs, or null if unavailable/failed. */
 export async function synthesizeEleven(text: string, { rate, voiceId }: ElevenOptions): Promise<Buffer | null> {
-  if (!process.env.ELEVENLABS_API_KEY || !voiceId || !text.trim()) return null;
+  if (!process.env.ELEVENLABS_API_KEY) {
+    console.error("[elevenlabs] ELEVENLABS_API_KEY is not set in this environment");
+    return null;
+  }
+  if (!voiceId || !text.trim()) return null;
   // ElevenLabs supports speeds 0.7–1.2; map the app's rate into that band.
   const speed = Math.min(1.2, Math.max(0.7, rate && rate > 0 ? rate : 1));
 
