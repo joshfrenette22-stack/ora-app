@@ -2,7 +2,7 @@
 // exposing all ~40 Google voices. Shared by the picker UI and the TTS route
 // (which validates the requested voice against this allowlist).
 
-export type VoiceTier = "ElevenLabs" | "Neural2" | "Chirp3-HD" | "Studio";
+export type VoiceTier = "Neural2" | "Chirp3-HD" | "Studio";
 
 export type VoiceProvider = "google" | "elevenlabs";
 
@@ -21,17 +21,9 @@ export interface Voice {
   provider?: VoiceProvider;
 }
 
-export const DEFAULT_VOICE = "JBFqnCBsd6RMkjVDRZzb";
+export const DEFAULT_VOICE = "en-US-Neural2-D";
 
 export const VOICES: Voice[] = [
-  // ElevenLabs — most natural; premium (uses ElevenLabs credits). These are
-  // ElevenLabs' stock "default" voice_ids, present in every account.
-  { id: "JBFqnCBsd6RMkjVDRZzb", short: "George", name: "Francis", gender: "Male", tier: "ElevenLabs", desc: "Warm & reverent", free: false, provider: "elevenlabs" },
-  { id: "nPczCjzI2devNBz1zQrb", short: "Brian", name: "Thomas", gender: "Male", tier: "ElevenLabs", desc: "Deep & resonant", free: false, provider: "elevenlabs" },
-  { id: "onwK4e9ZLuTAKqWW03F9", short: "Daniel", name: "Ignatius", gender: "Male", tier: "ElevenLabs", desc: "Calm & steady", free: false, provider: "elevenlabs" },
-  { id: "EXAVITQu4vr4xnSDxMaL", short: "Sarah", name: "Teresa", gender: "Female", tier: "ElevenLabs", desc: "Soft & warm", free: false, provider: "elevenlabs" },
-  { id: "Xb7hH8MSUJpSbSDYk0k2", short: "Alice", name: "Agnes", gender: "Female", tier: "ElevenLabs", desc: "Clear & gentle", free: false, provider: "elevenlabs" },
-  { id: "XrExE9yKIg1WjnnlVkGX", short: "Matilda", name: "Rose", gender: "Female", tier: "ElevenLabs", desc: "Bright & graceful", free: false, provider: "elevenlabs" },
   // Neural2 — natural and free (1M characters/month).
   { id: "en-US-Neural2-D", short: "D", name: "Gabriel", gender: "Male", tier: "Neural2", desc: "Calm & clear", free: true },
   { id: "en-US-Neural2-J", short: "J", name: "Raphael", gender: "Male", tier: "Neural2", desc: "Deep & steady", free: true },
@@ -49,10 +41,9 @@ export const VOICES: Voice[] = [
   { id: "en-US-Studio-O", short: "O", name: "Monica", gender: "Female", tier: "Studio", desc: "Studio narration", free: false },
 ];
 
-export const VOICE_TIERS: VoiceTier[] = ["ElevenLabs", "Neural2", "Chirp3-HD", "Studio"];
+export const VOICE_TIERS: VoiceTier[] = ["Neural2", "Chirp3-HD", "Studio"];
 
 export const TIER_NOTE: Record<VoiceTier, string> = {
-  "ElevenLabs": "Most natural · ElevenLabs",
   "Neural2": "Natural & free",
   "Chirp3-HD": "Most lifelike · premium",
   "Studio": "Narration · premium",
