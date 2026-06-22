@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { synthesize, googleTtsEnabled } from "@/lib/googleTts";
+import { synthesizeVoice, cloudTtsEnabled } from "@/lib/tts";
 
 export const dynamic = "force-dynamic";
 
@@ -8,10 +8,10 @@ export async function GET(request: NextRequest) {
 
   // Capability probe — the client checks this once to choose its audio engine.
   if (params.has("probe")) {
-    return new Response(null, { status: googleTtsEnabled() ? 204 : 503 });
+    return new Response(null, { status: cloudTtsEnabled() ? 204 : 503 });
   }
 
-  if (!googleTtsEnabled()) return new Response("TTS not configured", { status: 503 });
+  if (!cloudTtsEnabled()) return new Response("TTS not configured", { status: 503 });
 
   const text = params.get("text")?.trim();
   if (!text) return new Response("Missing text", { status: 400 });
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   const rate = Number(params.get("rate")) || undefined;
   const voice = params.get("voice") ?? undefined;
 
-  const audio = await synthesize(text, { rate, voice });
+  const audio = await synthesizeVoice(text, { rate, voice });
   if (!audio) return new Response("Synthesis failed", { status: 502 });
 
   return new Response(new Uint8Array(audio), {
