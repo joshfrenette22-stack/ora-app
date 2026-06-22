@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
-import { synthesizeVoice, cloudTtsEnabled } from "@/lib/tts";
+import { cloudTtsEnabled } from "@/lib/tts";
+import { synthesizeCached } from "@/lib/audioCache";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
   const rate = Number(params.get("rate")) || undefined;
   const voice = params.get("voice") ?? undefined;
 
-  const audio = await synthesizeVoice(text, { rate, voice });
+  const audio = await synthesizeCached(text, { rate, voice });
   if (!audio) return new Response("Synthesis failed", { status: 502 });
 
   return new Response(new Uint8Array(audio), {
