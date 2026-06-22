@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
 import { PRAYER_CATALOG } from "@/data/prayers";
+import { DEFAULT_VOICE } from "@/lib/voices";
 import { cloudTtsEnabled, synthesizeVoice } from "@/lib/tts";
 import {
   audioCacheEnabled,
@@ -22,13 +23,10 @@ export const maxDuration = 60;
 //
 // Guard: if BACKFILL_TOKEN is set, require a matching ?token=.
 
-// Default trio: Francis (warm male / app default), Teresa (soft female),
-// Thomas (deep male). Override with ?voices=.
-const DEFAULT_VOICES = [
-  "JBFqnCBsd6RMkjVDRZzb", // Francis
-  "EXAVITQu4vr4xnSDxMaL", // Teresa
-  "nPczCjzI2devNBz1zQrb", // Thomas
-];
+// Defaults to the app's default voice. Override with ?voices=ID1,ID2 — useful
+// for pre-warming the paid Google tiers (Studio / Chirp3-HD); the free Neural2
+// voices don't need it.
+const DEFAULT_VOICES = [DEFAULT_VOICE];
 
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
