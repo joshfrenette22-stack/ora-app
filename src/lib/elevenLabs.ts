@@ -6,8 +6,8 @@
 // repeated passages ("Hail Mary", antiphons) are synthesised once per voice.
 
 const ENDPOINT = "https://api.elevenlabs.io/v1/text-to-speech";
-// High-quality multilingual model; good for reverent narration.
-const MODEL = process.env.ELEVENLABS_MODEL || "eleven_multilingual_v2";
+// Low-latency, cost-efficient model; still very natural for narration.
+const MODEL = process.env.ELEVENLABS_MODEL || "eleven_turbo_v2_5";
 const OUTPUT_FORMAT = "mp3_44100_128";
 
 export function elevenLabsEnabled(): boolean {
