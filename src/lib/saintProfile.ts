@@ -65,6 +65,7 @@ const CATHOLIC_HOSTS = [
   "aleteia.org", "sanctoral.com", "osb.org", "americancatholic.org",
   "simplycatholic.com", "ucatholic.com", "magnificat.com",
   "catholicism.org", "catholicexchange.com", "mycatholic.life",
+  "catholicreadings.org", "catholicireland.net", "rvasia.org",
 ];
 
 function hostOf(url: string): string {
