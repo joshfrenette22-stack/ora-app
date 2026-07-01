@@ -151,6 +151,7 @@ export default function DevotionsPage() {
 
       <DevotionLink href="/holy-face" lucide="cross" kicker="Chaplet · Guided or Interactive" title="Chaplet of the Holy Face" />
       <DevotionLink href="/auxilium" lucide="shield" kicker="Help of Christians · Daily" title="Auxilium Christianorum" />
+      <DevotionLink href="/practice-love" lucide="book-open" kicker="Audiobook · St. Alphonsus Liguori" title="The Practice of the Love of Jesus Christ" />
     </div>
   );
 }
