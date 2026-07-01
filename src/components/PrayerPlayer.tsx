@@ -146,6 +146,10 @@ export function useNarration({
   const prayerCountedRef = useRef(false); // counted one prayer for this sitting?
   const storageKeyRef = useRef(storageKey);
   useEffect(() => { storageKeyRef.current = storageKey; }, [storageKey]);
+  // The storage key whose saved position has already been restored. Guards the
+  // save effect so the initial index (0) can't overwrite a saved spot before we
+  // read it back — which would silently wipe the resume point.
+  const hydratedKeyRef = useRef<string | undefined>(undefined);
   // Resolves once we know which engine to use (prevents the first segment
   // falling back to the browser voice while the cloud probe is in-flight).
   const engineReadyRef = useRef<Promise<void>>(Promise.resolve());
@@ -205,25 +209,31 @@ export function useNarration({
   }, []);
 
   // Remember the current position so closing the app doesn't lose her place.
+  // Only writes once the active key has been restored below, so the initial 0
+  // never clobbers a saved spot.
   useEffect(() => {
-    if (!storageKeyRef.current) return;
-    try { localStorage.setItem(`pw-pos:${storageKeyRef.current}`, String(index)); } catch { /* ignore */ }
+    const key = storageKeyRef.current;
+    if (!key || hydratedKeyRef.current !== key) return;
+    try { localStorage.setItem(`pw-pos:${key}`, String(index)); } catch { /* ignore */ }
   }, [index]);
 
-  // Restore the saved position once, on mount.
-  const restoredRef = useRef(false);
+  // Restore the saved position for the active key. Re-runs whenever the key
+  // changes (e.g. moving between audiobook chapters) so every key resumes right
+  // where it was left, and reopening the app never starts over.
   useEffect(() => {
-    if (restoredRef.current || !storageKeyRef.current) return;
-    restoredRef.current = true;
+    if (!storageKey) return;
+    let restored = 0;
     try {
-      const saved = parseInt(localStorage.getItem(`pw-pos:${storageKeyRef.current}`) ?? "", 10);
+      const saved = parseInt(localStorage.getItem(`pw-pos:${storageKey}`) ?? "", 10);
       if (Number.isFinite(saved) && saved > 0 && saved < segmentsRef.current.length) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setIndex(saved);
-        changeRef.current?.(saved);
+        restored = saved;
       }
     } catch { /* ignore */ }
-  }, []);
+    hydratedKeyRef.current = storageKey;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIndex(restored);
+    changeRef.current?.(restored);
+  }, [storageKey]);
 
   // Flush time on background/close, and resume cloud audio when the screen
   // comes back on (iOS pauses the <audio> element when the device locks).
@@ -457,11 +467,15 @@ export function useNarration({
           else if (loop) playNextRef.current(0);
           else {
             setStatus("idle");
-            // Reached the end — record the listened time and clear the saved spot.
+            // Reached the end — record the listened time and clear the saved spot,
+            // then rewind so the next play starts from the top rather than replaying
+            // the final segment.
             flushListened();
             if (storageKeyRef.current) {
               try { localStorage.removeItem(`pw-pos:${storageKeyRef.current}`); } catch { /* ignore */ }
             }
+            setIndex(0);
+            changeRef.current?.(0);
             completeRef.current?.();
           }
         },
@@ -1101,10 +1115,13 @@ export function ListenButton({
   narration,
   label = "Listen",
   dark = false,
+  resume = false,
 }: {
   narration: Narration;
   label?: string;
   dark?: boolean;
+  /** Start from the last-saved position instead of the beginning. */
+  resume?: boolean;
 }) {
   const { speed, setSpeed } = useVoice();
   const SPEEDS = [0.75, 1, 1.25, 1.5];
@@ -1123,7 +1140,9 @@ export function ListenButton({
 
   const handleClick = () => {
     if (active) narration.toggle();
-    else narration.play(0);
+    // `resume` starts from the restored position (play() → current index);
+    // otherwise always from the top.
+    else narration.play(resume ? undefined : 0);
   };
 
   return (

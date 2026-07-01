@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Fleuron } from "@/components/Sacred";
 import { Illustration } from "@/components/Illustration";
 import { Kicker, LucideIcon } from "@/components/UI";
@@ -14,6 +14,7 @@ import {
 import { PRACTICE_LOVE, blockSpeech, chapterSegments, type ReadingBlock } from "@/data/practiceLove";
 
 const BOOK = PRACTICE_LOVE;
+const CHAPTER_KEY = "pw-book-chapter:practice-love";
 
 function BlockView({
   block, dropcap, active, wordIndex,
@@ -54,6 +55,25 @@ export default function PracticeLovePage() {
   useRegisterNarration(narration, `${BOOK.title} — ${chapter.number}`, false, "app-icon-crucifix");
   const speaking = narration.status !== "idle";
 
+  // Remember which chapter she was on, too, so reopening the book returns to the
+  // right chapter (the paragraph position within it is remembered by the player).
+  const chapterSaved = useRef(false);
+  useEffect(() => {
+    try {
+      const saved = parseInt(localStorage.getItem(CHAPTER_KEY) ?? "", 10);
+      if (Number.isFinite(saved) && saved > 0 && saved < BOOK.chapters.length) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setChapterIdx(saved);
+      }
+    } catch { /* ignore */ }
+  }, []);
+  useEffect(() => {
+    // Skip the first run so the default (0) can't overwrite the stored chapter
+    // before it's been restored above.
+    if (!chapterSaved.current) { chapterSaved.current = true; return; }
+    try { localStorage.setItem(CHAPTER_KEY, String(chapterIdx)); } catch { /* ignore */ }
+  }, [chapterIdx]);
+
   // Index of the first narrated body block (gets the drop cap), and a running
   // map from each block to its narration segment index.
   const firstBodyIdx = chapter.blocks.findIndex((b) => b.type === "body");
@@ -81,7 +101,7 @@ export default function PracticeLovePage() {
         {BOOK.chapters.map((c, i) => {
           const on = i === chapterIdx;
           return (
-            <button key={c.id} onClick={() => { setChapterIdx(i); narration.reset(0); }} style={{
+            <button key={c.id} onClick={() => { narration.stop(); setChapterIdx(i); }} style={{
               fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 11.5, letterSpacing: ".01em",
               padding: "7px 13px", borderRadius: 999, cursor: "pointer",
               border: on ? "none" : "1px solid var(--stone-200)",
@@ -113,7 +133,7 @@ export default function PracticeLovePage() {
         </div>
 
         <div style={{ marginBottom: 24, position: "relative" }}>
-          <ListenButton narration={narration} label="Listen" />
+          <ListenButton narration={narration} resume label={narration.index > 0 ? "Resume" : "Listen"} />
         </div>
 
         {/* Follow-along body — the playing paragraph highlights word-by-word. */}
