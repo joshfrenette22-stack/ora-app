@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
 import { PRAYER_CATALOG } from "@/data/prayers";
+import { PRACTICE_LOVE, blockSpeech } from "@/data/practiceLove";
 import { DEFAULT_VOICE } from "@/lib/voices";
 import { cloudTtsEnabled, synthesizeVoice } from "@/lib/tts";
 import {
@@ -12,14 +13,22 @@ import {
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// Pre-generate ("warm") the static prayer catalogue in the given voices so the
-// durable audio cache already holds them — every later play is then free. Each
-// call processes a small batch (synthesis is slow + providers cap concurrency);
-// call repeatedly until `remaining` reaches 0. Already-cached items are skipped,
-// so re-running is safe.
+// Pre-generate ("warm") static narration into the durable audio cache so the
+// free-tier synthesis quota is spent once, not on every play. Prayers and the
+// long-form audiobook use the exact same mechanism — each unique (voice, rate,
+// text) is synthesised once and stored permanently. Each call processes a small
+// batch (synthesis is slow + providers cap concurrency); call repeatedly until
+// `remaining` reaches 0. Already-cached items are skipped, so re-running is safe.
 //
 //   GET /api/tts/warm?voices=ID1,ID2,ID3&rate=1&limit=4
+//   GET /api/tts/warm?content=book   → warm the audiobook instead of prayers
+//   GET /api/tts/warm?content=all    → warm both
 //   GET /api/tts/warm?...&dryRun=1   → report counts/credits, generate nothing
+//
+// The audiobook ("The Practice of the Love of Jesus Christ") is ~294k characters
+// across 355 paragraphs — well within the free 1M-chars/month tier when warmed
+// once. Its segments are keyed to match exactly what the reader page requests
+// (default voice + rate 1), so a warmed book plays instantly from cache.
 //
 // Guard: if BACKFILL_TOKEN is set, require a matching ?token=.
 
@@ -51,15 +60,36 @@ export async function GET(request: NextRequest) {
   const rate = Number(params.get("rate")) || 1;
   const limit = Math.min(12, Math.max(1, Number(params.get("limit")) || 4));
   const dryRun = params.has("dryRun");
+  // Which narration to warm: prayers (default), the audiobook, or both.
+  const content = (params.get("content") ?? "prayers").toLowerCase();
+  const wantPrayers = content === "prayers" || content === "all";
+  const wantBook = content === "book" || content === "all";
 
-  // Every prayer × every voice → one synthesis task.
+  // One synthesis task per (passage × voice). The key MUST match the request the
+  // player makes at playback time, or the warmed audio won't be hit.
   type Task = { id: string; voice: string; text: string; key: string };
   const tasks: Task[] = [];
-  for (const p of PRAYER_CATALOG) {
-    const text = p.text?.trim();
-    if (!text) continue;
-    for (const voice of voices) {
-      tasks.push({ id: p.id, voice, text, key: audioCacheKey({ text, rate, voice }) });
+  if (wantPrayers) {
+    for (const p of PRAYER_CATALOG) {
+      const text = p.text?.trim();
+      if (!text) continue;
+      for (const voice of voices) {
+        tasks.push({ id: p.id, voice, text, key: audioCacheKey({ text, rate, voice }) });
+      }
+    }
+  }
+  if (wantBook) {
+    // Each narrated block is one player segment (see chapterSegments); warm them
+    // paragraph-by-paragraph so the whole book fits under the per-request cap.
+    for (const chapter of PRACTICE_LOVE.chapters) {
+      chapter.blocks.forEach((block, i) => {
+        const text = blockSpeech(block)?.trim();
+        if (!text) return;
+        const id = `${PRACTICE_LOVE.slug}-${chapter.id}-${i}`;
+        for (const voice of voices) {
+          tasks.push({ id, voice, text, key: audioCacheKey({ text, rate, voice }) });
+        }
+      });
     }
   }
 
@@ -72,9 +102,11 @@ export async function GET(request: NextRequest) {
   if (dryRun) {
     return Response.json({
       dryRun: true,
+      content,
       voices,
       rate,
-      prayers: PRAYER_CATALOG.length,
+      prayers: wantPrayers ? PRAYER_CATALOG.length : 0,
+      bookSegments: wantBook ? tasks.filter((t) => t.id.startsWith(`${PRACTICE_LOVE.slug}-`)).length / voices.length : 0,
       totalTasks: tasks.length,
       alreadyCached: tasks.length - todo.length,
       remaining: todo.length,
@@ -94,6 +126,7 @@ export async function GET(request: NextRequest) {
   );
 
   return Response.json({
+    content,
     generated: results.filter((r) => r.ok).length,
     failed: results.filter((r) => !r.ok).map((r) => ({ id: r.id, voice: r.voice })),
     remaining: Math.max(0, todo.length - batch.length),
