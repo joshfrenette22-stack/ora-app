@@ -4,7 +4,6 @@
 
 import { ROSARY_PRAYERS, DEVOTIONS } from "./content";
 import { auxiliumEverydayText } from "./auxilium";
-import { PRACTICE_LOVE, audiobookText } from "./practiceLove";
 import type { IllustrationKey } from "@/lib/illustrations";
 
 export interface Prayer {
@@ -232,17 +231,6 @@ export const PRAYER_CATALOG: Prayer[] = [
     text: "My soul doth magnify the Lord, and my spirit hath rejoiced in God my Saviour. For he hath regarded the lowliness of his handmaiden; for behold, from henceforth all generations shall call me blessed. For he that is mighty hath magnified me, and holy is his name. And his mercy is on them that fear him throughout all generations. He hath showed strength with his arm; he hath scattered the proud in the imagination of their hearts. He hath put down the mighty from their seat, and hath exalted the humble and meek. He hath filled the hungry with good things, and the rich he hath sent empty away. He hath holpen his servant Israel, in remembrance of his mercy; as he promised to our forefathers, Abraham and his seed, for ever. Amen.",
     category: "Marian",
     lucide: "flower",
-  },
-
-  // ── Spiritual reading (audiobook) ─────────────────────────────────────────
-  {
-    id: "practice-love-introduction",
-    title: "The Practice of the Love of Jesus Christ",
-    sub: "St. Alphonsus Liguori · Introduction",
-    text: audiobookText(PRACTICE_LOVE),
-    category: "Reading",
-    lucide: "book-open",
-    illustration: "app-icon-crucifix",
   },
 ];
 
