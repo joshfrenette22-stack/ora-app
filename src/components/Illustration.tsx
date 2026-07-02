@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
 import { ILLUSTRATIONS, type IllustrationKey } from "@/lib/illustrations";
 import { useTheme } from "./ThemeProvider";
 
@@ -68,6 +69,9 @@ export function Illustration({
   feather = true,
 }: IllustrationProps) {
   const { night } = useTheme();
+  // If the file fails to load (offline, cache eviction) render nothing rather
+  // than the browser's broken-image glyph — every usage is ornamental.
+  const [failed, setFailed] = useState(false);
   const entry = ILLUSTRATIONS[name];
   const resolvedAlt = altOverride ?? entry.alt;
   const w = size ?? widthOverride ?? entry.defaultWidth;
@@ -85,6 +89,8 @@ export function Illustration({
     ...style,
   };
 
+  if (failed) return null;
+
   return (
     <Image
       src={entry.src}
@@ -96,6 +102,7 @@ export function Illustration({
       style={filterStyle}
       aria-hidden={isDecorative || undefined}
       draggable={false}
+      onError={() => setFailed(true)}
     />
   );
 }

@@ -17,7 +17,6 @@ export default function ConfessionPage() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       if (raw) setChecked(JSON.parse(raw));
     } catch { /* ignore */ }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoaded(true);
   }, []);
 

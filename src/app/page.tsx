@@ -10,6 +10,7 @@ import { localDateISO } from "@/lib/clientDate";
 import { HOURS, currentHourName, WEEKDAY_SET } from "@/data/content";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { CommunityCard } from "@/components/CommunityCard";
+import { JourneyCard } from "@/components/JourneyCard";
 import { getCachedName, ensureSession } from "@/lib/user";
 
 type Hour = typeof HOURS[number];
@@ -63,6 +64,8 @@ export default function TodayPage() {
   const [rosarySet, setRosarySet] = useState<string | null>(null);
   const [weekday, setWeekday] = useState<string | null>(null);
   const [church, setChurch] = useState<ChurchItem[] | null>(null);
+  const [churchFailed, setChurchFailed] = useState(false);
+  const [dateLabel, setDateLabel] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -72,8 +75,12 @@ export default function TodayPage() {
       .catch(() => {});
     fetch(`/api/today-in-church?date=${localDateISO()}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (alive && d?.items) setChurch(d.items as ChurchItem[]); })
-      .catch(() => {});
+      .then((d) => {
+        if (!alive) return;
+        if (d?.items?.length) setChurch(d.items as ChurchItem[]);
+        else setChurchFailed(true);
+      })
+      .catch(() => { if (alive) setChurchFailed(true); });
     return () => { alive = false; };
   }, []);
 
@@ -86,6 +93,7 @@ export default function TodayPage() {
     setHour(HOURS.find((x) => x.name === currentHourName()) ?? null);
     setRosarySet(WEEKDAY_SET[new Date().getDay()]);
     setWeekday(new Date().toLocaleDateString("en-US", { weekday: "long" }));
+    setDateLabel(new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }));
 
     // Onboarding status (Supabase-backed name) + anonymous auth session.
     const cached = getCachedName();
@@ -137,6 +145,11 @@ export default function TodayPage() {
         </div>
       </div>
 
+      {/* Your prayer journey — streak + today's plan */}
+      <div style={{ marginBottom: 16 }}>
+        <JourneyCard />
+      </div>
+
       {/* Community prayer stats */}
       <div style={{ marginBottom: 30 }}>
         <CommunityCard />
@@ -164,6 +177,10 @@ export default function TodayPage() {
                 </div>
               </div>
             ))}
+          </div>
+        ) : churchFailed ? (
+          <div style={{ fontFamily: "var(--font-body)", fontSize: 14.5, lineHeight: 1.6, color: "var(--stone-400)", marginTop: 14 }}>
+            Today&rsquo;s overview couldn&rsquo;t be loaded. Please check your connection and try again later.
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
@@ -312,7 +329,7 @@ export default function TodayPage() {
           fontSize: 11,
           letterSpacing: ".02em",
         }}>
-          {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+          {dateLabel ?? " "}
         </span>
       </div>
     </div>

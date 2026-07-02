@@ -8,13 +8,19 @@ Built with Next.js 16 (App Router), React 19, and TypeScript.
 
 ## Features
 
-- **Today** — liturgical season/colour, a daily verse, and quick links.
+- **Today** — liturgical season/colour, a daily verse, community prayer stats, and quick links.
 - **Daily Mass** — the day's readings with a follow-along audio player.
 - **Liturgy of the Hours** — the current hour's antiphon, read aloud.
-- **The Holy Rosary** — hands-free narration that auto-advances the beads.
+- **The Holy Rosary** — guided or interactive, with per-bead artwork and hands-free narration that auto-advances the beads.
+- **Devotions** — the Angelus, Divine Mercy chaplet, St. Michael prayer, Memorare, and more.
+- **Chaplet of the Holy Face** — guided or interactive.
+- **Auxilium Christianorum** — the daily prayers for spiritual protection, with each weekday's proper prayer.
+- **The Practice of the Love of Jesus Christ** — St. Alphonsus Liguori, as a narrated audiobook.
+- **Confession** — how to prepare, plus a checkable examination of conscience.
+- **My Playlist** — build a personal prayer sequence and pray through it in one session.
 - **Saints** — the day's celebration with life and collect.
 - **Calendar** — the month's feasts and seasons.
-- **Settings** — pick a narration voice (with live previews) and night mode.
+- **Settings** — pick a narration voice (with live previews), reading speed, night mode, and force-refresh the app.
 - Installable PWA with an app icon; responsive (sidebar on desktop, bottom bar on phones).
 
 ## Data sources

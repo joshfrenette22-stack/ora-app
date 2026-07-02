@@ -6,6 +6,7 @@ import { Cross, Fleuron } from "@/components/Sacred";
 import { SeasonBadge, Kicker, Btn } from "@/components/UI";
 import { ListenButton, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { countWords } from "@/lib/words";
+import { markPrayed } from "@/lib/journey";
 import { Illustration } from "@/components/Illustration";
 import { HOURS, currentHourName as getCurrentHour } from "@/data/content";
 import { OFFICE, type OfficePart } from "@/data/office";
@@ -39,7 +40,7 @@ export default function HoursPage() {
     [parts, selected, hour.name],
   );
 
-  const narration = useNarration({ segments, onSegmentChange: setActivePart, storageKey: `hours:${hour.name}` });
+  const narration = useNarration({ segments, onSegmentChange: setActivePart, onComplete: () => markPrayed("hours"), storageKey: `hours:${hour.name}` });
   useRegisterNarration(narration, `Pray ${hour.name} aloud`, false, HOUR_ART[hour.name]);
 
   // Switching hours resets the office narration (reset() clears the highlight

@@ -8,6 +8,7 @@ import { MYSTERY_ART, type IllustrationKey } from "@/lib/illustrations";
 import { Btn, LucideIcon } from "@/components/UI";
 import { ListenButton, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { countWords } from "@/lib/words";
+import { markPrayed } from "@/lib/journey";
 import { MYSTERY_SETS, ROSARY_PRAYERS, WEEKDAY_SET } from "@/data/content";
 import { RosarySlide } from "@/components/RosarySlide";
 import { hasSlides, rosarySlide } from "@/data/rosarySlides";
@@ -182,7 +183,7 @@ export default function RosaryPage() {
     [steps],
   );
 
-  const narration = useNarration({ segments });
+  const narration = useNarration({ segments, onComplete: () => markPrayed("rosary") });
 
   // Stable getter for the current rosary slide (used by the full-screen player).
   // It reads a ref kept in sync with the active step below; intro/closing steps
@@ -194,12 +195,6 @@ export default function RosaryPage() {
   }, []);
   useRegisterNarration(narration, mode === "guided" ? "Fully guided" : "Listen", true, MYSTERY_ART[activeSet] as IllustrationKey | undefined, getImageSrc);
 
-  // Fully-guided mode plays the whole rosary aloud, auto-advancing the text.
-  useEffect(() => {
-    if (mode === "guided") narration.play(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
-
   const idx = Math.min(narration.index, steps.length - 1);
   const step = steps[idx] ?? steps[0];
   const mysteries = MYSTERY_SETS[activeSet] as readonly (readonly [string, string])[];
@@ -207,13 +202,23 @@ export default function RosaryPage() {
   // Feed the current slide (mystery beads only) to the full-screen player.
   useEffect(() => { slideStateRef.current = { set: activeSet, mysteryIdx: step.mysteryIdx, bead: step.bead }; });
 
-  function advance() { narration.seek(idx + 1 >= steps.length ? 0 : idx + 1); }
+  function advance() {
+    // Reaching the end interactively (praying silently) also counts.
+    if (idx + 1 >= steps.length) markPrayed("rosary");
+    narration.seek(idx + 1 >= steps.length ? 0 : idx + 1);
+  }
   function jumpToMystery(i: number) { narration.seek(INTRO_LEN + i * TOTAL_BEADS); }
   function jumpToIntro() { narration.seek(0); }
   function jumpToClosing() { narration.seek(INTRO_LEN + MYSTERY_SETS[activeSet].length * TOTAL_BEADS); }
   function changeSet(key: SetKey) { setActiveSet(key); narration.reset(0); }
   function backToMenu() { narration.reset(0); setMode("menu"); }
-  function start(m: Mode) { narration.reset(0); setMode(m); }
+  function start(m: Mode) {
+    narration.reset(0);
+    setMode(m);
+    // Fully-guided plays the whole rosary aloud. Start synchronously inside the
+    // tap gesture — iOS drops audio/speech begun outside the user gesture task.
+    if (m === "guided") narration.play(0);
+  }
 
   // ── MODE CHOOSER ──────────────────────────────────────────────────────────
   if (mode === "menu") {

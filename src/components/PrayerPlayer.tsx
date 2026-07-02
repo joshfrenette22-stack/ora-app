@@ -6,11 +6,11 @@ import { useVoice } from "./VoiceProvider";
 import { VOICES, voiceName } from "@/lib/voices";
 import { wordStarts, wordIndexAtChar, countWords } from "@/lib/words";
 import { logPrayer } from "@/lib/prayers";
+import { addJourneySeconds } from "@/lib/journey";
 import {
   ensureVoices,
   isSpeechSupported,
   pauseSpeaking,
-  resumeSpeaking,
   speak,
   stopSpeaking,
 } from "@/lib/speech";
@@ -201,6 +201,7 @@ export function useNarration({
     if (secs < 5) return; // ignore trivial blips
     const counted = prayerCountedRef.current;
     prayerCountedRef.current = true; // count the prayer once per sitting; minutes always
+    addJourneySeconds(secs); // personal ledger (streak card on Today)
     void logPrayer({ prayer_type: "prayer", segments_count: counted ? 0 : 1, duration_seconds: secs }).catch(() => {});
   }, []);
 
@@ -218,7 +219,6 @@ export function useNarration({
     try {
       const saved = parseInt(localStorage.getItem(`pw-pos:${storageKeyRef.current}`) ?? "", 10);
       if (Number.isFinite(saved) && saved > 0 && saved < segmentsRef.current.length) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIndex(saved);
         changeRef.current?.(saved);
       }
@@ -246,7 +246,6 @@ export function useNarration({
       window.removeEventListener("pagehide", flushListened);
       flushListened();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flushListened]);
 
   // Core segment player — separated so playSegment can await the engine probe.
@@ -428,7 +427,6 @@ export function useNarration({
   useEffect(() => { startSegmentRef.current = startSegment; }, [startSegment]);
 
   // Clean up estimation timer on unmount.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => clearEstimate, [clearEstimate]);
 
   const playIndex = useCallback(
@@ -476,15 +474,21 @@ export function useNarration({
   // Re-speak the current segment at the new speed when it changes mid-prayer.
   const statusRef = useRef(status);
   const indexRef = useRef(index);
-  const speedRef = useRef(speed);
+  // Seeded on the effect's first run (not from the render value) so the
+  // compiler lint can verify the ref is only written inside effects.
+  const speedRef = useRef<number | null>(null);
   const voiceRef = useRef(voice);
+  // Latest-value refs, written only in effects so mid-prayer speed/voice
+  // changes can read fresh state without re-running the engine.
+  // eslint-disable-next-line react-hooks/immutability
   useEffect(() => { statusRef.current = status; }, [status]);
   useEffect(() => { fracRef.current = frac; }, [frac]);
   useEffect(() => { indexRef.current = index; }, [index]);
   useEffect(() => {
+    const first = speedRef.current === null;
     if (speedRef.current === speed) return;
     speedRef.current = speed;
-    if (statusRef.current === "playing") playIndex(indexRef.current);
+    if (!first && statusRef.current === "playing") playIndex(indexRef.current);
   }, [speed, playIndex]);
   // Re-read the current segment in the new voice when it changes mid-prayer.
   useEffect(() => {
@@ -1015,6 +1019,14 @@ export function useRegisterNarration(narration: Narration, title: string, dark =
     register(getterRef.current, title, dark, illustration, getImageSrc);
     return () => unregister(getterRef.current);
   }, [register, unregister, title, dark, illustration, getImageSrc]);
+  // When several narrations are mounted at once (the devotions page renders one
+  // per prayer), the single now-playing slot belongs to the last one registered.
+  // Whichever narration actually starts playing must claim the slot, or the
+  // floating player and OS media session bind to an idle sibling.
+  const active = narration.status !== "idle";
+  useEffect(() => {
+    if (active) register(getterRef.current, title, dark, illustration, getImageSrc);
+  }, [active, register, title, dark, illustration, getImageSrc]);
 }
 
 /**
@@ -1216,6 +1228,7 @@ export function FloatingPlayer() {
 
   // Close full-screen when playback stops (must use effect, not during render).
   const idle = !narration || narration.status === "idle";
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (idle) setExpanded(false); }, [idle]);
 
   if (idle) return null;
@@ -1365,7 +1378,7 @@ export function FloatingPlayer() {
 
 import Image from "next/image";
 import { Illustration } from "./Illustration";
-import { Cross, Fleuron } from "./Sacred";
+import { Cross } from "./Sacred";
 
 /** Seconds → m:ss (clamped at 0). */
 function fmtTime(sec: number): string {

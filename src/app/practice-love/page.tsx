@@ -12,6 +12,7 @@ import {
   type NarrationSegment,
 } from "@/components/PrayerPlayer";
 import { PRACTICE_LOVE, blockSpeech, chapterSegments, type ReadingBlock } from "@/data/practiceLove";
+import { markPrayed } from "@/lib/journey";
 
 const BOOK = PRACTICE_LOVE;
 
@@ -50,7 +51,7 @@ export default function PracticeLovePage() {
   );
 
   // Remember the reader's place per chapter so closing the app resumes here.
-  const narration = useNarration({ segments, storageKey: `practice-love:${chapter.id}` });
+  const narration = useNarration({ segments, onComplete: () => markPrayed("devotion"), storageKey: `practice-love:${chapter.id}` });
   useRegisterNarration(narration, `${BOOK.title} — ${chapter.number}`, false, "app-icon-crucifix");
   const speaking = narration.status !== "idle";
 

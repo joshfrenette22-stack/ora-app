@@ -85,6 +85,11 @@
   --stone-300: #4E463C;
   --stone-200: #322C25;
   --stone-100: #28231E;
+  /* Day-mode terracotta (#A8501F) reads ~3.3:1 on the dark bone — lighten it
+     for small-text contrast, and swap the cream highlight tint for a dark one
+     so "selected" surfaces don't glow bright in the dark. */
+  --gold-deep: #E08A56;
+  --gold-faint: #3A2B20;
 }
 
 @theme inline {
@@ -145,6 +150,7 @@ html { scroll-behavior: smooth; }
 /* Responsive navigation: sidebar on desktop, bottom tab bar on phones */
 .pw-bottomnav { display: none; }
 .pw-mobile-only { display: none; }
+.pw-search-row:hover { background: var(--stone-100); }
 .pw-rosary-sets { display: none; }
 
 /* ── Prevent overflow globally ─────────────────────────────────────────────── */

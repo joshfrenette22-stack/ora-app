@@ -12,6 +12,7 @@ import {
   auxBlockSpeech,
   type AuxBlock,
 } from "@/data/auxilium";
+import { markPrayed } from "@/lib/journey";
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -88,7 +89,7 @@ export default function AuxiliumPage() {
     return segs;
   }, [blocks]);
 
-  const narration = useNarration({ segments, storageKey: `auxilium:${day}` });
+  const narration = useNarration({ segments, onComplete: () => markPrayed("devotion"), storageKey: `auxilium:${day}` });
   useRegisterNarration(narration, "Pray the Auxilium Christianorum", false, "devotion-st-michael");
   const speaking = narration.status !== "idle";
 

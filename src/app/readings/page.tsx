@@ -7,6 +7,7 @@ import { ListenButton, SpokenText, useNarration, useRegisterNarration, type Narr
 import { countWords } from "@/lib/words";
 import type { DailyReadings } from "@/lib/readings";
 import { localDateISO } from "@/lib/clientDate";
+import { markPrayed } from "@/lib/journey";
 import { Flame, Clock, BookOpen } from "lucide-react";
 import { Illustration } from "@/components/Illustration";
 
@@ -24,8 +25,8 @@ const TAB_ORDER: Tab[] = ["first", "psalm", "second", "gospel"];
 
 const ALSO_TODAY = [
   { icon: <Flame size={16} strokeWidth={1.6} />, label: "Saint of the Day", sub: "Life, patronage & feast", href: "/saints" },
-  { icon: <Clock size={16} strokeWidth={1.6} />, label: "Sext · Midday", sub: "12:00 Prayer" },
-  { icon: <BookOpen size={16} strokeWidth={1.6} />, label: "Office of Readings", sub: "Breviary" },
+  { icon: <Clock size={16} strokeWidth={1.6} />, label: "Liturgy of the Hours", sub: "Pray the current hour", href: "/hours" },
+  { icon: <BookOpen size={16} strokeWidth={1.6} />, label: "Devotions", sub: "Prayers & chaplets", href: "/devotions" },
 ];
 
 // Static fallback so the page renders before the API responds.
@@ -94,6 +95,7 @@ export default function ReadingsPage() {
   const narration = useNarration({
     segments,
     onSegmentChange: (i) => setActive(order[i]),
+    onComplete: () => markPrayed("readings"),
     storageKey: "readings",
   });
   useRegisterNarration(narration, "Listen to the Readings", false, "section-daily-mass");

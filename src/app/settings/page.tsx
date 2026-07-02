@@ -26,8 +26,11 @@ function MiniWave() {
   );
 }
 
+// Mirrors the speed steps offered by the player's cycle button.
+const SPEEDS = [0.75, 1, 1.25, 1.5];
+
 export default function SettingsPage() {
-  const { voice, setVoice } = useVoice();
+  const { voice, setVoice, speed, setSpeed } = useVoice();
   const { night, setNight } = useTheme();
   const [cloud, setCloud] = useState(true);
   const [previewing, setPreviewing] = useState<string | null>(null);
@@ -175,6 +178,45 @@ export default function SettingsPage() {
           </div>
         );
       })}
+
+      {/* Narration speed */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+        padding: "14px 16px", borderRadius: 12, background: "var(--bone-raised)", border: "1px solid var(--stone-200)",
+        marginBottom: 26,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+          <span style={{ width: 38, height: 38, borderRadius: "50%", background: "var(--gold-faint)", color: "var(--gold-deep)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+            <LucideIcon name="gauge" size={18} />
+          </span>
+          <span style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 17, color: "var(--ink)" }}>
+            Reading Speed
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+          {SPEEDS.map((s) => {
+            const on = speed === s;
+            const label = `${Number.isInteger(s) ? s : String(s).replace(/0+$/, "")}×`;
+            return (
+              <button
+                key={s}
+                onClick={() => setSpeed(s)}
+                aria-pressed={on}
+                aria-label={`Reading speed ${label}`}
+                style={{
+                  fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 12.5,
+                  padding: "9px 12px", borderRadius: 999, cursor: "pointer",
+                  border: on ? "1.5px solid var(--gold)" : "1px solid var(--stone-200)",
+                  background: on ? "var(--gold-faint)" : "transparent",
+                  color: on ? "var(--gold-deep)" : "var(--stone-400)",
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Display section */}
       <div style={{ height: 1, background: "var(--stone-200)", margin: "10px 0 26px" }} />
