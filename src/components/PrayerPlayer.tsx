@@ -6,6 +6,7 @@ import { useVoice } from "./VoiceProvider";
 import { VOICES, voiceName } from "@/lib/voices";
 import { wordStarts, wordIndexAtChar, countWords } from "@/lib/words";
 import { logPrayer } from "@/lib/prayers";
+import { addJourneySeconds } from "@/lib/journey";
 import {
   ensureVoices,
   isSpeechSupported,
@@ -201,6 +202,7 @@ export function useNarration({
     if (secs < 5) return; // ignore trivial blips
     const counted = prayerCountedRef.current;
     prayerCountedRef.current = true; // count the prayer once per sitting; minutes always
+    addJourneySeconds(secs); // personal ledger (streak card on Today)
     void logPrayer({ prayer_type: "prayer", segments_count: counted ? 0 : 1, duration_seconds: secs }).catch(() => {});
   }, []);
 

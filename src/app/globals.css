@@ -150,6 +150,7 @@ html { scroll-behavior: smooth; }
 /* Responsive navigation: sidebar on desktop, bottom tab bar on phones */
 .pw-bottomnav { display: none; }
 .pw-mobile-only { display: none; }
+.pw-search-row:hover { background: var(--stone-100); }
 .pw-rosary-sets { display: none; }
 
 /* ── Prevent overflow globally ─────────────────────────────────────────────── */

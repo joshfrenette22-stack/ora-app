@@ -6,6 +6,7 @@ import { Illustration } from "@/components/Illustration";
 import { Btn, LucideIcon } from "@/components/UI";
 import { ListenButton, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { countWords } from "@/lib/words";
+import { markPrayed } from "@/lib/journey";
 import { HOLY_FACE_STEPS, HOLY_FACE_SECTIONS, type HFLine } from "@/data/holyFace";
 
 type Mode = "menu" | "interactive" | "guided";
@@ -54,14 +55,18 @@ export default function HolyFacePage() {
     [steps],
   );
 
-  const narration = useNarration({ segments, storageKey: "holy-face" });
+  const narration = useNarration({ segments, onComplete: () => markPrayed("devotion"), storageKey: "holy-face" });
   useRegisterNarration(narration, mode === "guided" ? "Fully guided" : "Listen", true, "section-devotions");
 
   const idx = Math.min(narration.index, steps.length - 1);
   const step = steps[idx] ?? steps[0];
   const speaking = narration.status !== "idle";
 
-  function advance() { narration.seek(idx + 1 >= steps.length ? 0 : idx + 1); }
+  function advance() {
+    // Reaching the end interactively (praying silently) also counts.
+    if (idx + 1 >= steps.length) markPrayed("devotion");
+    narration.seek(idx + 1 >= steps.length ? 0 : idx + 1);
+  }
   function jumpTo(i: number) { narration.seek(i); }
   function backToMenu() { narration.reset(0); setMode("menu"); }
   function start(m: Mode) {

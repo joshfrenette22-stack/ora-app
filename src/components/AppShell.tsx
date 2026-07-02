@@ -6,6 +6,7 @@ import { SeasonBadge, LucideIcon } from "./UI";
 import { useTheme } from "./ThemeProvider";
 import { localDateISO } from "@/lib/clientDate";
 import { FloatingPlayer, MediaSessionManager } from "./PrayerPlayer";
+import { SearchOverlay } from "./SearchOverlay";
 
 const NAV = [
   { id: "/", label: "Today", short: "Today", lucide: "sun" },
@@ -174,7 +175,7 @@ function Sidebar({ active, onChange }: { active: string; onChange: (id: string) 
 // shows only chrome (back button, actions) there so the title isn't doubled.
 const HERO_PAGES = new Set(["/auxilium", "/practice-love", "/confession"]);
 
-function ContentBar({ title, sub, pathname }: { title: string | null; sub: string | null; pathname: string }) {
+function ContentBar({ title, sub, pathname, onSearch }: { title: string | null; sub: string | null; pathname: string; onSearch: () => void }) {
   const { night, setNight } = useTheme();
   const router = useRouter();
 
@@ -232,6 +233,9 @@ function ContentBar({ title, sub, pathname }: { title: string | null; sub: strin
         )}
       </div>
       <div style={{ display: "flex", gap: 10, flexShrink: 0, marginLeft: 14 }}>
+        <button className="pw-iconbtn" style={iconBtn} aria-label="Search" onClick={onSearch}>
+          <LucideIcon name="search" size={19} />
+        </button>
         {/* Night toggle — the sidebar's copy is hidden on phones, so surface it here. */}
         <button className="pw-mobile-only pw-iconbtn" onClick={() => setNight(!night)} aria-label="Toggle night mode" style={{ ...iconBtn, placeItems: "center" }}>
           <LucideIcon name={night ? "sun" : "moon"} size={19} />
@@ -288,12 +292,29 @@ export function AppShell({ children }: { children: ReactNode }) {
   const immersive = pathname === "/rosary" || pathname === "/holy-face";
   const titleEntry = TITLES[pathname] || ["Prayer Warrior", null];
   const active = navActive(pathname);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   // The scroll container persists across route changes, so reset it manually.
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     scrollRef.current?.scrollTo(0, 0);
   }, [pathname]);
+
+  // "/" or Cmd/Ctrl+K opens search anywhere (except while typing).
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const t = e.target as HTMLElement | null;
+      const typing = !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
+      if (!typing && (e.key === "/" || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k"))) {
+        e.preventDefault();
+        setSearchOpen(true);
+      } else if (e.key === "Escape") {
+        setSearchOpen(false);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   return (
     <div style={{ height: "100vh", display: "flex", fontFamily: "var(--font-body)" }}>
@@ -304,6 +325,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             title={HERO_PAGES.has(pathname) ? null : titleEntry[0]}
             sub={HERO_PAGES.has(pathname) ? null : titleEntry[1]}
             pathname={pathname}
+            onSearch={() => setSearchOpen(true)}
           />
         )}
         <div ref={scrollRef} className="pw-scroll" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
@@ -313,6 +335,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <FloatingPlayer />
       <MediaSessionManager />
       <BottomNav active={active} onChange={(id) => router.push(id)} />
+      {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
     </div>
   );
 }

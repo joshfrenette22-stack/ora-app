@@ -10,6 +10,7 @@ import { localDateISO } from "@/lib/clientDate";
 import { HOURS, currentHourName, WEEKDAY_SET } from "@/data/content";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { CommunityCard } from "@/components/CommunityCard";
+import { JourneyCard } from "@/components/JourneyCard";
 import { getCachedName, ensureSession } from "@/lib/user";
 
 type Hour = typeof HOURS[number];
@@ -142,6 +143,11 @@ export default function TodayPage() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Your prayer journey — streak + today's plan */}
+      <div style={{ marginBottom: 16 }}>
+        <JourneyCard />
       </div>
 
       {/* Community prayer stats */}

@@ -7,6 +7,7 @@ import { ListenButton, SpokenText, useNarration, useRegisterNarration, type Narr
 import { countWords } from "@/lib/words";
 import type { DailyReadings } from "@/lib/readings";
 import { localDateISO } from "@/lib/clientDate";
+import { markPrayed } from "@/lib/journey";
 import { Flame, Clock, BookOpen } from "lucide-react";
 import { Illustration } from "@/components/Illustration";
 
@@ -94,6 +95,7 @@ export default function ReadingsPage() {
   const narration = useNarration({
     segments,
     onSegmentChange: (i) => setActive(order[i]),
+    onComplete: () => markPrayed("readings"),
     storageKey: "readings",
   });
   useRegisterNarration(narration, "Listen to the Readings", false, "section-daily-mass");

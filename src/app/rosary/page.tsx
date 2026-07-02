@@ -8,6 +8,7 @@ import { MYSTERY_ART, type IllustrationKey } from "@/lib/illustrations";
 import { Btn, LucideIcon } from "@/components/UI";
 import { ListenButton, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { countWords } from "@/lib/words";
+import { markPrayed } from "@/lib/journey";
 import { MYSTERY_SETS, ROSARY_PRAYERS, WEEKDAY_SET } from "@/data/content";
 import { RosarySlide } from "@/components/RosarySlide";
 import { hasSlides, rosarySlide } from "@/data/rosarySlides";
@@ -182,7 +183,7 @@ export default function RosaryPage() {
     [steps],
   );
 
-  const narration = useNarration({ segments });
+  const narration = useNarration({ segments, onComplete: () => markPrayed("rosary") });
 
   // Stable getter for the current rosary slide (used by the full-screen player).
   // It reads a ref kept in sync with the active step below; intro/closing steps
@@ -201,7 +202,11 @@ export default function RosaryPage() {
   // Feed the current slide (mystery beads only) to the full-screen player.
   useEffect(() => { slideStateRef.current = { set: activeSet, mysteryIdx: step.mysteryIdx, bead: step.bead }; });
 
-  function advance() { narration.seek(idx + 1 >= steps.length ? 0 : idx + 1); }
+  function advance() {
+    // Reaching the end interactively (praying silently) also counts.
+    if (idx + 1 >= steps.length) markPrayed("rosary");
+    narration.seek(idx + 1 >= steps.length ? 0 : idx + 1);
+  }
   function jumpToMystery(i: number) { narration.seek(INTRO_LEN + i * TOTAL_BEADS); }
   function jumpToIntro() { narration.seek(0); }
   function jumpToClosing() { narration.seek(INTRO_LEN + MYSTERY_SETS[activeSet].length * TOTAL_BEADS); }

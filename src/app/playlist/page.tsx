@@ -6,6 +6,7 @@ import { Kicker, LucideIcon } from "@/components/UI";
 import { ListenButton, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
 import { PRAYER_CATALOG, CATEGORIES, type Prayer } from "@/data/prayers";
 import { Illustration } from "@/components/Illustration";
+import { markPrayed } from "@/lib/journey";
 
 // ── Persistence ──────────────────────────────────────────────────────────────
 
@@ -443,7 +444,7 @@ export default function PlaylistPage() {
     [prayers],
   );
 
-  const narration = useNarration({ segments });
+  const narration = useNarration({ segments, onComplete: () => markPrayed("devotion") });
   useRegisterNarration(narration, "My Playlist", false, "app-icon-crucifix");
 
   const speaking = narration.status !== "idle";

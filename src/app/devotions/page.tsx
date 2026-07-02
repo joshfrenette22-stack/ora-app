@@ -8,6 +8,7 @@ import { ListenButton, SpokenText, useNarration, useRegisterNarration, type Narr
 import { LucideIcon } from "@/components/UI";
 import { Illustration } from "@/components/Illustration";
 import { DEVOTION_ART, type IllustrationKey } from "@/lib/illustrations";
+import { markPrayed } from "@/lib/journey";
 import { DEVOTIONS } from "@/data/content";
 
 type DevotionKey = keyof typeof DEVOTIONS;
@@ -74,7 +75,7 @@ const TITLE: React.CSSProperties = {
 function DevotionRow({ dkey, lucide, open, onToggle }: { dkey: DevotionKey; lucide: string; open: boolean; onToggle: () => void }) {
   const d = DEVOTIONS[dkey];
   const segments = useMemo(() => segmentsFor(d.blocks, d.title), [d]);
-  const narration = useNarration({ segments });
+  const narration = useNarration({ segments, onComplete: () => markPrayed("devotion") });
   useRegisterNarration(narration, `Pray ${d.title} aloud`, false, DEVOTION_ART[dkey] as IllustrationKey | undefined);
   const speaking = narration.status !== "idle";
   let seg = -1;
