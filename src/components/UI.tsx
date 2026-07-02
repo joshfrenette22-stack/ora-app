@@ -89,10 +89,18 @@ export function FeatureCard({ kicker, title, meta, onClick, motif }: {
         <div className="pw-feature-title" style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 32, color: "#F3EEE2", marginTop: 6 }}>{title}</div>
         <div style={{ fontFamily: "var(--font-body)", fontSize: 16, opacity: 0.72, marginTop: 4 }}>{meta}</div>
       </div>
+      {/* Decorative CTA — the whole card is the button; a nested <button>
+          is invalid HTML and broke hydration on every home-page load. */}
       <span className="pw-feature-btn">
-        <Btn variant="primary" icon={<Cross size={15} />} onClick={() => { onClick?.(); }}>
+        <span style={{
+          fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 14, letterSpacing: ".005em",
+          borderRadius: 11, padding: "13px 24px", display: "inline-flex", alignItems: "center",
+          justifyContent: "center", gap: 9, whiteSpace: "nowrap",
+          background: "var(--gilt)", color: "#2A2008", boxShadow: "var(--shadow-gold)",
+        }}>
+          <Cross size={15} />
           Begin
-        </Btn>
+        </span>
       </span>
     </button>
   );
@@ -108,8 +116,19 @@ export function SurfaceCard({ kicker, title, meta, onClick, lucide, motif, cta }
   /** Optional call-to-action shown at the foot of the card, e.g. "Learn more". */
   cta?: string;
 }) {
+  // Rendered as a div: these cards are wrapped in <Link> on the Today page,
+  // and a <button> inside <a> is invalid HTML (it breaks hydration). With a
+  // bare onClick it opts back into button semantics.
+  const interactive = !!onClick;
   return (
-    <button className="pw-card" onClick={onClick} style={{ textAlign: "left", cursor: "pointer", background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 18, padding: "24px 26px", boxShadow: "var(--shadow-sm)", display: "flex", flexDirection: "column", gap: 14, width: "100%", position: "relative", overflow: "hidden" }}>
+    <div
+      className="pw-card"
+      onClick={onClick}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={interactive ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
+      style={{ textAlign: "left", cursor: "pointer", background: "var(--bone-raised)", border: "1px solid var(--stone-200)", borderRadius: 18, padding: "24px 26px", boxShadow: "var(--shadow-sm)", display: "flex", flexDirection: "column", gap: 14, width: "100%", position: "relative", overflow: "hidden", boxSizing: "border-box" }}
+    >
       {motif && <div style={{ position: "absolute", right: -10, bottom: -10, pointerEvents: "none" }}>{motif}</div>}
       <span style={{ width: 50, height: 50, borderRadius: "50%", background: "var(--gold-faint)", color: "var(--gold-deep)", display: "grid", placeItems: "center", position: "relative" }}>
         {lucide ? <LucideIcon name={lucide} size={24} /> : <Cross size={22} />}
@@ -124,7 +143,7 @@ export function SurfaceCard({ kicker, title, meta, onClick, lucide, motif, cta }
           </div>
         )}
       </div>
-    </button>
+    </div>
   );
 }
 
