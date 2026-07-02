@@ -401,6 +401,7 @@ export default function PlaylistPage() {
   const [pickerOpen, setPickerOpen] = useState(false);
 
   // Load from localStorage on mount
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setIds(loadPlaylist()); }, []);
 
   const updateIds = useCallback((next: string[]) => {
@@ -448,9 +449,6 @@ export default function PlaylistPage() {
   useRegisterNarration(narration, "My Playlist", false, "app-icon-crucifix");
 
   const speaking = narration.status !== "idle";
-
-  // Find illustration for the currently playing prayer
-  const currentPrayer = prayers[narration.index];
 
   return (
     <>
@@ -528,7 +526,7 @@ export default function PlaylistPage() {
                 fontFamily: "var(--font-body)", fontSize: 15, color: "var(--stone-400)",
                 margin: "0 0 20px", lineHeight: 1.5,
               }}>
-                Tap "Add Prayer" to build a sequence of prayers to pray aloud.
+                Tap &ldquo;Add Prayer&rdquo; to build a sequence of prayers to pray aloud.
               </p>
               <button
                 onClick={() => setPickerOpen(true)}

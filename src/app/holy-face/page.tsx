@@ -190,14 +190,11 @@ export default function HolyFacePage() {
 
         {/* Prayer lines */}
         <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 30 }}>
-          {(() => {
-            let off = 0;
-            return step.lines.map((l, i) => {
-              const node = <LineView key={i} line={l} active={speaking && narration.index === idx} wordIndex={narration.wordIndex} offset={off} />;
-              off += countWords(l.text);
-              return node;
-            });
-          })()}
+          {step.lines.map((l, i) => {
+            // Word offset of this line within the step's spoken text.
+            const off = step.lines.slice(0, i).reduce((n, prev) => n + countWords(prev.text), 0);
+            return <LineView key={i} line={l} active={speaking && narration.index === idx} wordIndex={narration.wordIndex} offset={off} />;
+          })}
         </div>
 
         <Fleuron width={170} style={{ marginBottom: 28 }} />
