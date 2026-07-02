@@ -81,11 +81,13 @@ export function useNowPlaying() {
 export function useNowPlayingLive(): NowPlaying {
   const { get, subscribe } = useContext(Ctx);
   const [, bump] = useState(0);
+  const [version, setVersion] = useState(0);
 
-  // Re-render when register/unregister happens.
-  useEffect(() => subscribe(() => bump((n) => n + 1)), [subscribe]);
+  // Re-render (and restart polling) when register/unregister happens.
+  useEffect(() => subscribe(() => setVersion((n) => n + 1)), [subscribe]);
 
-  // Continuous polling — fast while playing, slow while idle.
+  // Continuous polling — fast while playing, slow while idle, off when no
+  // narration is registered at all (registration bumps `version` to restart).
   useEffect(() => {
     let active = true;
     let raf = 0;
@@ -94,7 +96,8 @@ export function useNowPlayingLive(): NowPlaying {
     function tick() {
       if (!active) return;
       const np = get();
-      const playing = np.narration && np.narration.status !== "idle";
+      if (!np.narration) return;
+      const playing = np.narration.status !== "idle";
       bump((n) => n + 1);
       if (playing) {
         // Full-speed polling for waveform progress.
@@ -110,7 +113,7 @@ export function useNowPlayingLive(): NowPlaying {
       cancelAnimationFrame(raf);
       if (timer) clearTimeout(timer);
     };
-  }, [get]);
+  }, [get, version]);
 
   return get();
 }

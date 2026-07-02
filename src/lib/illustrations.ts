@@ -26,8 +26,7 @@ export type IllustrationKey =
   | "today-greeting-band"
   | "today-daily-readings"
   | "today-daily-readings-alt"
-  | "today-hero-verse-ornament"
-  | "og-share";
+  | "today-hero-verse-ornament";
 
 export interface IllustrationEntry {
   src: string;
@@ -186,12 +185,6 @@ export const ILLUSTRATIONS: Record<IllustrationKey, IllustrationEntry> = {
     alt: "",
     defaultWidth: 400,
     defaultHeight: 400,
-  },
-  "og-share": {
-    src: "/illustrations/og-share.webp",
-    alt: "Prayer Warrior",
-    defaultWidth: 1200,
-    defaultHeight: 630,
   },
 };
 

@@ -84,17 +84,28 @@ function feastKey(year: number, month: number, day: number) {
 }
 
 export default function CalendarPage() {
-  const today = new Date();
-  const [viewYear, setViewYear] = useState(today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(today.getMonth() + 1); // 1-based
+  // "Today" is resolved after mount — the server may render in a different
+  // timezone, and highlighting/selecting a day in server HTML would hydrate
+  // wrong near midnight. The month in view is seeded from the clock (a
+  // mismatch there needs server and client to straddle a month boundary).
+  const [today, setToday] = useState<Date | null>(null);
+  const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
+  const [viewMonth, setViewMonth] = useState(() => new Date().getMonth() + 1); // 1-based
 
   // Feasts + season come live from /api/calendar; static FEASTS seed the first paint.
   const [feasts, setFeasts] = useState<Record<string, FeastDay>>(FEASTS);
-  const [seasonColor, setSeasonColor] = useState<EngineColor>(getSeason(today.getFullYear(), today.getMonth() + 1));
+  const [seasonColor, setSeasonColor] = useState<EngineColor>(() => getSeason(new Date().getFullYear(), new Date().getMonth() + 1));
   const [seasonLabel, setSeasonLabel] = useState("Ordinary Time");
   // Selected day-of-month within the viewed month (null = nothing selected).
-  const viewingThisMonth = viewMonth === today.getMonth() + 1 && viewYear === today.getFullYear();
-  const [selected, setSelected] = useState<number | null>(viewingThisMonth ? today.getDate() : null);
+  const [selected, setSelected] = useState<number | null>(null);
+
+  useEffect(() => {
+    const now = new Date();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setToday(now);
+    // The initial view is always the current month, so select today in it.
+    setSelected((s) => s ?? now.getDate());
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -122,15 +133,17 @@ export default function CalendarPage() {
   }
 
   // Upcoming feasts: every loaded feast on/after today, soonest first.
-  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const upcoming = Object.entries(feasts)
-    .map(([k, f]) => {
-      const [y, m, d] = k.split("-").map(Number);
-      return { date: new Date(y, m - 1, d), feast: f };
-    })
-    .filter((e) => !Number.isNaN(e.date.getTime()) && e.date >= startOfToday)
-    .sort((a, b) => a.date.getTime() - b.date.getTime())
-    .slice(0, 6);
+  const startOfToday = today ? new Date(today.getFullYear(), today.getMonth(), today.getDate()) : null;
+  const upcoming = startOfToday
+    ? Object.entries(feasts)
+        .map(([k, f]) => {
+          const [y, m, d] = k.split("-").map(Number);
+          return { date: new Date(y, m - 1, d), feast: f };
+        })
+        .filter((e) => !Number.isNaN(e.date.getTime()) && e.date >= startOfToday)
+        .sort((a, b) => a.date.getTime() - b.date.getTime())
+        .slice(0, 6)
+    : [];
 
   const selectedFeast = selected ? feasts[feastKey(viewYear, viewMonth, selected)] : undefined;
   const selectedDate = selected ? new Date(viewYear, viewMonth - 1, selected) : null;
@@ -255,6 +268,7 @@ export default function CalendarPage() {
           }
 
           const isToday =
+            today !== null &&
             isCurrentMonth &&
             dayNum === today.getDate() &&
             viewMonth === today.getMonth() + 1 &&

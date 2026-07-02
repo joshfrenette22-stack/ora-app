@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Cross, Fleuron } from "@/components/Sacred";
 import { Illustration } from "@/components/Illustration";
 import { Btn, LucideIcon } from "@/components/UI";
@@ -57,12 +57,6 @@ export default function HolyFacePage() {
   const narration = useNarration({ segments, storageKey: "holy-face" });
   useRegisterNarration(narration, mode === "guided" ? "Fully guided" : "Listen", true, "section-devotions");
 
-  // Fully-guided plays the whole chaplet aloud, auto-advancing the text.
-  useEffect(() => {
-    if (mode === "guided") narration.play(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
-
   const idx = Math.min(narration.index, steps.length - 1);
   const step = steps[idx] ?? steps[0];
   const speaking = narration.status !== "idle";
@@ -70,7 +64,13 @@ export default function HolyFacePage() {
   function advance() { narration.seek(idx + 1 >= steps.length ? 0 : idx + 1); }
   function jumpTo(i: number) { narration.seek(i); }
   function backToMenu() { narration.reset(0); setMode("menu"); }
-  function start(m: Mode) { narration.reset(0); setMode(m); }
+  function start(m: Mode) {
+    narration.reset(0);
+    setMode(m);
+    // Fully-guided plays the whole chaplet aloud. Start synchronously inside the
+    // tap gesture — iOS drops audio/speech begun outside the user gesture task.
+    if (m === "guided") narration.play(0);
+  }
 
   // ── MODE CHOOSER ────────────────────────────────────────────────────────────
   if (mode === "menu") {

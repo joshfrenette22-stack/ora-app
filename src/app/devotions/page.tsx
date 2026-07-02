@@ -135,11 +135,9 @@ export default function DevotionsPage() {
 
   return (
     <div className="pw-devotions-pad" style={{ maxWidth: 600, margin: "0 auto", padding: "26px 18px 64px", display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* The content bar already titles this page — keep just the helper line. */}
       <div style={{ textAlign: "center", marginBottom: 10 }}>
-        <h1 className="pw-reveal" style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 30, color: "var(--ink)", margin: 0, letterSpacing: "-.015em" }}>
-          Devotions
-        </h1>
-        <p style={{ fontFamily: "var(--font-body)", fontSize: 14.5, color: "var(--stone-400)", margin: "6px 0 0", lineHeight: 1.5 }}>
+        <p style={{ fontFamily: "var(--font-body)", fontSize: 14.5, color: "var(--stone-400)", margin: 0, lineHeight: 1.5 }}>
           Tap a prayer to open it.
         </p>
         <Fleuron width={160} style={{ margin: "14px auto 4px" }} />

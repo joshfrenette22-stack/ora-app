@@ -66,7 +66,7 @@ function PrayerPicker({ onAdd, onClose, existing }: { onAdd: (id: string) => voi
             <h2 style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 22, color: "var(--ink)", margin: 0 }}>
               Add Prayer
             </h2>
-            <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: "50%", border: "none", background: "var(--stone-100)", color: "var(--stone-400)", cursor: "pointer", display: "grid", placeItems: "center" }}>
+            <button onClick={onClose} aria-label="Close" style={{ width: 36, height: 36, borderRadius: "50%", border: "none", background: "var(--stone-100)", color: "var(--stone-400)", cursor: "pointer", display: "grid", placeItems: "center" }}>
               <LucideIcon name="x" size={18} />
             </button>
           </div>
@@ -212,11 +212,20 @@ function PlaylistItem({
       transition: "background .2s, border-color .2s",
     }}>
       {/* Row header */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 12,
-        padding: "14px 16px",
-        cursor: "pointer",
-      }} onClick={() => setExpanded(!expanded)}>
+      <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
+        style={{
+          display: "flex", alignItems: "center", gap: 12,
+          padding: "14px 16px",
+          cursor: "pointer",
+        }}
+        onClick={() => setExpanded(!expanded)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded(!expanded); }
+        }}
+      >
         {/* Number badge */}
         <span style={{
           width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
@@ -251,7 +260,7 @@ function PlaylistItem({
             disabled={isFirst}
             aria-label="Move up"
             style={{
-              width: 28, height: 28, borderRadius: "50%", border: "none",
+              width: 34, height: 34, borderRadius: "50%", border: "none",
               background: "transparent", cursor: isFirst ? "default" : "pointer",
               color: isFirst ? "var(--stone-300)" : "var(--stone-400)",
               display: "grid", placeItems: "center",
@@ -264,7 +273,7 @@ function PlaylistItem({
             disabled={isLast}
             aria-label="Move down"
             style={{
-              width: 28, height: 28, borderRadius: "50%", border: "none",
+              width: 34, height: 34, borderRadius: "50%", border: "none",
               background: "transparent", cursor: isLast ? "default" : "pointer",
               color: isLast ? "var(--stone-300)" : "var(--stone-400)",
               display: "grid", placeItems: "center",
@@ -276,7 +285,7 @@ function PlaylistItem({
             onClick={onRemove}
             aria-label="Remove"
             style={{
-              width: 28, height: 28, borderRadius: "50%", border: "none",
+              width: 34, height: 34, borderRadius: "50%", border: "none",
               background: "transparent", cursor: "pointer",
               color: "var(--stone-400)",
               display: "grid", placeItems: "center",
@@ -449,23 +458,13 @@ export default function PlaylistPage() {
         {/* Main column */}
         <div className="pw-playlist-main" style={{ flex: 1, padding: "40px 48px 72px", minWidth: 0, maxWidth: "100%" }}>
 
-          {/* Header */}
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28, gap: 16 }}>
-            <div>
-              <h1 className="pw-reveal" style={{
-                fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 34,
-                color: "var(--ink)", margin: 0, letterSpacing: "-.015em",
-              }}>
-                My Playlist
-              </h1>
-              <p style={{
-                fontFamily: "var(--font-body)", fontSize: 15, color: "var(--stone-400)",
-                margin: "6px 0 0", lineHeight: 1.5,
-              }}>
-                Build your own prayer sequence — add, reorder, and pray through them in one session.
-              </p>
-            </div>
-          </div>
+          {/* The content bar already titles this page — go straight to a short helper. */}
+          <p style={{
+            fontFamily: "var(--font-body)", fontSize: 15, color: "var(--stone-400)",
+            margin: "0 0 24px", lineHeight: 1.5,
+          }}>
+            Build your own prayer sequence — add, reorder, and pray through them in one session.
+          </p>
 
           {/* Controls bar */}
           <div style={{

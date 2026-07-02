@@ -1,5 +1,5 @@
 "use client";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Cross, Logomark } from "./Sacred";
 import { SeasonBadge, LucideIcon } from "./UI";
@@ -17,6 +17,51 @@ const NAV = [
   { id: "/calendar", label: "Calendar", short: "Calendar", lucide: "calendar" },
 ];
 
+// Sidebar-only entries — the phone bottom nav stays at seven tabs, and these
+// remain reachable there through the Today page cards.
+const NAV_MORE = [
+  { id: "/devotions", label: "Devotions", short: "Devotions", lucide: "bell" },
+  { id: "/confession", label: "Confession", short: "Confession", lucide: "heart" },
+];
+
+// Sub-pages highlight their section in the sidebar and get a back button in
+// the content bar pointing at their parent.
+const PARENT: Record<string, string> = {
+  "/holy-face": "/devotions",
+  "/auxilium": "/devotions",
+  "/practice-love": "/devotions",
+  "/devotions": "/",
+  "/confession": "/",
+  "/settings": "/",
+};
+
+function navActive(pathname: string): string {
+  if (pathname === "/holy-face" || pathname === "/auxilium" || pathname === "/practice-love") return "/devotions";
+  return pathname;
+}
+
+function romanNumeral(n: number): string {
+  const table: [number, string][] = [
+    [1000, "M"], [900, "CM"], [500, "D"], [400, "CD"], [100, "C"], [90, "XC"],
+    [50, "L"], [40, "XL"], [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"],
+  ];
+  let out = "";
+  for (const [v, s] of table) while (n >= v) { out += s; n -= v; }
+  return out;
+}
+
+// Sunday lectionary cycle (A/B/C). The liturgical year is named for the
+// calendar year it ends in; it begins on the First Sunday of Advent
+// (the fourth Sunday before Christmas).
+function lectionaryYear(now: Date): string {
+  const y = now.getFullYear();
+  const dec25 = new Date(y, 11, 25);
+  const dow = dec25.getDay();
+  const adventStart = new Date(y, 11, 25 - (dow === 0 ? 7 : dow) - 21);
+  const litYear = now >= adventStart ? y + 1 : y;
+  return ["C", "A", "B"][litYear % 3];
+}
+
 const TITLES: Record<string, [string, string | null]> = {
   "/": ["Today", "Monday · Ordinary Time"],
   "/readings": ["Daily Mass Readings", "Lectionary · Year C"],
@@ -31,16 +76,18 @@ const TITLES: Record<string, [string, string | null]> = {
   "/practice-love": ["The Practice of the Love of Jesus Christ", "St. Alphonsus Liguori · Audiobook"],
   "/confession": ["Confession", "Examine · prepare · be cleansed"],
   "/settings": ["Settings", "Voice & display"],
-  "/pray": ["Pray", "The Office, the Rosary & devotions"],
-  "/focus": ["Enter Into Prayer", null],
 };
 
 function Sidebar({ active, onChange }: { active: string; onChange: (id: string) => void }) {
   const { night, setNight } = useTheme();
   const [lit, setLit] = useState<{ label: string; badgeSeason: string }>({ label: "Ordinary Time", badgeSeason: "green" });
   const [dayLabel, setDayLabel] = useState("Feria");
+  // Resolved on the client — the server may render in a different timezone.
+  const [dateLabel, setDateLabel] = useState<string | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDateLabel(new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }));
     let alive = true;
     fetch(`/api/today?date=${localDateISO()}`)
       .then((r) => (r.ok ? r.json() : null))
@@ -80,12 +127,31 @@ function Sidebar({ active, onChange }: { active: string; onChange: (id: string) 
             </button>
           );
         })}
+        <div style={{ height: 1, background: "var(--stone-200)", margin: "12px 10px" }} />
+        {NAV_MORE.map((n) => {
+          const on = active === n.id;
+          return (
+            <button key={n.id} onClick={() => onChange(n.id)} style={{
+              display: "flex", alignItems: "center", gap: 13, padding: "11px 14px", borderRadius: 12,
+              border: "none", cursor: "pointer", textAlign: "left", width: "100%",
+              background: on ? "var(--gold-faint)" : "transparent",
+              color: on ? "var(--gold-deep)" : "var(--ink-500)",
+              fontFamily: "var(--font-body)", fontSize: 15.5, fontWeight: on ? 700 : 500,
+              transition: "background .14s, color .14s",
+            }}>
+              <span style={{ width: 22, display: "grid", placeItems: "center", color: on ? "var(--gold)" : "var(--stone-400)" }}>
+                <LucideIcon name={n.lucide} size={19} stroke={on ? 2 : 1.7} />
+              </span>
+              {n.label}
+            </button>
+          );
+        })}
       </div>
       <div style={{ marginTop: "auto", padding: "0 22px" }}>
         <div style={{ height: 1, background: "var(--stone-200)", margin: "0 0 16px" }} />
         <SeasonBadge season={lit.badgeSeason}>{lit.label}</SeasonBadge>
         <div style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--stone-400)", marginTop: 7 }}>
-          {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · {dayLabel}
+          {dateLabel ? `${dateLabel} · ${dayLabel}` : " "}
         </div>
         <button
           onClick={() => setNight(!night)}
@@ -104,7 +170,11 @@ function Sidebar({ active, onChange }: { active: string; onChange: (id: string) 
   );
 }
 
-function ContentBar({ title, sub, pathname }: { title: string; sub: string | null; pathname: string }) {
+// Pages whose body opens with its own large hero heading — the content bar
+// shows only chrome (back button, actions) there so the title isn't doubled.
+const HERO_PAGES = new Set(["/auxilium", "/practice-love", "/confession"]);
+
+function ContentBar({ title, sub, pathname }: { title: string | null; sub: string | null; pathname: string }) {
   const { night, setNight } = useTheme();
   const router = useRouter();
 
@@ -117,6 +187,8 @@ function ContentBar({ title, sub, pathname }: { title: string; sub: string | nul
     const base =
       pathname === "/saints" ? now.toLocaleDateString("en-US", { month: "long", day: "numeric" })
       : pathname === "/" ? `${weekday} · Ordinary Time`
+      : pathname === "/readings" ? `Lectionary · Year ${lectionaryYear(now)}`
+      : pathname === "/calendar" ? `Anno Domini ${romanNumeral(now.getFullYear())}`
       : null;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLiveSub(base);
@@ -134,19 +206,32 @@ function ContentBar({ title, sub, pathname }: { title: string; sub: string | nul
     background: "var(--bone-raised)", color: "var(--ink-500)", cursor: "pointer",
     display: "grid", placeItems: "center",
   };
+  const parent = PARENT[pathname];
   return (
     <div className="pw-contentbar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px 44px", borderBottom: "1px solid var(--stone-200)" }}>
-      <div>
-        {shownSub && (
+      {parent && (
+        <button
+          className="pw-iconbtn"
+          style={{ ...iconBtn, marginRight: 14, flexShrink: 0 }}
+          aria-label="Back"
+          onClick={() => router.push(parent)}
+        >
+          <LucideIcon name="arrow-left" size={19} />
+        </button>
+      )}
+      <div style={{ minWidth: 0, marginRight: "auto" }}>
+        {title && shownSub && (
           <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 12, letterSpacing: ".02em", color: "var(--stone-400)" }}>
             {shownSub}
           </div>
         )}
-        <div className="pw-contentbar-title" style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 25, letterSpacing: "-.01em", color: "var(--ink)", marginTop: shownSub ? 2 : 0 }}>
-          {title}
-        </div>
+        {title && (
+          <div className="pw-contentbar-title" style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 25, letterSpacing: "-.01em", color: "var(--ink)", marginTop: shownSub ? 2 : 0 }}>
+            {title}
+          </div>
+        )}
       </div>
-      <div style={{ display: "flex", gap: 10 }}>
+      <div style={{ display: "flex", gap: 10, flexShrink: 0, marginLeft: 14 }}>
         {/* Night toggle — the sidebar's copy is hidden on phones, so surface it here. */}
         <button className="pw-mobile-only pw-iconbtn" onClick={() => setNight(!night)} aria-label="Toggle night mode" style={{ ...iconBtn, placeItems: "center" }}>
           <LucideIcon name={night ? "sun" : "moon"} size={19} />
@@ -200,21 +285,34 @@ function BottomNav({ active, onChange }: { active: string; onChange: (id: string
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const immersive = pathname === "/rosary" || pathname === "/focus" || pathname === "/holy-face";
+  const immersive = pathname === "/rosary" || pathname === "/holy-face";
   const titleEntry = TITLES[pathname] || ["Prayer Warrior", null];
+  const active = navActive(pathname);
+
+  // The scroll container persists across route changes, so reset it manually.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    scrollRef.current?.scrollTo(0, 0);
+  }, [pathname]);
 
   return (
     <div style={{ height: "100vh", display: "flex", fontFamily: "var(--font-body)" }}>
-      <Sidebar active={pathname} onChange={(id) => router.push(id)} />
+      <Sidebar active={active} onChange={(id) => router.push(id)} />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", background: immersive ? "var(--surface-ink)" : "var(--bone)", minWidth: 0 }}>
-        {!immersive && <ContentBar title={titleEntry[0]} sub={titleEntry[1]} pathname={pathname} />}
-        <div className="pw-scroll" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+        {!immersive && (
+          <ContentBar
+            title={HERO_PAGES.has(pathname) ? null : titleEntry[0]}
+            sub={HERO_PAGES.has(pathname) ? null : titleEntry[1]}
+            pathname={pathname}
+          />
+        )}
+        <div ref={scrollRef} className="pw-scroll" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
           {children}
         </div>
       </div>
       <FloatingPlayer />
       <MediaSessionManager />
-      <BottomNav active={pathname} onChange={(id) => router.push(id)} />
+      <BottomNav active={active} onChange={(id) => router.push(id)} />
     </div>
   );
 }

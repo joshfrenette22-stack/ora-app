@@ -1015,6 +1015,14 @@ export function useRegisterNarration(narration: Narration, title: string, dark =
     register(getterRef.current, title, dark, illustration, getImageSrc);
     return () => unregister(getterRef.current);
   }, [register, unregister, title, dark, illustration, getImageSrc]);
+  // When several narrations are mounted at once (the devotions page renders one
+  // per prayer), the single now-playing slot belongs to the last one registered.
+  // Whichever narration actually starts playing must claim the slot, or the
+  // floating player and OS media session bind to an idle sibling.
+  const active = narration.status !== "idle";
+  useEffect(() => {
+    if (active) register(getterRef.current, title, dark, illustration, getImageSrc);
+  }, [active, register, title, dark, illustration, getImageSrc]);
 }
 
 /**

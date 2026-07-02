@@ -44,7 +44,7 @@ export function SplashScreen() {
   return (
     <div
       role="dialog"
-      aria-label="The Prayer Warrior App"
+      aria-label="Prayer Warrior"
       onClick={() => setPhase("out")}
       style={{
         position: "fixed", inset: 0, zIndex: 310, // above the onboarding overlay (300)
@@ -80,7 +80,7 @@ export function SplashScreen() {
         fontSize: "clamp(28px, 8vw, 44px)", lineHeight: 1.12, letterSpacing: "-.015em",
         color: "#F6F0E6", animation: "oraReveal .9s var(--ease-sacred) .45s both",
       }}>
-        The Prayer Warrior App
+        Prayer Warrior
       </h1>
 
       <Fleuron width={180} style={{ margin: "20px 0", position: "relative", animation: "oraReveal .9s var(--ease-sacred) .8s both" }} />

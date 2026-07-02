@@ -32,8 +32,16 @@ export function RosarySlide({ set, mysteryIdx, bead }: RosarySlideProps) {
   const [prev, setPrev] = useState<string | null>(null);
   const [current, setCurrent] = useState<string | null>(src);
   const [fadeIn, setFadeIn] = useState(true);
+  // Hide the framed card if the slide fails to load (offline) — an empty frame
+  // or the browser's broken-image glyph would be worse than no card.
+  const [failed, setFailed] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prefersReducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFailed(false);
+  }, [current]);
 
   useEffect(() => {
     if (src === current) return;
@@ -73,7 +81,7 @@ export function RosarySlide({ set, mysteryIdx, bead }: RosarySlideProps) {
     img.src = nextSrc;
   }, [nextSrc]);
 
-  if (!current) return null;
+  if (!current || failed) return null;
 
   const alt = getAltText(set, mysteryIdx, bead);
 
@@ -120,6 +128,7 @@ export function RosarySlide({ set, mysteryIdx, bead }: RosarySlideProps) {
           transition: prefersReducedMotion ? "none" : "opacity 500ms var(--ease-sacred)",
         }}
         draggable={false}
+        onError={() => setFailed(true)}
       />
     </div>
   );
