@@ -258,6 +258,17 @@ export default function TodayPage() {
           />
         </Link>
 
+        {/* Chaplet of Divine Mercy */}
+        <Link href="/divine-mercy" style={{ textDecoration: "none" }}>
+          <SurfaceCard
+            kicker="Chaplet"
+            title="Divine Mercy"
+            meta="At the three o'clock hour"
+            lucide="heart"
+            motif={<Illustration name="devotion-divine-mercy" alt="" size={180} invertOnDark opacity={0.55} />}
+          />
+        </Link>
+
         {/* Chaplet of the Holy Face */}
         <Link href="/holy-face" style={{ textDecoration: "none" }}>
           <SurfaceCard
