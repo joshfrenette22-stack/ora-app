@@ -11,6 +11,7 @@
  *  is exactly what is read aloud. */
 
 import { ROSARY_PRAYERS } from "./content";
+import { countWords } from "@/lib/words";
 
 export interface DMLine { a?: string; text: string }
 
@@ -21,7 +22,8 @@ export interface DMStep {
   beadLabel: string;   // gold label above the prayer ("" hides it)
   large: boolean;      // a large bead (diamond) vs a small bead / plain step (circle)
   lines: DMLine[];     // shown on screen
-  speech: string;      // read aloud (the lines, joined)
+  speech: string;      // read aloud (a spoken announcement, then the lines, joined)
+  speechOffset: number; // words spoken before the first line begins (for highlight sync)
 }
 
 const SIGN = ROSARY_PRAYERS.signCross;
@@ -40,8 +42,13 @@ const ETERNAL_GOD =
   "Eternal God, in whom mercy is endless and the treasury of compassion inexhaustible, look kindly upon us and increase thy mercy in us, that in difficult moments we might not despair nor become despondent, but with great confidence submit ourselves to thy holy will, which is love and mercy itself. Amen.";
 const TRUST = "Jesus, I trust in you.";
 
-function mk(group: string, kicker: string, title: string, beadLabel: string, lines: DMLine[], large = false): DMStep {
-  return { group, kicker, title, beadLabel, large, lines, speech: lines.map((l) => l.text).join(" ") };
+function mk(group: string, kicker: string, title: string, beadLabel: string, lines: DMLine[], large = false, announce = ""): DMStep {
+  const spoken = lines.map((l) => l.text).join(" ");
+  return {
+    group, kicker, title, beadLabel, large, lines,
+    speech: announce ? `${announce} ${spoken}` : spoken,
+    speechOffset: announce ? countWords(announce) : 0,
+  };
 }
 
 const ORDINALS = ["First", "Second", "Third", "Fourth", "Fifth"];
@@ -59,11 +66,13 @@ export const DIVINE_MERCY_STEPS: DMStep[] = (() => {
   steps.push(mk("open", "On the First Three Beads", "Hail Mary", "Second Bead", [{ text: ROSARY_PRAYERS.hail }]));
   steps.push(mk("open", "On the First Three Beads", "The Apostles' Creed", "Third Bead", [{ text: ROSARY_PRAYERS.creed }]));
 
-  // The five decades — each: one large bead, then ten small beads
+  // The five decades — each: one large bead, then ten small beads. Like the
+  // Rosary's mystery announcements, each decade is announced aloud before the
+  // large-bead prayer.
   ORDINALS.forEach((ord, i) => {
     const g = `decade-${i + 1}`;
     const kicker = `The ${ord} Decade`;
-    steps.push(mk(g, kicker, "Eternal Father", "Large Bead", [{ text: ETERNAL_FATHER }], true));
+    steps.push(mk(g, kicker, "Eternal Father", "Large Bead", [{ text: ETERNAL_FATHER }], true, `The ${ord} Decade.`));
     for (let n = 1; n <= 10; n++) {
       steps.push(mk(g, kicker, "For the Sake of His Sorrowful Passion", `Small Bead · ${n} of 10`, [{ text: PASSION }]));
     }

@@ -191,8 +191,9 @@ export default function DivineMercyPage() {
         {/* Prayer lines */}
         <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 30 }}>
           {step.lines.map((l, i) => {
-            // Word offset of this line within the step's spoken text.
-            const off = step.lines.slice(0, i).reduce((n, prev) => n + countWords(prev.text), 0);
+            // Word offset of this line within the step's spoken text (any
+            // spoken decade announcement comes first).
+            const off = step.speechOffset + step.lines.slice(0, i).reduce((n, prev) => n + countWords(prev.text), 0);
             return <LineView key={i} line={l} active={speaking && narration.index === idx} wordIndex={narration.wordIndex} offset={off} />;
           })}
         </div>
