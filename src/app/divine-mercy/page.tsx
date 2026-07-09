@@ -163,11 +163,28 @@ export default function DivineMercyPage() {
       {/* CENTER */}
       <main className="pw-rosary-main" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 60px", minWidth: 0, position: "relative", overflowY: "auto" }}>
 
-        {/* Mobile: back */}
-        <div className="pw-rosary-sets" style={{ width: "100%", flexDirection: "column", gap: 16, marginBottom: 24, alignItems: "flex-start" }}>
+        {/* Mobile: back + section jump pills (the desktop side panel is hidden) */}
+        <div className="pw-rosary-sets" style={{ width: "100%", flexDirection: "column", gap: 14, marginBottom: 24, alignItems: "flex-start" }}>
           <button onClick={backToMenu} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 999, border: `1px solid ${cream(0.18)}`, background: "transparent", color: cream(0.8), cursor: "pointer", fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 600 }}>
             <LucideIcon name="arrow-left" size={14} /> Change mode
           </button>
+          <div style={{ display: "flex", gap: 7, width: "100%", overflowX: "auto", paddingBottom: 4, WebkitOverflowScrolling: "touch" }}>
+            {DIVINE_MERCY_SECTIONS.map((sec, i) => {
+              const on = sec.id === step.group;
+              const label = sec.id === "open" ? "Opening" : sec.id === "conclude" ? "Closing" : ["I", "II", "III", "IV", "V"][i - 1];
+              return (
+                <button key={sec.id} onClick={() => jumpTo(sec.index)} style={{
+                  fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 11, letterSpacing: ".01em",
+                  padding: "8px 15px", borderRadius: 999, cursor: "pointer", flexShrink: 0,
+                  border: on ? "none" : `1px solid ${cream(0.2)}`,
+                  background: on ? "var(--gilt)" : cream(0.06),
+                  color: on ? "#2A1A0E" : "var(--gold-bright)", transition: "all .16s",
+                }}>
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div style={{ fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 600, letterSpacing: ".02em", color: "var(--gold)", marginBottom: 8, textAlign: "center" }}>
