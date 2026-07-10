@@ -21,7 +21,9 @@ Built with Next.js 16 (App Router), React 19, and TypeScript.
 - **Saints** — the day's celebration with life and collect.
 - **Calendar** — the month's feasts and seasons.
 - **Settings** — pick a narration voice (with live previews), reading speed, night mode, and force-refresh the app.
-- Installable PWA with an app icon; responsive (sidebar on desktop, bottom bar on phones).
+- Installable PWA with an app icon and **offline support** — a service worker
+  caches the app shell, artwork, and the day's content so prayers stay readable
+  with no signal; responsive (sidebar on desktop, bottom bar on phones).
 
 ## Data sources
 

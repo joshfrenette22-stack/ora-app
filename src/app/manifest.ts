@@ -8,18 +8,22 @@ export default function manifest(): MetadataRoute.Manifest {
       "A reverent Catholic prayer companion. Daily Mass readings, Liturgy of the Hours, the Holy Rosary, and more.",
     id: "/",
     start_url: "/",
+    scope: "/",
+    lang: "en",
+    dir: "ltr",
     display: "standalone",
     orientation: "portrait",
     background_color: "#1B1916",
     theme_color: "#1B1916",
+    categories: ["lifestyle", "books", "education"],
     // Android/Chrome requires both a 192px and a 512px icon to offer "Install
-    // app"; the maskable variants let Android crop to the device's icon shape
-    // without clipping the crucifix. (iOS uses /apple-icon below.)
+    // app". The maskable variants keep the crucifix inside the ~80% safe zone
+    // so launcher shapes (circle/squircle) never clip it. (iOS uses /apple-icon.)
     icons: [
-      { src: "/icon", sizes: "192x192", type: "image/png", purpose: "any" },
-      { src: "/icon", sizes: "512x512", type: "image/png", purpose: "any" },
-      { src: "/icon", sizes: "192x192", type: "image/png", purpose: "maskable" },
-      { src: "/icon", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: "/icon/192", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icon/512", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/icon/maskable-192", sizes: "192x192", type: "image/png", purpose: "maskable" },
+      { src: "/icon/maskable-512", sizes: "512x512", type: "image/png", purpose: "maskable" },
       { src: "/apple-icon", sizes: "180x180", type: "image/png" },
     ],
   };
