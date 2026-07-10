@@ -5,7 +5,7 @@
 
 import type { LitColor } from "./liturgical";
 
-export type Rank = "solemnity" | "feast" | "memorial" | "feria";
+export type Rank = "solemnity" | "feast" | "memorial" | "sunday" | "feria";
 
 export interface Saint {
   name: string;
@@ -85,6 +85,9 @@ export function allCuratedSaints(): { name: string; month: number; day: number }
 
 export const FERIA_BIO =
   "No obligatory memorial falls today. The Church keeps a feria — an ordinary weekday — on which the Mass and Office of the season are prayed. A fitting day to take up a votive Mass or a saint of personal devotion.";
+
+export const SUNDAY_BIO =
+  "Sunday is the Lord's Day — the weekly celebration of the Resurrection and the original Christian feast. The Sunday liturgy takes precedence over most memorials, so the Church keeps the day itself rather than a particular saint.";
 
 /** Derive a single-letter crest from a celebration name. */
 export function monogramFor(name: string): string {

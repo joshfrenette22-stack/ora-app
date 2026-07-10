@@ -1,6 +1,7 @@
 import { type NextRequest } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { filterCatholicSources, type SaintSource } from "@/lib/saintProfile";
+import { adminAuthorized, adminUnauthorizedResponse } from "@/lib/adminAuth";
 import records from "@/data/saint-imports.json";
 
 export const dynamic = "force-dynamic";
@@ -26,10 +27,7 @@ interface ImportRecord {
 }
 
 export async function GET(request: NextRequest) {
-  const token = process.env.BACKFILL_TOKEN;
-  if (token && request.nextUrl.searchParams.get("token") !== token) {
-    return Response.json({ error: "unauthorized" }, { status: 401 });
-  }
+  if (!adminAuthorized(request)) return adminUnauthorizedResponse();
 
   const recs = records as ImportRecord[];
   const ok: string[] = [];

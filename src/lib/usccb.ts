@@ -153,27 +153,29 @@ interface Translated { text: string; provider: Provider; book: string; chapter: 
 async function translateCitation(cite: string): Promise<Translated | null> {
   const esv = await renderEsv(cite);
   if (esv) {
-    const refs = parseRefs(cite);
+    const refs = await parseRefs(cite);
     return { text: esv, provider: "esv", book: refs?.book ?? "", chapter: refs?.refs[0]?.chapter ?? 0 };
   }
-  const dra = renderPassage(cite);
+  const dra = await renderPassage(cite);
   if (dra) return { text: dra.text, provider: "dra", book: dra.book, chapter: dra.chapter };
   return null;
 }
 
 const SECTIONS: Exclude<Section, null>[] = ["first", "psalm", "second", "gospel"];
 
-/** Replace each scraped reading's text with the best available translation. */
+/** Replace each scraped reading's text with the best available translation.
+ *  The four sections translate in parallel — each may be an ESV round-trip,
+ *  and running them sequentially made first-of-day latency additive. */
 export async function translateReadings(readings: DailyReadings): Promise<DailyReadings> {
   let esv = 0, dra = 0, nabre = 0;
-  for (const key of SECTIONS) {
+  await Promise.all(SECTIONS.map(async (key) => {
     const r = readings[key];
-    if (!r || !r.cite) continue;
+    if (!r || !r.cite) return;
     const t = await translateCitation(r.cite);
     if (!t) {
       nabre++; // keep the scraped NABRE text for this reading
       delete r.refrainVerse;
-      continue;
+      return;
     }
     r.body = t.text;
     if (t.provider === "esv") esv++; else dra++;
@@ -182,7 +184,7 @@ export async function translateReadings(readings: DailyReadings): Promise<DailyR
       r.refrain = rf?.text ?? undefined; // refrain in the same translation as the body
     }
     delete r.refrainVerse;
-  }
+  }));
   readings.source = buildSource(esv, dra, nabre);
   return readings;
 }
@@ -216,5 +218,8 @@ export async function fetchUsccbReadings(date: Date): Promise<DailyReadings | nu
 export async function getDailyReadings(date: Date): Promise<DailyReadings> {
   const scraped = await fetchUsccbReadings(date);
   if (scraped) return translateReadings(scraped);
+  // Loud on purpose: a silent scraper break would degrade every reader to the
+  // representative sample set with no signal in the logs.
+  console.error(`usccb: scrape failed for ${date.toISOString().slice(0, 10)} — serving representative readings`);
   return readingsForDate(date);
 }

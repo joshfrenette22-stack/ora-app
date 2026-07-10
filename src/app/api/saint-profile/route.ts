@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { parseDate } from "@/lib/liturgical";
+import { parseDate, DAY_CACHE_HEADERS } from "@/lib/liturgical";
 import { liturgicalForDate } from "@/lib/calendar";
 import { saintForDate, saintExtras } from "@/lib/saints";
 import { supabase } from "@/lib/supabase";
@@ -93,24 +93,27 @@ export async function GET(request: NextRequest) {
   const saint = saintForDate(date);
   const extras = saintExtras(date);
 
-  const isFeria = lit.rank === "feria" || saint.name === "Feria";
-  // No saint to profile on a feria — let the page keep its feria note.
-  if (isFeria) return Response.json({ profile: null, reason: "feria" });
+  // No saint to profile on a feria, and Sundays keep the Lord's Day itself —
+  // never send a Sunday name ("Eleventh Sunday in Ordinary Time") to the AI.
+  const isFeria = lit.rank === "feria" || lit.rank === "sunday" || saint.name === "Feria";
+  if (isFeria) return Response.json({ profile: null, reason: "feria" }, { headers: DAY_CACHE_HEADERS });
 
   const name = lit.name || saint.name;
   const title = extras.title ?? saint.title ?? null;
-  const monthDay = date.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  // The date is UTC-midnight; format in UTC so servers west of Greenwich don't
+  // label the profile with the previous day.
+  const monthDay = date.toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
   const slug = saintSlug(name);
 
   // 1) In-memory cache.
   const cached = cache.get(slug);
-  if (cached) return Response.json({ profile: cached });
+  if (cached) return Response.json({ profile: cached }, { headers: DAY_CACHE_HEADERS });
 
   // 2) Stored/curated row (includes any human corrections).
   const stored = await readStored(slug);
   if (stored) {
     cache.set(slug, stored);
-    return Response.json({ profile: stored });
+    return Response.json({ profile: stored }, { headers: DAY_CACHE_HEADERS });
   }
 
   // 3) No AI configured → hand back the curated bio so the page still enriches.
@@ -121,7 +124,7 @@ export async function GET(request: NextRequest) {
       contributions: "", patronage: "", feastEngagement: "",
       summary: extras.bio ?? saint.bio ?? "", sources: [], source: "calendar",
     };
-    return Response.json({ profile: fallback });
+    return Response.json({ profile: fallback }, { headers: DAY_CACHE_HEADERS });
   }
 
   // 4) Generate, persist for review, cache.
@@ -133,10 +136,11 @@ export async function GET(request: NextRequest) {
       contributions: "", patronage: "", feastEngagement: "",
       summary: extras.bio ?? saint.bio ?? "", sources: [], source: "calendar",
     };
+    // Don't CDN-cache the transient failure — let the next visitor retry.
     return Response.json({ profile: fallback });
   }
 
   cache.set(slug, generated);
   await persist(generated);
-  return Response.json({ profile: generated });
+  return Response.json({ profile: generated }, { headers: DAY_CACHE_HEADERS });
 }

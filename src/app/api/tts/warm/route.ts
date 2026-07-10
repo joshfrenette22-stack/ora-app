@@ -8,6 +8,7 @@ import {
   listCachedKeys,
   writeCachedAudio,
 } from "@/lib/audioCache";
+import { adminAuthorized, adminUnauthorizedResponse } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -19,9 +20,10 @@ export const maxDuration = 60;
 // so re-running is safe.
 //
 //   GET /api/tts/warm?voices=ID1,ID2,ID3&rate=1&limit=4
-//   GET /api/tts/warm?...&dryRun=1   → report counts/credits, generate nothing
+//   GET /api/tts/warm?...&dryRun=1   → report counts, generate nothing
 //
-// Guard: if BACKFILL_TOKEN is set, require a matching ?token=.
+// Guard: requires BACKFILL_TOKEN (Authorization: Bearer … or ?token=).
+// Disabled entirely when the token is not configured.
 
 // Defaults to the app's default voice. Override with ?voices=ID1,ID2 — useful
 // for pre-warming the paid Google tiers (Studio / Chirp3-HD); the free Neural2
@@ -31,10 +33,7 @@ const DEFAULT_VOICES = [DEFAULT_VOICE];
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
 
-  const token = process.env.BACKFILL_TOKEN;
-  if (token && params.get("token") !== token) {
-    return Response.json({ error: "unauthorized" }, { status: 401 });
-  }
+  if (!adminAuthorized(request)) return adminUnauthorizedResponse();
   if (!cloudTtsEnabled()) {
     return Response.json({ error: "TTS not configured" }, { status: 400 });
   }
@@ -67,7 +66,6 @@ export async function GET(request: NextRequest) {
   const todo = tasks.filter((t) => !cached.has(t.key));
 
   const remainingChars = todo.reduce((n, t) => n + t.text.length, 0);
-  const estCreditsTurbo = Math.round(remainingChars * 0.5); // Turbo v2.5 = 0.5 cr/char
 
   if (dryRun) {
     return Response.json({
@@ -79,7 +77,6 @@ export async function GET(request: NextRequest) {
       alreadyCached: tasks.length - todo.length,
       remaining: todo.length,
       remainingChars,
-      estCreditsTurbo,
     });
   }
 

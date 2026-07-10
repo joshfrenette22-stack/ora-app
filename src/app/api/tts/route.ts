@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
 import { cloudTtsEnabled } from "@/lib/tts";
+import { isValidVoice } from "@/lib/voices";
 import { synthesizeCached } from "@/lib/audioCache";
 
 export const dynamic = "force-dynamic";
@@ -8,8 +9,11 @@ export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
 
   // Capability probe — the client checks this once to choose its audio engine.
+  // "Not configured" is a normal answer, not a failure: a 200 keeps the browser
+  // console clean (the old 503 logged an error on every app launch).
   if (params.has("probe")) {
-    return new Response(null, { status: cloudTtsEnabled() ? 204 : 503 });
+    if (cloudTtsEnabled()) return new Response(null, { status: 204 });
+    return Response.json({ cloud: false }, { headers: { "Cache-Control": "public, max-age=300" } });
   }
 
   if (!cloudTtsEnabled()) return new Response("TTS not configured", { status: 503 });
@@ -21,6 +25,9 @@ export async function GET(request: NextRequest) {
   if (text.length > 15000) return new Response("Text too long", { status: 413 });
   const rate = Number(params.get("rate")) || undefined;
   const voice = params.get("voice") ?? undefined;
+  // Only the curated voices are synthesised — arbitrary ids would let anyone
+  // drive paid synthesis against voices/models we never offer.
+  if (voice && !isValidVoice(voice)) return new Response("Unknown voice", { status: 400 });
 
   const audio = await synthesizeCached(text, { rate, voice });
   if (!audio) return new Response("Synthesis failed", { status: 502 });

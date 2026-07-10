@@ -41,7 +41,9 @@ const RANK: Record<string, Rank> = {
   FEAST: "feast",
   MEMORIAL: "memorial",
   OPT_MEMORIAL: "memorial",
-  SUNDAY: "feria",
+  // Sundays are not ferias — they carry their proper name ("Eleventh Sunday in
+  // Ordinary Time"), which the routes surface instead of the generic "Feria".
+  SUNDAY: "sunday",
   FERIA: "feria",
 };
 
@@ -103,7 +105,7 @@ export async function feastsForMonth(year: number, month: number): Promise<Recor
     const m = String(e.moment).slice(0, 10).split("-").map(Number);
     if (m[1] !== month) continue;
     const rank = RANK[e.type] ?? "feria";
-    if (rank === "feria") continue; // skip plain weekdays and Sundays
+    if (rank === "feria" || rank === "sunday") continue; // skip plain weekdays and Sundays
     out[`${m[0]}-${m[1]}-${m[2]}`] = {
       name: e.name,
       color: COLOR[e.data?.meta?.liturgicalColor?.key ?? "WHITE"] ?? "white",

@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
-import { parseDate } from "@/lib/liturgical";
+import { parseDate, DAY_CACHE_HEADERS } from "@/lib/liturgical";
 import { liturgicalForDate } from "@/lib/calendar";
-import { saintExtras, monogramFor, FERIA_BIO } from "@/lib/saints";
+import { saintExtras, monogramFor, FERIA_BIO, SUNDAY_BIO } from "@/lib/saints";
 
 export const dynamic = "force-dynamic";
 
@@ -23,17 +23,18 @@ export async function GET(request: NextRequest) {
   const extras = saintExtras(date);
 
   const isFeria = lit.rank === "feria";
+  const isSunday = lit.rank === "sunday";
   const name = isFeria ? "Feria" : lit.name;
   const titleFromRomcal = lit.titles.map((t) => TITLE_WORDS[t]).filter(Boolean).join(" · ") || null;
 
   return Response.json({
     date: lit.date,
     name,
-    title: extras.title ?? (isFeria ? "Weekday in Ordinary Time" : titleFromRomcal),
+    title: extras.title ?? (isFeria ? "Weekday in Ordinary Time" : isSunday ? "The Lord's Day" : titleFromRomcal),
     color: lit.color,
     rank: lit.rank,
-    monogram: extras.monogram ?? (isFeria ? "✝" : monogramFor(name)),
-    bio: extras.bio ?? (isFeria ? FERIA_BIO : undefined),
+    monogram: extras.monogram ?? (isFeria || isSunday ? "✝" : monogramFor(name)),
+    bio: extras.bio ?? (isFeria ? FERIA_BIO : isSunday ? SUNDAY_BIO : undefined),
     collect: extras.collect,
-  });
+  }, { headers: DAY_CACHE_HEADERS });
 }

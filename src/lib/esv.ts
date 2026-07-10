@@ -13,7 +13,7 @@
 // those books (and the Greek additions to Daniel/Esther) resolve to null here
 // and fall back to Douay–Rheims.
 
-import { bookName } from "./dra";
+import { bookName } from "./bibleBooks";
 
 // Books absent from the (Protestant) ESV API — skip the call and let DRA handle them.
 const DEUTEROCANON = new Set([

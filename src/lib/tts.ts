@@ -1,14 +1,12 @@
-// Provider-agnostic TTS entry point. Picks the backend (Google or ElevenLabs)
-// for the requested voice and returns MP3 bytes. The route and the rest of the
-// app only talk to this.
+// TTS entry point. All curated voices are Google Cloud voices (the ElevenLabs
+// backend was retired — see voices.ts); the route and the rest of the app only
+// talk to this module, so a future second provider slots in here.
 
 import { synthesize as googleSynthesize, googleTtsEnabled } from "./googleTts";
-import { synthesizeEleven, elevenLabsEnabled } from "./elevenLabs";
-import { voiceProvider } from "./voices";
 
-/** True when any cloud voice backend is configured. */
+/** True when a cloud voice backend is configured. */
 export function cloudTtsEnabled(): boolean {
-  return googleTtsEnabled() || elevenLabsEnabled();
+  return googleTtsEnabled();
 }
 
 interface SynthOptions {
@@ -16,15 +14,8 @@ interface SynthOptions {
   voice?: string;
 }
 
-/** Synthesise text with the backend that owns the requested voice. Falls back to
- *  whichever provider is configured if the chosen one is unavailable. */
+/** Synthesise text with the configured backend, or null when none is set up. */
 export async function synthesizeVoice(text: string, { rate, voice }: SynthOptions = {}): Promise<Buffer | null> {
-  const provider = voice ? voiceProvider(voice) : googleTtsEnabled() ? "google" : "elevenlabs";
-
-  if (provider === "elevenlabs" && elevenLabsEnabled() && voice) {
-    return synthesizeEleven(text, { rate, voiceId: voice });
-  }
-  if (googleTtsEnabled()) return googleSynthesize(text, { rate, voice });
-  if (elevenLabsEnabled() && voice) return synthesizeEleven(text, { rate, voiceId: voice });
-  return null;
+  if (!googleTtsEnabled()) return null;
+  return googleSynthesize(text, { rate, voice });
 }

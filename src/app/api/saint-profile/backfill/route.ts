@@ -3,6 +3,7 @@ import { liturgicalForDate } from "@/lib/calendar";
 import { allCuratedSaints, saintExtras } from "@/lib/saints";
 import { supabase } from "@/lib/supabase";
 import { generateSaintProfile, aiEnabled, saintSlug, type SaintProfile } from "@/lib/saintProfile";
+import { adminAuthorized, adminUnauthorizedResponse } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -13,7 +14,8 @@ export const maxDuration = 60;
 //
 //   GET /api/saint-profile/backfill?limit=4
 //
-// Guard: if BACKFILL_TOKEN is set, require ?token= to match.
+// Guard: requires BACKFILL_TOKEN (Authorization: Bearer … or ?token=).
+// Disabled entirely when the token is not configured.
 
 async function persist(p: SaintProfile): Promise<boolean> {
   try {
@@ -30,10 +32,7 @@ async function persist(p: SaintProfile): Promise<boolean> {
 }
 
 export async function GET(request: NextRequest) {
-  const token = process.env.BACKFILL_TOKEN;
-  if (token && request.nextUrl.searchParams.get("token") !== token) {
-    return Response.json({ error: "unauthorized" }, { status: 401 });
-  }
+  if (!adminAuthorized(request)) return adminUnauthorizedResponse();
   if (!aiEnabled()) {
     return Response.json({ error: "ANTHROPIC_API_KEY not configured" }, { status: 400 });
   }

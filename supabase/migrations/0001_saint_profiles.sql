@@ -3,8 +3,8 @@
 -- Supabase project (SQL Editor, or `supabase db push`).
 --
 -- Accuracy workflow:
---   * The app generates a profile with Gemini (grounded in Catholic sources)
---     and upserts it here via upsert_saint_profile().
+--   * The app generates a profile with Claude (grounded in Catholic sources
+--     via web search) and upserts it here via upsert_saint_profile().
 --   * To correct an entry, edit its row in the dashboard and set verified = true.
 --   * Verified rows are never overwritten by future AI regenerations.
 

@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { parseDate } from "@/lib/liturgical";
+import { parseDate, DAY_CACHE_HEADERS } from "@/lib/liturgical";
 import { liturgicalForDate } from "@/lib/calendar";
 import { saintForDate, saintExtras } from "@/lib/saints";
 
@@ -33,13 +33,15 @@ export async function GET(request: NextRequest) {
   const key = date.toISOString().slice(0, 10);
 
   const cached = cache.get(key);
-  if (cached) return Response.json(cached);
+  if (cached) return Response.json(cached, { headers: DAY_CACHE_HEADERS });
 
   const lit = await liturgicalForDate(date);
   const saint = saintForDate(date);
   const extras = saintExtras(date);
   const feast = lit.rank === "feria" ? "a weekday (feria)" : lit.name;
-  const monthDay = date.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  // Format the UTC-midnight date in UTC so servers west of Greenwich don't
+  // brief the previous day.
+  const monthDay = date.toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
   const season = lit.label;
 
   // No key configured → honest, data-driven briefing (no AI).
@@ -77,9 +79,10 @@ export async function GET(request: NextRequest) {
 
     const result: TodayInChurch = { items, source: "ai" };
     cache.set(key, result);
-    return Response.json(result);
-  } catch {
+    return Response.json(result, { headers: DAY_CACHE_HEADERS });
+  } catch (err) {
     // Any failure (no network, refusal, bad JSON) degrades to the calendar briefing.
+    console.error("today-in-church: AI briefing failed, serving calendar fallback", err);
     return Response.json(fallback(monthDay, lit.rank === "feria" ? `${saint.name}` : lit.name, season, extras.bio));
   }
 }

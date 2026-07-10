@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { parseDate, badgeSeason } from "@/lib/liturgical";
+import { parseDate, badgeSeason, DAY_CACHE_HEADERS } from "@/lib/liturgical";
 import { liturgicalForDate } from "@/lib/calendar";
 import { saintExtras, monogramFor } from "@/lib/saints";
 import { getDailyReadings } from "@/lib/usccb";
@@ -21,8 +21,7 @@ export async function GET(request: NextRequest) {
   const extras = saintExtras(date);
   const verse = VERSES[date.getUTCDate() % VERSES.length];
 
-  const isFeria = lit.rank === "feria";
-  const saintName = isFeria ? "Feria" : lit.name;
+  const saintName = lit.rank === "feria" ? "Feria" : lit.name;
 
   return Response.json({
     date: lit.date,
@@ -43,5 +42,5 @@ export async function GET(request: NextRequest) {
       representative: readings.representative,
       source: readings.source,
     },
-  });
+  }, { headers: DAY_CACHE_HEADERS });
 }

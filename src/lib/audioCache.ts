@@ -67,15 +67,22 @@ export async function writeCachedAudio(key: string, audio: Buffer): Promise<void
   }
 }
 
-/** Set of cached keys currently in the bucket, for idempotent pre-warming. */
+/** Set of cached keys currently in the bucket, for idempotent pre-warming.
+ *  Paginates: past 1000 objects a single page would under-report and the warm
+ *  job would re-synthesise (and re-pay for) audio it already has. */
 export async function listCachedKeys(): Promise<Set<string>> {
   const svc = service();
   const out = new Set<string>();
   if (!svc) return out;
+  const PAGE = 1000;
   try {
-    const { data } = await svc.storage.from(BUCKET).list("", { limit: 1000 });
-    for (const f of data ?? []) {
-      if (f.name.endsWith(".mp3")) out.add(f.name.slice(0, -4));
+    for (let offset = 0; ; offset += PAGE) {
+      const { data, error } = await svc.storage.from(BUCKET).list("", { limit: PAGE, offset });
+      if (error || !data?.length) break;
+      for (const f of data) {
+        if (f.name.endsWith(".mp3")) out.add(f.name.slice(0, -4));
+      }
+      if (data.length < PAGE) break;
     }
   } catch { /* ignore */ }
   return out;

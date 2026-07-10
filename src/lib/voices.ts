@@ -4,10 +4,8 @@
 
 export type VoiceTier = "Neural2" | "Chirp3-HD" | "Studio";
 
-export type VoiceProvider = "google" | "elevenlabs";
-
 export interface Voice {
-  id: string; // provider voice id: Google name "en-US-Neural2-D" or an ElevenLabs voice_id
+  id: string; // Google voice name, e.g. "en-US-Neural2-D"
   short: string; // display identifier, e.g. "D" or "Charon"
   /** Distinct display name shown in the pickers. */
   name: string;
@@ -17,8 +15,6 @@ export interface Voice {
   desc: string;
   /** Covered by the generous free tier for typical use (Neural2). */
   free: boolean;
-  /** TTS backend. Omitted = Google (the original provider). */
-  provider?: VoiceProvider;
 }
 
 export const DEFAULT_VOICE = "en-US-Neural2-D";
@@ -51,11 +47,6 @@ export const TIER_NOTE: Record<VoiceTier, string> = {
 
 export function isValidVoice(id: string): boolean {
   return VOICES.some((v) => v.id === id);
-}
-
-/** Which TTS backend serves a given voice id (defaults to Google). */
-export function voiceProvider(id: string): VoiceProvider {
-  return VOICES.find((v) => v.id === id)?.provider ?? "google";
 }
 
 /** The display name for a voice id (falls back to a generic label). */
