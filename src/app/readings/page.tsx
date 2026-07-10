@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { Fleuron } from "@/components/Sacred";
 import { Kicker } from "@/components/UI";
 import { ListenButton, SpokenText, useNarration, useRegisterNarration, type NarrationSegment } from "@/components/PrayerPlayer";
@@ -44,9 +45,23 @@ const FALLBACK: DailyReadings = {
   },
 };
 
+function ReadingSkeleton() {
+  return (
+    <div className="pw-shimmer" aria-hidden style={{ maxWidth: 700 }}>
+      <div style={{ height: 12, width: 120, borderRadius: 6, background: "var(--stone-200)", marginBottom: 18 }} />
+      <div style={{ height: 30, width: "65%", borderRadius: 8, background: "var(--stone-200)", marginBottom: 30 }} />
+      {[100, 97, 92, 99, 88, 95, 60].map((w, i) => (
+        <div key={i} style={{ height: 14, width: `${w}%`, borderRadius: 6, background: "var(--stone-200)", marginBottom: 11 }} />
+      ))}
+    </div>
+  );
+}
+
 export default function ReadingsPage() {
   const [active, setActive] = useState<Tab>("first");
   const [data, setData] = useState<DailyReadings>(FALLBACK);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [retryCount, setRetryCount] = useState(0);
   // On Saturday, the evening Mass is the anticipated (vigil) Sunday Mass — it
   // uses the upcoming Sunday's readings, not Saturday's weekday Mass. Offer a
   // toggle, defaulting to the vigil from mid-afternoon on. `null` means the user
@@ -70,12 +85,20 @@ export default function ReadingsPage() {
 
   useEffect(() => {
     let alive = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setStatus("loading");
     fetch(`/api/readings?date=${localDateISO(readingDate)}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (alive && d) setData(d); })
-      .catch(() => {});
+      .then((d) => {
+        if (!alive) return;
+        if (d) { setData(d); setStatus("ready"); }
+        else setStatus("error");
+      })
+      .catch(() => { if (alive) setStatus("error"); });
     return () => { alive = false; };
-  }, [readingDate]);
+  }, [readingDate, retryCount]);
+
+  const loading = status === "loading";
 
   // Tabs present today (second reading is omitted on weekdays).
   const order = useMemo<Tab[]>(() => TAB_ORDER.filter((k) => data[k]), [data]);
@@ -191,6 +214,27 @@ export default function ReadingsPage() {
           })}
         </div>
 
+        {/* Couldn't reach the lectionary — the page falls back to a sample set. */}
+        {status === "error" && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+            background: "var(--gold-faint)", border: "1px solid var(--stone-200)", borderRadius: 12,
+            padding: "12px 16px", marginBottom: 24, fontFamily: "var(--font-body)", fontSize: 14, color: "var(--ink-700)",
+          }}>
+            <span>Today&rsquo;s readings couldn&rsquo;t be loaded — showing a sample passage.</span>
+            <button
+              onClick={() => setRetryCount((c) => c + 1)}
+              style={{ border: "none", background: "none", padding: 0, cursor: "pointer", color: "var(--gold-deep)", font: "inherit", fontWeight: 600, textDecoration: "underline" }}
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
+        {loading ? (
+          <ReadingSkeleton />
+        ) : (
+        <>
         {/* Audio player — listen to the Mass */}
         <div style={{ marginBottom: 32 }}>
           <ListenButton narration={narration} label="Listen to the Readings" />
@@ -275,6 +319,8 @@ export default function ReadingsPage() {
           </div>
 
         </div>
+        </>
+        )}
       </div>
 
       {/* Right sidebar */}
@@ -310,12 +356,11 @@ export default function ReadingsPage() {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-            {ALSO_TODAY.map((item, i) => {
-              const Tag = (item.href ? "a" : "button") as React.ElementType;
-              return (
-              <Tag
+            {ALSO_TODAY.map((item, i) => (
+              // next/link, not <a> — a raw anchor forced a full page reload.
+              <Link
                 key={i}
-                {...(item.href ? { href: item.href } : {})}
+                href={item.href}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -351,9 +396,8 @@ export default function ReadingsPage() {
                     {item.sub}
                   </div>
                 </div>
-              </Tag>
-              );
-            })}
+              </Link>
+            ))}
           </div>
         </div>
 

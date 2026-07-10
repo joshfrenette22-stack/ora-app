@@ -1,5 +1,6 @@
 "use client";
 import type { ReactNode, CSSProperties } from "react";
+import Link from "next/link";
 import * as Lucide from "lucide-react";
 import { Cross } from "./Sacred";
 
@@ -74,22 +75,25 @@ export function Btn({ variant = "primary", children, onClick, icon, style = {}, 
   );
 }
 
-export function FeatureCard({ kicker, title, meta, onClick, motif }: {
+export function FeatureCard({ kicker, title, meta, href, onClick, motif }: {
   kicker: string;
   title: string;
   meta: string;
+  /** Renders as a real link — prefetch, middle-click, and open-in-new-tab work. */
+  href?: string;
   onClick?: () => void;
   motif?: ReactNode;
 }) {
-  return (
-    <button className="pw-card pw-feature-card" onClick={onClick} style={{ position: "relative", overflow: "hidden", textAlign: "left", cursor: "pointer", background: "var(--surface-ink)", color: "var(--gold-bright)", borderRadius: 18, padding: "30px 34px", boxShadow: "var(--shadow-lg)", border: "none", display: "flex", alignItems: "center", gap: 20, width: "100%" }}>
+  const style: CSSProperties = { position: "relative", overflow: "hidden", textAlign: "left", cursor: "pointer", background: "var(--surface-ink)", color: "var(--gold-bright)", borderRadius: 18, padding: "30px 34px", boxShadow: "var(--shadow-lg)", border: "none", display: "flex", alignItems: "center", gap: 20, width: "100%", textDecoration: "none" };
+  const body = (
+    <>
       {motif && <div style={{ position: "absolute", right: -10, top: -10, color: "var(--gold-bright)" }}>{motif}</div>}
       <div style={{ flex: 1, position: "relative", minWidth: 0 }}>
         <Kicker style={{ color: "var(--gold-bright)", opacity: 0.85 }}>{kicker}</Kicker>
         <div className="pw-feature-title" style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 32, color: "#F3EEE2", marginTop: 6 }}>{title}</div>
         <div style={{ fontFamily: "var(--font-body)", fontSize: 16, opacity: 0.72, marginTop: 4 }}>{meta}</div>
       </div>
-      {/* Decorative CTA — the whole card is the button; a nested <button>
+      {/* Decorative CTA — the whole card is the control; a nested <button>
           is invalid HTML and broke hydration on every home-page load. */}
       <span className="pw-feature-btn">
         <span style={{
@@ -102,8 +106,12 @@ export function FeatureCard({ kicker, title, meta, onClick, motif }: {
           Begin
         </span>
       </span>
-    </button>
+    </>
   );
+  if (href) {
+    return <Link href={href} className="pw-card pw-feature-card" style={style}>{body}</Link>;
+  }
+  return <button className="pw-card pw-feature-card" onClick={onClick} style={style}>{body}</button>;
 }
 
 export function SurfaceCard({ kicker, title, meta, onClick, lucide, motif, cta }: {

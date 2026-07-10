@@ -72,11 +72,14 @@ export function useNowPlaying() {
 }
 
 /**
- * Hook for the FloatingPlayer — re-renders on every animation frame while
- * audio is playing so the waveform tracks progress in real time.
+ * Hook for the FloatingPlayer / MediaSessionManager — re-renders when the
+ * playback state meaningfully changes (status, segment, loading, artwork,
+ * ~1 s elapsed-time ticks).
  *
- * When idle it polls at a slower cadence (every 500 ms) so it can detect
- * when playback begins. When playing it polls every animation frame.
+ * It deliberately does NOT re-render per animation frame: the waveform reads
+ * its position imperatively via getPlayFrac()/envelope inside its own rAF
+ * loop, so consumers only need coarse updates. (An earlier version bumped
+ * every frame, re-rendering two full component trees at 60 fps.)
  */
 export function useNowPlayingLive(): NowPlaying {
   const { get, subscribe } = useContext(Ctx);
@@ -86,31 +89,33 @@ export function useNowPlayingLive(): NowPlaying {
   // Re-render (and restart polling) when register/unregister happens.
   useEffect(() => subscribe(() => setVersion((n) => n + 1)), [subscribe]);
 
-  // Continuous polling — fast while playing, slow while idle, off when no
-  // narration is registered at all (registration bumps `version` to restart).
   useEffect(() => {
     let active = true;
-    let raf = 0;
     let timer: ReturnType<typeof setTimeout> | null = null;
+    let lastKey = "";
 
     function tick() {
       if (!active) return;
       const np = get();
-      if (!np.narration) return;
-      const playing = np.narration.status !== "idle";
-      bump((n) => n + 1);
-      if (playing) {
-        // Full-speed polling for waveform progress.
-        raf = requestAnimationFrame(tick);
-      } else {
-        // Slow poll to detect when playback starts.
-        timer = setTimeout(tick, 500);
+      const n = np.narration;
+      const key = n
+        ? [
+            n.status, n.index, n.count, n.loading,
+            n.current?.label ?? "", np.title, np.imageSrc ?? "",
+            n.envelope ? n.envelope.length : 0,
+            Math.floor(n.elapsed), // keeps the full-screen timestamp ticking
+          ].join("|")
+        : "none";
+      if (key !== lastKey) {
+        lastKey = key;
+        bump((x) => x + 1);
       }
+      const playing = !!n && n.status !== "idle";
+      timer = setTimeout(tick, playing ? 150 : 500);
     }
-    raf = requestAnimationFrame(tick);
+    tick();
     return () => {
       active = false;
-      cancelAnimationFrame(raf);
       if (timer) clearTimeout(timer);
     };
   }, [get, version]);

@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useState } from "react";
 import { ILLUSTRATIONS, type IllustrationKey } from "@/lib/illustrations";
-import { useTheme } from "./ThemeProvider";
 
 interface IllustrationProps {
   /** Key from the illustration manifest. A bad key is a compile error. */
@@ -40,16 +39,6 @@ interface IllustrationProps {
 }
 
 /**
- * The dark-mode inversion filter:
- * - invert(1) flips black → white
- * - brightness(1.05) warms it slightly toward ivory
- * - sepia(0.08) adds a faint warmth so it doesn't look cold-white on charcoal
- *
- * This produces a warm cream line that matches --gold-bright (#EFE6D6) tonally.
- */
-const DARK_FILTER = "invert(1) brightness(1.05) sepia(0.08)";
-
-/**
  * Default edge-feathering mask: a radial vignette that dissolves all edges
  * so illustrations never show hard rectangular boundaries.
  */
@@ -68,7 +57,6 @@ export function Illustration({
   opacity,
   feather = true,
 }: IllustrationProps) {
-  const { night } = useTheme();
   // If the file fails to load (offline, cache eviction) render nothing rather
   // than the browser's broken-image glyph — every usage is ornamental.
   const [failed, setFailed] = useState(false);
@@ -81,8 +69,6 @@ export function Illustration({
   const maskValue = feather === true ? FEATHER_MASK : typeof feather === "string" ? feather : undefined;
 
   const filterStyle: React.CSSProperties = {
-    filter: invertOnDark && night ? DARK_FILTER : undefined,
-    transition: "filter var(--dur-base) var(--ease-sacred)",
     opacity: opacity ?? undefined,
     maskImage: maskValue,
     WebkitMaskImage: maskValue,
@@ -98,7 +84,9 @@ export function Illustration({
       width={w}
       height={h}
       priority={priority}
-      className={className}
+      // Inversion is pure CSS keyed off the .ora-night root class (see
+      // globals.css), so art is correct before hydration and on theme change.
+      className={`${invertOnDark ? "pw-invert-dark" : ""}${className ? ` ${className}` : ""}`}
       style={filterStyle}
       aria-hidden={isDecorative || undefined}
       draggable={false}

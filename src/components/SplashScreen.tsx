@@ -11,8 +11,10 @@ import { Logomark, RoseWindow, Fleuron } from "./Sacred";
 // without nagging within a session. Switch SHOWN_KEY to localStorage to show it
 // only once, ever.
 const SHOWN_KEY = "pw-splash-shown";
-const HOLD_MS = 2600; // time the welcome is held before it auto-fades
-const FADE_MS = 650;  // fade-out duration
+// Snappy: long enough for the emblem + name to register as a ceremony, short
+// enough that launching the app never feels gated (native splashes are ~1s).
+const HOLD_MS = 1400;
+const FADE_MS = 500; // fade-out duration
 
 type Phase = "hidden" | "in" | "out";
 
@@ -39,12 +41,19 @@ export function SplashScreen() {
     return () => clearTimeout(t);
   }, [phase]);
 
+  // Any key skips the splash — it must never gate keyboard users.
+  useEffect(() => {
+    if (phase !== "in") return;
+    const onKey = () => setPhase("out");
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [phase]);
+
   if (phase === "hidden") return null;
 
   return (
     <div
-      role="dialog"
-      aria-label="Prayer Warrior"
+      aria-hidden
       onClick={() => setPhase("out")}
       style={{
         position: "fixed", inset: 0, zIndex: 310, // above the onboarding overlay (300)

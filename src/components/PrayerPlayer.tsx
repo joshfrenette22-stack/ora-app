@@ -32,6 +32,22 @@ function ttsUrl(text: string, rate?: number, voice?: string): string {
   return `/api/tts?${params.toString()}`;
 }
 
+// One probe per app session, shared by every narration instance — pages like
+// Devotions mount several narrations at once, and each used to fire its own
+// identical /api/tts?probe request.
+let cloudProbe: Promise<boolean> | null = null;
+function probeCloudTts(): Promise<boolean> {
+  if (!cloudProbe) {
+    cloudProbe = fetch("/api/tts?probe=1")
+      .then((r) => r.status === 204)
+      .catch(() => {
+        cloudProbe = null; // transient failure — let a later mount retry
+        return false;
+      });
+  }
+  return cloudProbe;
+}
+
 type Status = "idle" | "playing" | "paused";
 
 export interface UseNarrationOptions {
@@ -58,6 +74,8 @@ export interface Narration {
   elapsed: number;
   /** True from pressing play until audio/speech actually begins. */
   loading: boolean;
+  /** Set when playback failed on every engine (e.g. offline with no cache). */
+  error: string | null;
   /** Live animated level 0–1 (device voice, which has no analysable stream). */
   getLevel: () => number;
   /** Decoded fine amplitude envelope of the current cloud segment, or null. */
@@ -100,6 +118,7 @@ export function useNarration({
   const [frac, setFrac] = useState(0); // playback fraction within the current segment
   const [wordIndex, setWordIndex] = useState(-1); // word being spoken within the segment
   const [loading, setLoading] = useState(false); // play pressed → audio actually started
+  const [error, setError] = useState<string | null>(null); // both engines failed
   const { voice, speed } = useVoice();
   // The chosen reading speed wins; a page may still pass an explicit rate.
   const rate = rateOption ?? speed;
@@ -167,20 +186,29 @@ export function useNarration({
     ensureVoices();
     audioRef.current = typeof Audio !== "undefined" ? new Audio() : null;
     let alive = true;
-    // Prefer the cloud voice when the server reports it's configured.
-    engineReadyRef.current = fetch("/api/tts?probe=1")
-      .then((r) => {
-        if (alive && r.status === 204) {
+    // Prefer the cloud voice when the server reports it's configured (the
+    // probe result is shared app-wide — see probeCloudTts).
+    engineReadyRef.current = probeCloudTts()
+      .then((cloud) => {
+        if (alive && cloud) {
           engineRef.current = "google";
           setSupported(true);
         }
       })
-      .catch(() => {})
       .finally(() => { engineResolvedRef.current = true; });
     return () => {
       alive = false;
       stopSpeaking();
-      if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
+      if (audioRef.current) {
+        const a = audioRef.current;
+        a.onpause = null;
+        a.pause();
+        a.src = "";
+      }
+      // The decode AudioContext must be closed or it leaks — browsers cap the
+      // number of live contexts (~6), after which waveform decode silently dies.
+      audioCtxRef.current?.close().catch(() => {});
+      audioCtxRef.current = null;
     };
   }, []);
 
@@ -310,14 +338,32 @@ export function useNarration({
     }
   }, []);
 
+  // Pause the <audio> element for our own reasons (segment switch, user pause,
+  // stop/reset) without tripping the external-interruption mirror: the flag is
+  // consumed by the queued `pause` event this call produces. No event fires for
+  // an already-paused element, so the flag is only set when one will.
+  const internalPauseRef = useRef(false);
+  const pauseAudioElement = useCallback(() => {
+    const a = audioRef.current;
+    if (!a || a.paused) return;
+    internalPauseRef.current = true;
+    a.pause();
+  }, []);
+
   // Speak one segment through the active engine, falling back to the browser
   // voice if the cloud audio can't play.
   const playSegment = useCallback(
     (text: string, onEnd: () => void, onError: () => void) => {
       clearEstimate();
-      // Stop any previous playback before starting the new segment.
+      // Stop any previous playback before starting the new segment. Handlers
+      // are cleared BEFORE pausing so the old segment's pause/ended handlers
+      // can't fire against the new segment's state.
       stopSpeaking();
-      if (audioRef.current) { audioRef.current.pause(); audioRef.current.onended = null; audioRef.current.onerror = null; audioRef.current.ontimeupdate = null; }
+      if (audioRef.current) {
+        const a = audioRef.current;
+        a.onended = null; a.onerror = null; a.ontimeupdate = null; a.onpause = null; a.onplay = null;
+        pauseAudioElement();
+      }
 
       // Once the probe has settled, start synchronously so the call stays inside
       // the user gesture (iOS requirement). Only the very first play — before the
@@ -328,16 +374,19 @@ export function useNarration({
         engineReadyRef.current.then(() => startSegmentRef.current(text, onEnd, onError));
       }
     },
-    [clearEstimate],
+    [clearEstimate, pauseAudioElement],
   );
 
-  const startSegment = useCallback(
+  // Browser speech path — also the runtime fallback when cloud audio fails, so
+  // it owns the full estimator + wrapped-handler bookkeeping (the fallback used
+  // to skip these, freezing progress and never firing completion state).
+  const startBrowserSegment = useCallback(
     (text: string, onEnd: () => void, onError: () => void) => {
       const starts = wordStarts(text);
       const wc = starts.length;
 
-      // Shared handler: when a boundary event fires (browser speech), update
-      // both wordIndex AND frac so the waveform tracks progress.
+      // When a boundary event fires, update both wordIndex AND frac so the
+      // waveform tracks progress.
       let boundaryFired = false;
       const onBoundary = (ci: number) => {
         boundaryFired = true;
@@ -348,7 +397,38 @@ export function useNarration({
         if (wc > 0) setFrac(Math.min(1, (wi + 1) / wc));
       };
 
+      // Timer-based fallback that estimates progress in case the browser
+      // doesn't fire boundary events (common on mobile).
+      const effectiveRate = rate ?? 0.92;
+      // ~160 WPM base rate, scaled by speech rate
+      const estimatedDurationMs = wc > 0 ? (wc / (160 * effectiveRate / 60)) * 1000 : 5000;
+      const startTime = Date.now();
+      estimateRef.current = setInterval(() => {
+        if (boundaryFired) return; // real events are flowing — don't interfere
+        const elapsed = Date.now() - startTime;
+        const f = Math.min(0.98, elapsed / estimatedDurationMs);
+        setFrac(f);
+        if (wc > 0) setWordIndex(Math.min(wc - 1, Math.floor(f * wc)));
+      }, 120);
+
+      const wrappedStart = () => { setLoading(false); soundingRef.current = true; };
+      const wrappedEnd = () => { clearEstimate(); soundingRef.current = false; setFrac(1); onEnd(); };
+      const wrappedError = () => { clearEstimate(); soundingRef.current = false; setLoading(false); onError(); };
+
+      if (!speak(text, { rate, onStart: wrappedStart, onEnd: wrappedEnd, onError: wrappedError, onBoundary })) {
+        clearEstimate();
+        setLoading(false);
+        onError();
+      }
+    },
+    [rate, clearEstimate],
+  );
+
+  const startSegment = useCallback(
+    (text: string, onEnd: () => void, onError: () => void) => {
       if (engineRef.current === "google" && audioRef.current) {
+        const starts = wordStarts(text);
+        const wc = starts.length;
         const a = audioRef.current;
         const url = ttsUrl(text, rate, voice);
         // New segment → drop the old waveform and decode the real one.
@@ -365,14 +445,32 @@ export function useNarration({
           settled = true;
           a.onended = null;
           a.onerror = null;
+          a.onpause = null;
+          a.onplay = null;
           // Cloud audio failed — invalidate its decode and animate the device voice.
           envGenRef.current++;
           setEnvelope(null);
-          if (!speak(text, { rate, onStart: () => { setLoading(false); soundingRef.current = true; }, onEnd, onError, onBoundary })) onError();
+          startBrowserSegment(text, onEnd, onError);
         };
         a.onplaying = () => { setLoading(false); soundingRef.current = true; };
         a.onended = finish;
         a.onerror = fallback;
+        // Mirror interruptions from outside the app (a phone call, another app
+        // taking audio focus, headphones unplugged) into the player state — the
+        // UI used to keep showing "playing" over silent audio. A lock-screen
+        // pause (document hidden) is left alone so unlocking auto-resumes.
+        a.onpause = () => {
+          if (internalPauseRef.current) { internalPauseRef.current = false; return; }
+          if (settled || a.ended || document.hidden) return;
+          soundingRef.current = false;
+          flushListened();
+          setStatus("paused");
+        };
+        a.onplay = () => {
+          soundingRef.current = true;
+          if (playStartTsRef.current === 0) playStartTsRef.current = Date.now();
+          setStatus("playing");
+        };
         a.ontimeupdate = () => {
           setLoading(false);
           // Prefer the decoded duration; audio.duration can be Infinity/NaN on iOS.
@@ -397,31 +495,9 @@ export function useNarration({
         return;
       }
 
-      // Browser speech — set up a timer-based fallback that estimates progress
-      // in case the browser doesn't fire boundary events (common on mobile).
-      const effectiveRate = rate ?? 0.92;
-      // ~160 WPM base rate, scaled by speech rate
-      const estimatedDurationMs = wc > 0 ? (wc / (160 * effectiveRate / 60)) * 1000 : 5000;
-      const startTime = Date.now();
-      estimateRef.current = setInterval(() => {
-        if (boundaryFired) return; // real events are flowing — don't interfere
-        const elapsed = Date.now() - startTime;
-        const f = Math.min(0.98, elapsed / estimatedDurationMs);
-        setFrac(f);
-        if (wc > 0) setWordIndex(Math.min(wc - 1, Math.floor(f * wc)));
-      }, 120);
-
-      const wrappedStart = () => { setLoading(false); soundingRef.current = true; };
-      const wrappedEnd = () => { clearEstimate(); soundingRef.current = false; setFrac(1); onEnd(); };
-      const wrappedError = () => { clearEstimate(); soundingRef.current = false; setLoading(false); onError(); };
-
-      if (!speak(text, { rate, onStart: wrappedStart, onEnd: wrappedEnd, onError: wrappedError, onBoundary })) {
-        clearEstimate();
-        setLoading(false);
-        onError();
-      }
+      startBrowserSegment(text, onEnd, onError);
     },
-    [rate, voice, clearEstimate, decodeEnvelope],
+    [rate, voice, decodeEnvelope, startBrowserSegment, flushListened],
   );
 
   useEffect(() => { startSegmentRef.current = startSegment; }, [startSegment]);
@@ -438,6 +514,7 @@ export function useNarration({
       setFrac(0);
       setWordIndex(-1);
       setLoading(true);
+      setError(null);
       soundingRef.current = false;
       changeRef.current?.(i);
       setStatus("playing");
@@ -463,7 +540,15 @@ export function useNarration({
             completeRef.current?.();
           }
         },
-        () => { if (gen === genRef.current) { setStatus("idle"); setLoading(false); } },
+        () => {
+          if (gen === genRef.current) {
+            setStatus("idle");
+            setLoading(false);
+            // Both the cloud audio and the device voice failed — tell the user
+            // instead of a play button that silently does nothing.
+            setError("Audio couldn't be played — check your connection and try again.");
+          }
+        },
       );
     },
     [rate, loop, voice, playSegment, flushListened],
@@ -503,12 +588,12 @@ export function useNarration({
   }, [playIndex, index]);
 
   const pause = useCallback(() => {
-    if (engineRef.current === "google") audioRef.current?.pause();
+    if (engineRef.current === "google") pauseAudioElement();
     else pauseSpeaking();
     soundingRef.current = false;
     flushListened();
     setStatus("paused");
-  }, [flushListened]);
+  }, [flushListened, pauseAudioElement]);
 
   const resume = useCallback(() => {
     if (engineRef.current === "google") {
@@ -534,7 +619,7 @@ export function useNarration({
   const stop = useCallback(() => {
     genRef.current++;
     clearEstimate();
-    if (audioRef.current) audioRef.current.pause();
+    pauseAudioElement();
     stopSpeaking();
     soundingRef.current = false;
     flushListened();
@@ -543,7 +628,7 @@ export function useNarration({
     setFrac(0);
     setWordIndex(-1);
     setLoading(false);
-  }, [clearEstimate, flushListened]);
+  }, [clearEstimate, flushListened, pauseAudioElement]);
 
   // Animated level (0–1) for the device/Siri voice, which gives no audio stream
   // to analyse. The cloud voice instead renders its decoded waveform (`peaks`).
@@ -595,7 +680,7 @@ export function useNarration({
   const reset = useCallback((i = 0) => {
     genRef.current++;
     clearEstimate();
-    if (audioRef.current) audioRef.current.pause();
+    pauseAudioElement();
     stopSpeaking();
     soundingRef.current = false;
     flushListened();
@@ -607,7 +692,7 @@ export function useNarration({
     setWordIndex(-1);
     setLoading(false);
     changeRef.current?.(clamped);
-  }, [clearEstimate, flushListened]);
+  }, [clearEstimate, flushListened, pauseAudioElement]);
 
   const count = segments.length;
   const progress = count > 0 ? Math.min(1, (index + frac) / count) : 0;
@@ -631,6 +716,7 @@ export function useNarration({
     duration,
     elapsed,
     loading,
+    error,
     getLevel,
     envelope,
     getPlayFrac,
@@ -789,7 +875,8 @@ export function PlayerBar({
       {/* Play/pause */}
       <button
         onClick={narration.toggle}
-        aria-label={playing ? "Pause" : "Play"}
+        aria-label={narration.loading ? "Loading" : playing ? "Pause" : "Play"}
+        aria-busy={narration.loading || undefined}
         style={{
           width: 40,
           height: 40,
@@ -943,9 +1030,21 @@ export function SpokenText({
   style?: React.CSSProperties;
   autoScroll?: boolean;
 }) {
-  const tokens = useMemo(() => text.split(/(\s+)/), [text]);
+  // Token list plus, for each word, its token position — computed once per
+  // text. Rendering is then three nodes (prefix text, active word, suffix
+  // text) instead of one <span> per word: on long readings the old shape
+  // reconciled 1000+ spans on every word tick (~8×/s).
+  const { tokens, wordTokenIdx } = useMemo(() => {
+    const tokens = text.split(/(\s+)/);
+    const wordTokenIdx: number[] = [];
+    tokens.forEach((tok, i) => {
+      if (tok !== "" && !/^\s+$/.test(tok)) wordTokenIdx.push(i);
+    });
+    return { tokens, wordTokenIdx };
+  }, [text]);
   const activeRef = useRef<HTMLSpanElement | null>(null);
   const local = active ? wordIndex - wordOffset : -1;
+  const activeTok = local >= 0 && local < wordTokenIdx.length ? wordTokenIdx[local] : -1;
 
   useEffect(() => {
     if (!active || local < 0 || !autoScroll) return;
@@ -962,43 +1061,22 @@ export function SpokenText({
     ? { background: "rgba(239,230,214,0.24)", color: "#FFF8ED", fontWeight: 600 }
     : { background: "rgba(210,107,67,0.20)", color: "var(--gold-deep)", fontWeight: 600 };
 
-  let wi = -1;
+  if (activeTok < 0) {
+    return <Tag className={className} style={style}>{text}</Tag>;
+  }
+
   return (
     <Tag className={className} style={style}>
-      {tokens.map((tok, i) => {
-        if (tok === "" || /^\s+$/.test(tok)) return tok;
-        wi++;
-        const on = wi === local;
-        return (
-          <span
-            key={i}
-            ref={on ? activeRef : undefined}
-            style={on
-              ? { ...hi, borderRadius: 4, padding: "0.05em 0.14em", margin: "0 -0.14em", boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone", transition: "background .1s ease, color .1s ease" }
-              : undefined}
-          >
-            {tok}
-          </span>
-        );
-      })}
+      {tokens.slice(0, activeTok).join("")}
+      <span
+        ref={activeRef}
+        style={{ ...hi, borderRadius: 4, padding: "0.05em 0.14em", margin: "0 -0.14em", boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone" }}
+      >
+        {tokens[activeTok]}
+      </span>
+      {tokens.slice(activeTok + 1).join("")}
     </Tag>
   );
-}
-
-/** Convenience: hook + bar wired together for linear content. */
-export function PrayerPlayer({
-  segments,
-  rate,
-  dark = false,
-  title,
-}: {
-  segments: NarrationSegment[];
-  rate?: number;
-  dark?: boolean;
-  title?: string;
-}) {
-  const narration = useNarration({ segments, rate });
-  return <PlayerBar narration={narration} dark={dark} title={title} />;
 }
 
 // ── Floating mini-player (Spotify-style, above bottom nav) ────────────────────
@@ -1139,6 +1217,7 @@ export function ListenButton({
   };
 
   return (
+    <>
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <button
         onClick={handleClick}
@@ -1218,6 +1297,15 @@ export function ListenButton({
         {speedLabel}
       </button>
     </div>
+    {narration.error && (
+      <div role="status" style={{
+        fontFamily: "var(--font-body)", fontSize: 13, marginTop: 8,
+        color: dark ? "rgba(239,230,214,0.6)" : "var(--danger)",
+      }}>
+        {narration.error}
+      </div>
+    )}
+    </>
   );
 }
 
@@ -1267,7 +1355,8 @@ export function FloatingPlayer() {
         {/* Play/pause */}
         <button
           onClick={(e) => { e.stopPropagation(); narration.toggle(); }}
-          aria-label={playing ? "Pause" : "Play"}
+          aria-label={narration.loading ? "Loading" : playing ? "Pause" : "Play"}
+          aria-busy={narration.loading || undefined}
           style={{
             width: 38,
             height: 38,
@@ -1453,9 +1542,33 @@ function FullScreenPlayer({
   const { status, index, count, current } = narration;
   const playing = status === "playing";
 
+  // Modal behaviour: Escape closes (voice sheet first), focus starts on the
+  // collapse control and returns to the opener when the view closes.
+  const collapseRef = useRef<HTMLButtonElement | null>(null);
+  const voiceOpenRef = useRef(voiceOpen);
+  useEffect(() => { voiceOpenRef.current = voiceOpen; }, [voiceOpen]);
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    collapseRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      if (voiceOpenRef.current) setVoiceOpen(false);
+      else onCollapse();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      opener?.focus?.();
+    };
+  }, [onCollapse]);
+
   return (
     <div
       className="pw-fullscreen-player"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Now playing"
       style={{
         position: "fixed",
         inset: 0,
@@ -1499,6 +1612,7 @@ function FullScreenPlayer({
         zIndex: 1,
       }}>
         <button
+          ref={collapseRef}
           onClick={onCollapse}
           aria-label="Collapse player"
           style={{
@@ -1566,6 +1680,9 @@ function FullScreenPlayer({
           style={{ position: "absolute", inset: 0, zIndex: 10, background: "rgba(0,0,0,0.5)", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Reading voice"
             onClick={(e) => e.stopPropagation()}
             style={{
               background: "var(--bone-raised, #221E1A)", borderTopLeftRadius: 22, borderTopRightRadius: 22,
@@ -1750,7 +1867,8 @@ function FullScreenPlayer({
           {/* Play/Pause — large central button */}
           <button
             onClick={() => narration.toggle()}
-            aria-label={playing ? "Pause" : "Play"}
+            aria-label={narration.loading ? "Loading" : playing ? "Pause" : "Play"}
+            aria-busy={narration.loading || undefined}
             style={{
               width: 68,
               height: 68,

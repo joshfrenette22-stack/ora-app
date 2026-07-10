@@ -37,7 +37,18 @@ function PrayerPicker({ onAdd, onClose, existing }: { onAdd: (id: string) => voi
   const [cat, setCat] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  // Focus the search on open, close on Escape, and return focus to the opener.
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    inputRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      opener?.focus?.();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filtered = useMemo(() => {
     let list = PRAYER_CATALOG;
@@ -55,7 +66,7 @@ function PrayerPicker({ onAdd, onClose, existing }: { onAdd: (id: string) => voi
       <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }} />
 
       {/* Sheet */}
-      <div style={{
+      <div role="dialog" aria-modal="true" aria-label="Add prayer" style={{
         position: "relative", marginTop: "auto", maxHeight: "85vh",
         background: "var(--bone-raised)", borderRadius: "20px 20px 0 0",
         display: "flex", flexDirection: "column", overflow: "hidden",
@@ -212,50 +223,56 @@ function PlaylistItem({
       overflow: "hidden",
       transition: "background .2s, border-color .2s",
     }}>
-      {/* Row header */}
+      {/* Row header — the expand toggle is its own <button>; nesting the
+          reorder/remove buttons inside a role="button" row was invalid and
+          garbled the focus order for screen readers. */}
       <div
-        role="button"
-        tabIndex={0}
-        aria-expanded={expanded}
         style={{
           display: "flex", alignItems: "center", gap: 12,
           padding: "14px 16px",
-          cursor: "pointer",
-        }}
-        onClick={() => setExpanded(!expanded)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded(!expanded); }
         }}
       >
-        {/* Number badge */}
-        <span style={{
-          width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
-          background: isActive ? "var(--gold-deep)" : "var(--stone-100)",
-          color: isActive ? "#fff" : "var(--stone-400)",
-          fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 700,
-          display: "grid", placeItems: "center",
-        }}>
-          {isActive && isPlaying ? <LucideIcon name="volume-2" size={14} /> : index + 1}
-        </span>
-
-        {/* Title */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 15,
-            color: isActive ? "var(--gold-deep)" : "var(--ink)",
-            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+        <button
+          onClick={() => setExpanded(!expanded)}
+          aria-expanded={expanded}
+          aria-label={`${prayer.title} — ${expanded ? "hide" : "show"} text`}
+          style={{
+            display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0,
+            border: "none", background: "transparent", padding: 0, cursor: "pointer",
+            textAlign: "left", font: "inherit",
+          }}
+        >
+          {/* Number badge */}
+          <span style={{
+            width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
+            background: isActive ? "var(--gold-deep)" : "var(--stone-100)",
+            color: isActive ? "#fff" : "var(--stone-400)",
+            fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 700,
+            display: "grid", placeItems: "center",
           }}>
-            {prayer.title}
-          </div>
-          {prayer.sub && (
-            <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: "var(--stone-400)", marginTop: 1 }}>
-              {prayer.sub}
-            </div>
-          )}
-        </div>
+            {isActive && isPlaying ? <LucideIcon name="volume-2" size={14} /> : index + 1}
+          </span>
+
+          {/* Title */}
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{
+              display: "block",
+              fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 15,
+              color: isActive ? "var(--gold-deep)" : "var(--ink)",
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            }}>
+              {prayer.title}
+            </span>
+            {prayer.sub && (
+              <span style={{ display: "block", fontFamily: "var(--font-body)", fontSize: 12, color: "var(--stone-400)", marginTop: 1 }}>
+                {prayer.sub}
+              </span>
+            )}
+          </span>
+        </button>
 
         {/* Reorder + remove */}
-        <div style={{ display: "flex", gap: 2, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
           <button
             onClick={onMoveUp}
             disabled={isFirst}

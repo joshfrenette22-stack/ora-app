@@ -7,12 +7,19 @@ export function CommunityCard() {
   const [stats, setStats] = useState<CommunityStats | null>(null);
 
   useEffect(() => {
-    getCommunityStats().then(setStats).catch(() => {});
-    // Refresh every 60 seconds
+    const refresh = () => getCommunityStats().then(setStats).catch(() => {});
+    refresh();
+    // Refresh every 60 seconds — but not while the tab is hidden; a
+    // backgrounded PWA shouldn't keep polling the database all day.
     const t = setInterval(() => {
-      getCommunityStats().then(setStats).catch(() => {});
+      if (!document.hidden) refresh();
     }, 60_000);
-    return () => clearInterval(t);
+    const onVisible = () => { if (!document.hidden) refresh(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
   const prayers = stats?.prayers ?? 0;

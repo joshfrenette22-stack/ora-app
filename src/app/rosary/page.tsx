@@ -207,6 +207,7 @@ export default function RosaryPage() {
     if (idx + 1 >= steps.length) markPrayed("rosary");
     narration.seek(idx + 1 >= steps.length ? 0 : idx + 1);
   }
+  function stepBack() { narration.seek(Math.max(0, idx - 1)); }
   function jumpToMystery(i: number) { narration.seek(INTRO_LEN + i * TOTAL_BEADS); }
   function jumpToIntro() { narration.seek(0); }
   function jumpToClosing() { narration.seek(INTRO_LEN + MYSTERY_SETS[activeSet].length * TOTAL_BEADS); }
@@ -223,11 +224,15 @@ export default function RosaryPage() {
   // ── MODE CHOOSER ──────────────────────────────────────────────────────────
   if (mode === "menu") {
     return (
-      <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "var(--surface-ink)", color: "var(--gold-bright)", padding: "40px 24px", overflowY: "auto", position: "relative", overflow: "hidden" }}>
+      // Scrollable, with the content centred via an auto-margin wrapper —
+      // flex justify-center + overflow clips the top of tall content on
+      // short screens with no way to scroll to it.
+      <div style={{ height: "100%", display: "flex", flexDirection: "column", background: "var(--surface-ink)", color: "var(--gold-bright)", overflowY: "auto", overflowX: "hidden", position: "relative" }}>
         {/* Background rosary watermark */}
         <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, -50%)", pointerEvents: "none" }}>
           <Illustration name="section-rosary" size={440} invertOnDark opacity={0.55} />
         </div>
+        <div style={{ margin: "auto", display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 24px", width: "100%" }}>
         <div style={{ width: 56, height: 56, borderRadius: "50%", border: `1.5px solid ${cream(0.4)}`, display: "grid", placeItems: "center", color: "var(--gold)", marginBottom: 20, position: "relative" }}>
           <Cross size={26} />
         </div>
@@ -264,6 +269,7 @@ export default function RosaryPage() {
               <span style={{ display: "block", fontFamily: "var(--font-body)", fontSize: 13.5, color: cream(0.7), marginTop: 1 }}>Pray at your own pace, tapping through.</span>
             </span>
           </button>
+        </div>
         </div>
       </div>
     );
@@ -414,9 +420,24 @@ export default function RosaryPage() {
 
         <Fleuron width={170} style={{ marginBottom: 32 }} />
 
-        {/* Interactive: tap to advance */}
+        {/* Interactive: tap to advance (with a way back — essential on phones,
+            where the desktop side panel is hidden) */}
         {mode === "interactive" && (
-          <Btn variant="primary" onClick={advance} style={{ minWidth: 180 }}>Continue</Btn>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button
+              onClick={stepBack}
+              disabled={idx === 0}
+              aria-label="Previous prayer"
+              style={{
+                width: 46, height: 46, borderRadius: "50%", cursor: idx === 0 ? "default" : "pointer",
+                border: `1px solid ${cream(idx === 0 ? 0.1 : 0.25)}`, background: "transparent",
+                color: cream(idx === 0 ? 0.25 : 0.8), display: "grid", placeItems: "center",
+              }}
+            >
+              <LucideIcon name="arrow-left" size={18} />
+            </button>
+            <Btn variant="primary" onClick={advance} style={{ minWidth: 180 }}>Continue</Btn>
+          </div>
         )}
 
         {/* Optional continuation — the Rosary ends with St. Michael; the Auxilium

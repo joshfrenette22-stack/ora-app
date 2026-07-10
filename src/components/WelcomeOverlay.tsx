@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { Cross } from "@/components/Sacred";
-import { setUserName } from "@/lib/user";
+import { setUserName, skipOnboarding } from "@/lib/user";
 
 interface WelcomeOverlayProps {
   onComplete: (name: string) => void;
+  onSkip: () => void;
 }
 
-export function WelcomeOverlay({ onComplete }: WelcomeOverlayProps) {
+export function WelcomeOverlay({ onComplete, onSkip }: WelcomeOverlayProps) {
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -21,8 +22,13 @@ export function WelcomeOverlay({ onComplete }: WelcomeOverlayProps) {
     onComplete(trimmed);
   }
 
+  function handleSkip() {
+    skipOnboarding();
+    onSkip();
+  }
+
   return (
-    <div style={{
+    <div role="dialog" aria-modal="true" aria-label="Welcome to Prayer Warrior" style={{
       position: "fixed",
       inset: 0,
       zIndex: 300,
@@ -120,6 +126,25 @@ export function WelcomeOverlay({ onComplete }: WelcomeOverlayProps) {
           {saving ? "Setting up..." : "Begin"}
         </button>
       </form>
+
+      {/* Giving a name must never be a wall — the app works fine without one. */}
+      <button
+        type="button"
+        onClick={handleSkip}
+        style={{
+          marginTop: 18,
+          border: "none",
+          background: "none",
+          cursor: "pointer",
+          fontFamily: "var(--font-body)",
+          fontSize: 14,
+          color: "rgba(239,230,214,0.5)",
+          textDecoration: "underline",
+          textUnderlineOffset: 3,
+        }}
+      >
+        Continue without a name
+      </button>
 
       <p style={{
         fontFamily: "var(--font-body)",

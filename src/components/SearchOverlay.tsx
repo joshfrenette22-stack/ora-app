@@ -50,9 +50,14 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
   useRegisterNarration(narration, reading ? reading.title : "Search", false, reading?.illustration);
 
   useEffect(() => {
-    // Focus after the overlay paints.
+    // Focus after the overlay paints, and hand focus back to whatever opened
+    // the search (the toolbar button, or the page behind the "/" shortcut).
+    const opener = document.activeElement as HTMLElement | null;
     const t = setTimeout(() => inputRef.current?.focus(), 30);
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(t);
+      opener?.focus?.();
+    };
   }, []);
 
   const q = query.trim().toLowerCase();

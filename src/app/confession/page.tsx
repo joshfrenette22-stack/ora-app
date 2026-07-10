@@ -10,6 +10,9 @@ const STORE_KEY = "ora-examen";
 export default function ConfessionPage() {
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [loaded, setLoaded] = useState(false);
+  // Clearing every mark is destructive and easy to fat-finger — keep the last
+  // cleared set around briefly so one tap undoes it.
+  const [lastCleared, setLastCleared] = useState<Record<string, boolean> | null>(null);
 
   useEffect(() => {
     try {
@@ -30,10 +33,22 @@ export default function ConfessionPage() {
 
   function toggle(id: string) {
     setChecked((prev) => ({ ...prev, [id]: !prev[id] }));
+    setLastCleared(null);
   }
   function clearAll() {
+    setLastCleared(checked);
     setChecked({});
   }
+  function undoClear() {
+    if (lastCleared) setChecked(lastCleared);
+    setLastCleared(null);
+  }
+
+  useEffect(() => {
+    if (!lastCleared) return;
+    const t = setTimeout(() => setLastCleared(null), 8000);
+    return () => clearTimeout(t);
+  }, [lastCleared]);
 
   return (
     <div style={{ maxWidth: 620, margin: "0 auto", padding: "32px 18px 80px" }}>
@@ -76,6 +91,11 @@ export default function ConfessionPage() {
           {markedCount > 0 && (
             <button onClick={clearAll} style={{ fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 600, color: "var(--gold-deep)", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
               Clear ({markedCount})
+            </button>
+          )}
+          {lastCleared && markedCount === 0 && (
+            <button onClick={undoClear} style={{ fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 700, color: "var(--gold-deep)", background: "transparent", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline", textUnderlineOffset: 3 }}>
+              Cleared — undo
             </button>
           )}
         </div>

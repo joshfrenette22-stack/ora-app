@@ -80,6 +80,3 @@ export function pauseSpeaking(): void {
   if (isSpeechSupported()) window.speechSynthesis.pause();
 }
 
-export function resumeSpeaking(): void {
-  if (isSpeechSupported()) window.speechSynthesis.resume();
-}

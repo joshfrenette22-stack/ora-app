@@ -16,54 +16,6 @@ interface FeastDay {
   rank?: "solemnity" | "feast" | "memorial" | "feria";
 }
 
-const FEASTS: Record<string, FeastDay> = {
-  // June 2026
-  "2026-6-1":  { name: "St. Justin, Martyr", color: "red", rank: "memorial" },
-  "2026-6-5":  { name: "St. Boniface, Bishop & Martyr", color: "red", rank: "memorial" },
-  "2026-6-9":  { name: "St. Ephrem, Deacon & Doctor", color: "green", rank: "memorial" },
-  "2026-6-11": { name: "St. Barnabas, Apostle", color: "red", rank: "feast" },
-  "2026-6-13": { name: "St. Anthony of Padua", color: "white", rank: "memorial" },
-  "2026-6-19": { name: "Sacred Heart of Jesus", color: "white", rank: "solemnity" },
-  "2026-6-21": { name: "St. Aloysius Gonzaga", color: "white", rank: "memorial" },
-  "2026-6-22": { name: "Sts. John Fisher & Thomas More", color: "red", rank: "memorial" },
-  "2026-6-24": { name: "Birth of St. John the Baptist", color: "white", rank: "solemnity" },
-  "2026-6-27": { name: "St. Cyril of Alexandria", color: "white", rank: "memorial" },
-  "2026-6-28": { name: "St. Irenaeus, Bishop & Martyr", color: "red", rank: "memorial" },
-  "2026-6-29": { name: "Sts. Peter & Paul, Apostles", color: "red", rank: "solemnity" },
-
-  // July 2026
-  "2026-7-1":  { name: "Bl. Junípero Serra", color: "white", rank: "memorial" },
-  "2026-7-3":  { name: "St. Thomas, Apostle", color: "red", rank: "feast" },
-  "2026-7-4":  { name: "Independence Day (USA)", color: "green", rank: "feria" },
-  "2026-7-11": { name: "St. Benedict, Abbot", color: "white", rank: "feast" },
-  "2026-7-14": { name: "Bl. Kateri Tekakwitha", color: "white", rank: "memorial" },
-  "2026-7-16": { name: "Our Lady of Mount Carmel", color: "white", rank: "memorial" },
-  "2026-7-22": { name: "St. Mary Magdalene", color: "white", rank: "feast" },
-  "2026-7-25": { name: "St. James, Apostle", color: "red", rank: "feast" },
-  "2026-7-26": { name: "Sts. Joachim & Anne", color: "white", rank: "memorial" },
-  "2026-7-29": { name: "St. Martha", color: "white", rank: "memorial" },
-  "2026-7-31": { name: "St. Ignatius of Loyola", color: "white", rank: "memorial" },
-
-  // May 2026
-  "2026-5-1":  { name: "St. Joseph the Worker", color: "white", rank: "memorial" },
-  "2026-5-2":  { name: "St. Athanasius, Bishop & Doctor", color: "white", rank: "memorial" },
-  "2026-5-3":  { name: "Sts. Philip & James, Apostles", color: "red", rank: "feast" },
-  "2026-5-14": { name: "St. Matthias, Apostle", color: "red", rank: "feast" },
-  "2026-5-21": { name: "Ascension of the Lord", color: "white", rank: "solemnity" },
-  "2026-5-31": { name: "Visitation of the Blessed Virgin", color: "white", rank: "feast" },
-};
-
-// Season bands — rough ordinary time for 2026
-function getSeason(year: number, month: number): LitColor {
-  // Lent: Feb 18 – Apr 2, 2026; Easter: Apr 5 – May 24; Advent: Nov 29 – Dec 24
-  if (month === 12) return "violet";
-  if (month === 2 && year === 2026) return "violet";
-  if (month === 3 && year === 2026) return "violet";
-  if (month === 4 && year === 2026) return "white"; // Easter season
-  if (month === 5 && year === 2026) return "white";
-  return "green";
-}
-
 const LIT_COLOR_MAP: Record<LitColor, string> = {
   green:  "var(--lit-green)",
   violet: "var(--lit-violet)",
@@ -92,12 +44,19 @@ export default function CalendarPage() {
   const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
   const [viewMonth, setViewMonth] = useState(() => new Date().getMonth() + 1); // 1-based
 
-  // Feasts + season come live from /api/calendar; static FEASTS seed the first paint.
-  const [feasts, setFeasts] = useState<Record<string, FeastDay>>(FEASTS);
-  const [seasonColor, setSeasonColor] = useState<EngineColor>(() => getSeason(new Date().getFullYear(), new Date().getMonth() + 1));
+  // Feasts come live from /api/calendar, cached per viewed month. No static
+  // seed: the old hard-coded 2026 table showed 2026 feasts in every other year.
+  const [monthFeasts, setMonthFeasts] = useState<Record<string, Record<string, FeastDay>>>({});
+  const [monthFailed, setMonthFailed] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const [seasonColor, setSeasonColor] = useState<EngineColor>("green");
   const [seasonLabel, setSeasonLabel] = useState("Ordinary Time");
   // Selected day-of-month within the viewed month (null = nothing selected).
   const [selected, setSelected] = useState<number | null>(null);
+
+  const monthKey = `${viewYear}-${viewMonth}`;
+  const feasts = monthFeasts[monthKey];
+  const loadingMonth = feasts === undefined && !monthFailed;
 
   useEffect(() => {
     const now = new Date();
@@ -109,17 +68,20 @@ export default function CalendarPage() {
 
   useEffect(() => {
     let alive = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMonthFailed(false);
     fetch(`/api/calendar?year=${viewYear}&month=${viewMonth}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (!alive || !d) return;
-        setFeasts((prev) => ({ ...prev, ...(d.feasts as Record<string, FeastDay>) }));
+        if (!alive) return;
+        if (!d) { setMonthFailed(true); return; }
+        setMonthFeasts((prev) => ({ ...prev, [`${viewYear}-${viewMonth}`]: d.feasts as Record<string, FeastDay> }));
         setSeasonColor(d.season.color as EngineColor);
         setSeasonLabel(d.season.label as string);
       })
-      .catch(() => {});
+      .catch(() => { if (alive) setMonthFailed(true); });
     return () => { alive = false; };
-  }, [viewYear, viewMonth]);
+  }, [viewYear, viewMonth, retry]);
 
   function prevMonth() {
     setSelected(null);
@@ -132,10 +94,11 @@ export default function CalendarPage() {
     else setViewMonth((m) => m + 1);
   }
 
-  // Upcoming feasts: every loaded feast on/after today, soonest first.
+  // Upcoming feasts: every feast on/after today across all loaded months.
   const startOfToday = today ? new Date(today.getFullYear(), today.getMonth(), today.getDate()) : null;
   const upcoming = startOfToday
-    ? Object.entries(feasts)
+    ? Object.values(monthFeasts)
+        .flatMap((m) => Object.entries(m))
         .map(([k, f]) => {
           const [y, m, d] = k.split("-").map(Number);
           return { date: new Date(y, m - 1, d), feast: f };
@@ -145,7 +108,7 @@ export default function CalendarPage() {
         .slice(0, 6)
     : [];
 
-  const selectedFeast = selected ? feasts[feastKey(viewYear, viewMonth, selected)] : undefined;
+  const selectedFeast = selected ? feasts?.[feastKey(viewYear, viewMonth, selected)] : undefined;
   const selectedDate = selected ? new Date(viewYear, viewMonth - 1, selected) : null;
 
   // Build calendar grid
@@ -159,9 +122,25 @@ export default function CalendarPage() {
   return (
     <div className="pw-calendar-pad" style={{ padding: "40px 44px 64px", maxWidth: 860, margin: "0 auto" }}>
 
-      {/* Season badge */}
-      <div style={{ marginBottom: 28 }}>
+      {/* Season badge (+ quiet month-load state) */}
+      <div style={{ marginBottom: 28, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
         <SeasonBadge season={badgeSeason(seasonColor)}>{seasonLabel}</SeasonBadge>
+        {loadingMonth && (
+          <span className="pw-shimmer" style={{ fontFamily: "var(--font-display)", fontSize: 11, letterSpacing: ".02em", color: "var(--stone-400)" }}>
+            Loading feasts…
+          </span>
+        )}
+        {monthFailed && (
+          <span style={{ fontFamily: "var(--font-body)", fontSize: 12.5, color: "var(--stone-400)" }}>
+            Couldn&rsquo;t load this month&rsquo;s feasts —{" "}
+            <button
+              onClick={() => setRetry((r) => r + 1)}
+              style={{ border: "none", background: "none", padding: 0, cursor: "pointer", color: "var(--gold-deep)", font: "inherit", textDecoration: "underline" }}
+            >
+              retry
+            </button>
+          </span>
+        )}
       </div>
 
       {/* Month header */}
@@ -275,7 +254,7 @@ export default function CalendarPage() {
             viewYear === today.getFullYear();
 
           const feast = isCurrentMonth
-            ? feasts[feastKey(viewYear, viewMonth, dayNum)]
+            ? feasts?.[feastKey(viewYear, viewMonth, dayNum)]
             : undefined;
 
           const isSunday = cellIdx % 7 === 0;
@@ -412,8 +391,6 @@ function DayCell({
   feast?: FeastDay;
   onSelect?: () => void;
 }) {
-  const [hovered, setHovered] = useState(false);
-
   const feastColor = feast ? LIT_COLOR_MAP[feast.color] : undefined;
   const isSolemnity = feast?.rank === "solemnity";
 
@@ -422,8 +399,9 @@ function DayCell({
       onClick={onSelect}
       disabled={!isCurrentMonth}
       aria-label={isCurrentMonth ? `${label}${feast ? ` — ${feast.name}` : ""}` : undefined}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      // Hover tint via .pw-cal-cell CSS — per-cell React hover state re-rendered
+      // the grid on every pointer move and did nothing on touch screens.
+      className={isCurrentMonth && !isToday && !isSelected ? "pw-cal-cell" : undefined}
       style={{
         minHeight: 82,
         minWidth: 0,
@@ -432,13 +410,7 @@ function DayCell({
         padding: "10px 10px 8px",
         textAlign: "left",
         font: "inherit",
-        background: isToday
-          ? "var(--gold-faint)"
-          : isSelected
-          ? "var(--gold-faint)"
-          : hovered && isCurrentMonth
-          ? "var(--stone-100)"
-          : "transparent",
+        background: isToday || isSelected ? "var(--gold-faint)" : "transparent",
         border: isToday
           ? "1.5px solid var(--gold)"
           : isSelected

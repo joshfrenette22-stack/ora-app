@@ -67,6 +67,7 @@ export default function HolyFacePage() {
     if (idx + 1 >= steps.length) markPrayed("devotion");
     narration.seek(idx + 1 >= steps.length ? 0 : idx + 1);
   }
+  function stepBack() { narration.seek(Math.max(0, idx - 1)); }
   function jumpTo(i: number) { narration.seek(i); }
   function backToMenu() { narration.reset(0); setMode("menu"); }
   function start(m: Mode) {
@@ -80,10 +81,13 @@ export default function HolyFacePage() {
   // ── MODE CHOOSER ────────────────────────────────────────────────────────────
   if (mode === "menu") {
     return (
-      <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "var(--surface-ink)", color: "var(--gold-bright)", padding: "40px 24px", position: "relative", overflow: "hidden" }}>
+      // Scrollable with auto-margin centring — flex justify-center + overflow
+      // hidden clipped the intro and buttons on short phones.
+      <div style={{ height: "100%", display: "flex", flexDirection: "column", background: "var(--surface-ink)", color: "var(--gold-bright)", overflowY: "auto", overflowX: "hidden", position: "relative" }}>
         <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, -50%)", pointerEvents: "none" }}>
           <Illustration name="section-devotions" size={440} invertOnDark opacity={0.5} />
         </div>
+        <div style={{ margin: "auto", display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 24px", width: "100%" }}>
         <div style={{ width: 56, height: 56, borderRadius: "50%", border: `1.5px solid ${cream(0.4)}`, display: "grid", placeItems: "center", color: "var(--gold)", marginBottom: 20, position: "relative" }}>
           <Cross size={26} />
         </div>
@@ -120,6 +124,7 @@ export default function HolyFacePage() {
               <span style={{ display: "block", fontFamily: "var(--font-body)", fontSize: 13.5, color: cream(0.7), marginTop: 1 }}>Pray at your own pace, tapping through.</span>
             </span>
           </button>
+        </div>
         </div>
       </div>
     );
@@ -200,7 +205,21 @@ export default function HolyFacePage() {
         <Fleuron width={170} style={{ marginBottom: 28 }} />
 
         {mode === "interactive" && (
-          <Btn variant="primary" onClick={advance} style={{ minWidth: 180 }}>Continue</Btn>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button
+              onClick={stepBack}
+              disabled={idx === 0}
+              aria-label="Previous prayer"
+              style={{
+                width: 46, height: 46, borderRadius: "50%", cursor: idx === 0 ? "default" : "pointer",
+                border: `1px solid ${cream(idx === 0 ? 0.1 : 0.25)}`, background: "transparent",
+                color: cream(idx === 0 ? 0.25 : 0.8), display: "grid", placeItems: "center",
+              }}
+            >
+              <LucideIcon name="arrow-left" size={18} />
+            </button>
+            <Btn variant="primary" onClick={advance} style={{ minWidth: 180 }}>Continue</Btn>
+          </div>
         )}
 
         {/* Bead tracker for the current section */}

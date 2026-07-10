@@ -2,16 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Illustration } from "@/components/Illustration";
+import { Fleuron } from "@/components/Sacred";
 import { SurfaceCard, FeatureCard } from "@/components/UI";
 import { Sun, Sparkles } from "lucide-react";
 import { localDateISO } from "@/lib/clientDate";
+import { fetchToday } from "@/lib/todayData";
 import { HOURS, currentHourName, WEEKDAY_SET } from "@/data/content";
 import { WelcomeOverlay } from "@/components/WelcomeOverlay";
 import { CommunityCard } from "@/components/CommunityCard";
 import { JourneyCard } from "@/components/JourneyCard";
-import { getCachedName, ensureSession } from "@/lib/user";
+import { getCachedName, ensureSession, onboardingSkipped } from "@/lib/user";
 
 type Hour = typeof HOURS[number];
 
@@ -42,20 +43,21 @@ const WAYS = [
   { label: "The Hours", href: "/hours" },
 ];
 
-// Static fallback so the page renders instantly and works without the API.
+// Neutral fallback so the page renders instantly and works without the API.
+// Deliberately date-agnostic: showing a specific (wrong) saint or citation on
+// first paint reads as an error the moment the real data lands.
 const FALLBACK: TodayData = {
   liturgical: { label: "Ordinary Time", badgeSeason: "green" },
   verse: { text: "Put on the full armour of God, that you may be able to stand against the wiles of the devil.", cite: "Ephesians 6 · 11" },
-  saint: { name: "St. Ephrem", title: "Doctor of the Church · June 9", monogram: "E" },
+  saint: { name: "", title: null, monogram: "✝" },
   readings: {
-    first: { cite: "1 Kings 17", title: "Elijah by the Brook" },
-    psalm: { cite: "Psalm 4", title: "In Peace I Will Lie Down" },
-    gospel: { cite: "Matthew 5 · 1–12", title: "The Beatitudes" },
+    first: { cite: "", title: "First Reading" },
+    psalm: { cite: "", title: "Responsorial Psalm" },
+    gospel: { cite: "", title: "Gospel" },
   },
 };
 
 export default function TodayPage() {
-  const router = useRouter();
   const [data, setData] = useState<TodayData>(FALLBACK);
   const [greeting, setGreeting] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
@@ -69,8 +71,7 @@ export default function TodayPage() {
 
   useEffect(() => {
     let alive = true;
-    fetch(`/api/today?date=${localDateISO()}`)
-      .then((r) => (r.ok ? r.json() : null))
+    fetchToday()
       .then((d) => { if (alive && d) setData(d); })
       .catch(() => {});
     fetch(`/api/today-in-church?date=${localDateISO()}`)
@@ -98,17 +99,22 @@ export default function TodayPage() {
     // Onboarding status (Supabase-backed name) + anonymous auth session.
     const cached = getCachedName();
     if (cached) setUserName(cached);
-    else setShowOnboarding(true);
+    else if (!onboardingSkipped()) setShowOnboarding(true);
     ensureSession().catch(() => {});
   }, []);
 
   const { liturgical, verse, saint, readings } = data;
-  const gospelMeta = `${readings.first.cite} · ${readings.psalm.cite} · ${readings.gospel.title}`;
+  const gospelMeta = readings.first.cite
+    ? `${readings.first.cite} · ${readings.psalm.cite} · ${readings.gospel.title}`
+    : "The day's First Reading, Psalm & Gospel";
 
   return (
     <>
     {showOnboarding && (
-      <WelcomeOverlay onComplete={(name) => { setUserName(name); setShowOnboarding(false); }} />
+      <WelcomeOverlay
+        onComplete={(name) => { setUserName(name); setShowOnboarding(false); }}
+        onSkip={() => setShowOnboarding(false)}
+      />
     )}
     <div className="pw-today-pad" style={{ padding: "44px 44px 64px", maxWidth: 900, margin: "0 auto" }}>
 
@@ -133,13 +139,13 @@ export default function TodayPage() {
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 18 }}>
             {WAYS.map((w) => (
-              <button
+              <Link
                 key={w.href}
-                onClick={() => router.push(w.href)}
-                style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, padding: "9px 16px", borderRadius: 999, border: "1px solid rgba(239,230,214,0.18)", background: "rgba(239,230,214,0.06)", color: "#F6F0E6", cursor: "pointer" }}
+                href={w.href}
+                style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600, padding: "9px 16px", borderRadius: 999, border: "1px solid rgba(239,230,214,0.18)", background: "rgba(239,230,214,0.06)", color: "#F6F0E6", textDecoration: "none" }}
               >
                 {w.label}
-              </button>
+              </Link>
             ))}
           </div>
         </div>
@@ -207,8 +213,10 @@ export default function TodayPage() {
           &ldquo;{verse.text}&rdquo;
         </blockquote>
 
+        {/* The ornament art file was never shipped — the drawn Fleuron rule
+            reads cleanly in both themes and costs no image request. */}
         <div style={{ display: "flex", justifyContent: "center", margin: "24px auto" }}>
-          <Illustration name="today-hero-verse-ornament" alt="" size={200} invertOnDark opacity={0.6} />
+          <Fleuron width={200} style={{ opacity: 0.8 }} />
         </div>
 
         <div style={{
@@ -231,7 +239,7 @@ export default function TodayPage() {
             kicker="Today · Holy Mass"
             title="Daily Readings"
             meta={gospelMeta}
-            onClick={() => router.push("/readings")}
+            href="/readings"
             motif={<Illustration name="today-daily-readings" alt="" size={260} invertOnDark={false} opacity={0.5} />}
           />
         </div>
@@ -273,7 +281,7 @@ export default function TodayPage() {
         <Link href="/saints" style={{ textDecoration: "none" }}>
           <SurfaceCard
             kicker="Saint of the Day"
-            title={saint.name}
+            title={saint.name || "Saint of the Day"}
             meta={saint.title ?? ""}
             lucide="flame"
             cta={saint.name && saint.name !== "Feria" ? "Learn more" : undefined}

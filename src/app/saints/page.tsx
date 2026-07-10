@@ -11,14 +11,14 @@ import type { Saint } from "@/lib/saints";
 import type { SaintProfile } from "@/lib/saintProfile";
 import { localDateISO } from "@/lib/clientDate";
 
-const FALLBACK: Saint = {
-  name: "St. Ephrem",
-  title: "the Syrian · Deacon & Doctor · c. 306–373",
+// Neutral placeholder while the identity fetch is in flight — a specific
+// (wrong-day) saint on first paint reads as an error when the real one lands.
+const PLACEHOLDER: Saint = {
+  name: "Saint of the Day",
+  title: undefined,
   color: "white",
   rank: "memorial",
-  monogram: "E",
-  bio: "Deacon, hymnographer, and Doctor of the Church, called the “Harp of the Holy Spirit.” His hymns and metrical homilies defended the faith against the heresies of his day and adorned the liturgy of the Syriac Church with a poetry that is still sung today.",
-  collect: "O God, who didst illumine thy Church with the learning and sanctity of the Deacon Saint Ephrem, grant that we, following his example, may ever seek thee above all things and delight in singing thy praises. Through our Lord Jesus Christ. Amen.",
+  monogram: "✝",
 };
 
 /** A labelled prose block that follows along with narration. */
@@ -74,7 +74,8 @@ function Shimmer() {
 }
 
 export default function SaintsPage() {
-  const [saint, setSaint] = useState<Saint>(FALLBACK);
+  const [saint, setSaint] = useState<Saint>(PLACEHOLDER);
+  const [identity, setIdentity] = useState<"loading" | "ready" | "error">("loading");
   const [profile, setProfile] = useState<SaintProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
@@ -83,8 +84,12 @@ export default function SaintsPage() {
     const date = localDateISO();
     fetch(`/api/saints?date=${date}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (alive && d) setSaint(d); })
-      .catch(() => {});
+      .then((d) => {
+        if (!alive) return;
+        if (d) { setSaint(d); setIdentity("ready"); }
+        else setIdentity("error");
+      })
+      .catch(() => { if (alive) setIdentity("error"); });
     fetch(`/api/saint-profile?date=${date}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (alive) setProfile(d?.profile ?? null); })
@@ -120,6 +125,7 @@ export default function SaintsPage() {
 
   const rankLabel = saint.rank === "feria" ? "Feria" : saint.rank.charAt(0).toUpperCase() + saint.rank.slice(1);
   const showFacts = Boolean(canonization || patronage);
+  const identityLoading = identity === "loading";
 
   return (
     <div
@@ -133,11 +139,17 @@ export default function SaintsPage() {
 
       {/* Saint name */}
       <div
-        className="pw-reveal pw-saint-name"
-        style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 40, color: "var(--ink)", letterSpacing: "-.02em", textAlign: "center", lineHeight: 1.08, marginBottom: 10, position: "relative", zIndex: 1 }}
+        className={`pw-reveal pw-saint-name${identityLoading ? " pw-shimmer" : ""}`}
+        style={{ fontFamily: "var(--font-serif)", fontWeight: 500, fontSize: 40, color: identityLoading ? "var(--stone-300)" : "var(--ink)", letterSpacing: "-.02em", textAlign: "center", lineHeight: 1.08, marginBottom: 10, position: "relative", zIndex: 1 }}
       >
         {saint.name}
       </div>
+
+      {identity === "error" && (
+        <div style={{ fontFamily: "var(--font-body)", fontSize: 13.5, color: "var(--stone-400)", textAlign: "center", marginBottom: 14, position: "relative", zIndex: 1 }}>
+          Today&rsquo;s celebration couldn&rsquo;t be loaded — check your connection.
+        </div>
+      )}
 
       {/* Subtitle */}
       {saint.title && (
@@ -146,10 +158,13 @@ export default function SaintsPage() {
         </div>
       )}
 
-      {/* Season badge */}
-      <div style={{ marginBottom: 28, position: "relative", zIndex: 1 }}>
-        <SeasonBadge season={badgeSeason(saint.color)}>{rankLabel}</SeasonBadge>
-      </div>
+      {/* Season badge (hidden until the identity resolves — a placeholder rank
+          would flash wrong information) */}
+      {identity === "ready" && (
+        <div style={{ marginBottom: 28, position: "relative", zIndex: 1 }}>
+          <SeasonBadge season={badgeSeason(saint.color)}>{rankLabel}</SeasonBadge>
+        </div>
+      )}
 
       {/* Voice player */}
       {segments.length > 0 && (

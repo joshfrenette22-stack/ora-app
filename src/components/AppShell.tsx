@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Cross, Logomark } from "./Sacred";
 import { SeasonBadge, LucideIcon } from "./UI";
 import { useTheme } from "./ThemeProvider";
-import { localDateISO } from "@/lib/clientDate";
+import { fetchToday } from "@/lib/todayData";
 import { FloatingPlayer, MediaSessionManager } from "./PrayerPlayer";
 import { SearchOverlay } from "./SearchOverlay";
 
@@ -63,14 +63,17 @@ function lectionaryYear(now: Date): string {
   return ["C", "A", "B"][litYear % 3];
 }
 
+// Date-dependent subtitles (Today, Readings, Saints, Calendar) are null here
+// and resolved on the client in ContentBar — hard-coding a specific day meant
+// every first paint flashed the wrong date.
 const TITLES: Record<string, [string, string | null]> = {
-  "/": ["Today", "Monday · Ordinary Time"],
-  "/readings": ["Daily Mass Readings", "Lectionary · Year C"],
+  "/": ["Today", null],
+  "/readings": ["Daily Mass Readings", null],
   "/hours": ["Liturgy of the Hours", "The Divine Office"],
   "/rosary": ["The Holy Rosary", null],
   "/holy-face": ["Chaplet of the Holy Face", null],
-  "/saints": ["Saint of the Day", "June IX"],
-  "/calendar": ["Liturgical Calendar", "Anno Domini MMXXVI"],
+  "/saints": ["Saint of the Day", null],
+  "/calendar": ["Liturgical Calendar", null],
   "/playlist": ["My Playlist", "Build your prayer sequence"],
   "/devotions": ["Devotions", "Prayers for every hour"],
   "/auxilium": ["Auxilium Christianorum", "Help of Christians · Daily Prayers"],
@@ -90,8 +93,7 @@ function Sidebar({ active, onChange }: { active: string; onChange: (id: string) 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setDateLabel(new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }));
     let alive = true;
-    fetch(`/api/today?date=${localDateISO()}`)
-      .then((r) => (r.ok ? r.json() : null))
+    fetchToday()
       .then((d) => {
         if (!alive || !d) return;
         setLit(d.liturgical);
@@ -187,17 +189,17 @@ function ContentBar({ title, sub, pathname, onSearch }: { title: string | null; 
     const weekday = now.toLocaleDateString("en-US", { weekday: "long" });
     const base =
       pathname === "/saints" ? now.toLocaleDateString("en-US", { month: "long", day: "numeric" })
-      : pathname === "/" ? `${weekday} · Ordinary Time`
       : pathname === "/readings" ? `Lectionary · Year ${lectionaryYear(now)}`
       : pathname === "/calendar" ? `Anno Domini ${romanNumeral(now.getFullYear())}`
       : null;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLiveSub(base);
     if (pathname === "/") {
-      fetch(`/api/today?date=${localDateISO()}`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((d) => { if (d?.liturgical?.label) setLiveSub(`${weekday} · ${d.liturgical.label}`); })
+      let alive = true;
+      fetchToday()
+        .then((d) => { if (alive && d?.liturgical?.label) setLiveSub(`${weekday} · ${d.liturgical.label}`); })
         .catch(() => {});
+      return () => { alive = false; };
     }
   }, [pathname]);
 
@@ -317,7 +319,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div style={{ height: "100vh", display: "flex", fontFamily: "var(--font-body)" }}>
+    // 100dvh (not 100vh) so iOS Safari's collapsing URL bar never hides the
+    // bottom of the app behind the browser chrome.
+    <div style={{ height: "100dvh", display: "flex", fontFamily: "var(--font-body)" }}>
       <Sidebar active={active} onChange={(id) => router.push(id)} />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", background: immersive ? "var(--surface-ink)" : "var(--bone)", minWidth: 0 }}>
         {!immersive && (

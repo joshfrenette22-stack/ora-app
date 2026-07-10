@@ -24,9 +24,7 @@ export type IllustrationKey =
   | "devotion-st-michael"
   | "devotion-memorare"
   | "today-greeting-band"
-  | "today-daily-readings"
-  | "today-daily-readings-alt"
-  | "today-hero-verse-ornament";
+  | "today-daily-readings";
 
 export interface IllustrationEntry {
   src: string;
@@ -168,20 +166,11 @@ export const ILLUSTRATIONS: Record<IllustrationKey, IllustrationEntry> = {
     defaultWidth: 800,
     defaultHeight: 200,
   },
+  // The only book-art file shipped is the "alt" cut — the original
+  // today-daily-readings.webp never made it into public/, so this key maps to
+  // the art that actually exists.
   "today-daily-readings": {
-    src: "/illustrations/today-daily-readings.webp",
-    alt: "",
-    defaultWidth: 400,
-    defaultHeight: 400,
-  },
-  "today-daily-readings-alt": {
     src: "/illustrations/today-daily-readings-alt.webp",
-    alt: "",
-    defaultWidth: 400,
-    defaultHeight: 400,
-  },
-  "today-hero-verse-ornament": {
-    src: "/illustrations/today-hero-verse-ornament.webp",
     alt: "",
     defaultWidth: 400,
     defaultHeight: 400,
