@@ -204,7 +204,15 @@ export function useNarration({
     const counted = prayerCountedRef.current;
     prayerCountedRef.current = true; // count the prayer once per sitting; minutes always
     addJourneySeconds(secs); // personal ledger (streak card on Today)
-    void logPrayer({ prayer_type: "prayer", segments_count: counted ? 0 : 1, duration_seconds: secs }).catch(() => {});
+    // Community counter. `storageKey` is the nearest thing the hook has to a
+    // name for what was prayed ("readings", "hours:Lauds"), so the logs aren't
+    // all anonymous. logPrayer reports its own failures and never rejects.
+    void logPrayer({
+      prayer_type: "prayer",
+      prayer_name: storageKeyRef.current,
+      segments_count: counted ? 0 : 1,
+      duration_seconds: secs,
+    });
   }, []);
 
   // ── Remembering her place ─────────────────────────────────────────────────

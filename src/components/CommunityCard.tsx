@@ -3,20 +3,32 @@
 import { useEffect, useState } from "react";
 import { getCommunityStats, type CommunityStats } from "@/lib/prayers";
 
+type Load = { state: "loading" } | { state: "ready"; stats: CommunityStats } | { state: "unavailable" };
+
 export function CommunityCard() {
-  const [stats, setStats] = useState<CommunityStats | null>(null);
+  // Three states, not two: a card that can't reach the totals must not present
+  // itself as a card reporting totals of zero.
+  const [load, setLoad] = useState<Load>({ state: "loading" });
 
   useEffect(() => {
-    getCommunityStats().then(setStats).catch(() => {});
+    let alive = true;
+    const fetchStats = () => {
+      getCommunityStats().then((stats) => {
+        if (!alive) return;
+        setLoad(stats ? { state: "ready", stats } : { state: "unavailable" });
+      });
+    };
+    fetchStats();
     // Refresh every 60 seconds
-    const t = setInterval(() => {
-      getCommunityStats().then(setStats).catch(() => {});
-    }, 60_000);
-    return () => clearInterval(t);
+    const t = setInterval(fetchStats, 60_000);
+    return () => { alive = false; clearInterval(t); };
   }, []);
 
-  const prayers = stats?.prayers ?? 0;
-  const minutes = stats?.minutes ?? 0;
+  // Nothing to say and no way to find out — say nothing rather than "0".
+  if (load.state === "unavailable") return null;
+
+  const prayers = load.state === "ready" ? load.stats.prayers : 0;
+  const minutes = load.state === "ready" ? load.stats.minutes : 0;
 
   return (
     <div style={{
@@ -37,7 +49,7 @@ export function CommunityCard() {
         PRAYING TOGETHER
       </div>
 
-      {stats === null ? (
+      {load.state === "loading" ? (
         <div style={{
           display: "flex",
           gap: 24,
