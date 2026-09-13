@@ -6,11 +6,19 @@
 // stable content. Responses are flagged `representative: true` so the UI/clients
 // can be honest that this is sample data, not the official daily lectionary.
 
+import { frameFor, type Acclamation, type Section } from "./lectionary";
+
 export interface Reading {
   label: string;
   cite: string;
   title: string;
   body: string;
+  /** Reader's introduction, e.g. "A reading from the Book of Genesis." Absent on the psalm. */
+  intro?: string;
+  /** The people's answer to the introduction — the Gospel greeting only. */
+  introReply?: string;
+  /** Closing acclamation and the people's reply. Absent on the psalm. */
+  acclamation?: Acclamation;
   refrain?: string;
   /** Internal: psalm refrain verse number, used to re-render the refrain in the chosen translation. */
   refrainVerse?: number;
@@ -126,8 +134,15 @@ export interface DailyReadings {
 
 export function readingsForDate(date: Date): DailyReadings {
   const set = SETS[dayOfYear(date) % SETS.length];
+  const framed = (key: Exclude<Section, "second">): Reading => ({
+    ...set[key],
+    ...frameFor(set[key].cite, key),
+  });
   return {
     ...set,
+    first: framed("first"),
+    psalm: framed("psalm"),
+    gospel: framed("gospel"),
     date: date.toISOString().slice(0, 10),
     representative: true,
     source: "Representative Douay–Rheims selection — not the official daily Lectionary.",

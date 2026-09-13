@@ -34,9 +34,9 @@ const FALLBACK: DailyReadings = {
   date: "",
   representative: true,
   source: "",
-  first: { label: "First Reading", cite: "1 Kings 17 · 1–6", title: "Elijah by the Brook", body: "And Elijah the Thesbite said to Achab: As the Lord liveth, before whom I stand, there shall not be dew nor rain these years, but according to the words of my mouth." },
+  first: { label: "First Reading", cite: "1 Kings 17 · 1–6", title: "Elijah by the Brook", intro: "A reading from the first Book of Kings.", acclamation: { say: "The word of the Lord.", reply: "Thanks be to God." }, body: "And Elijah the Thesbite said to Achab: As the Lord liveth, before whom I stand, there shall not be dew nor rain these years, but according to the words of my mouth." },
   psalm: { label: "Responsorial Psalm", cite: "Psalm 4 · 2–8", title: "In Peace I Will Lie Down", refrain: "Let the light of thy countenance, O Lord, be signed upon us.", body: "In peace in the selfsame I will sleep, and I will rest: for thou, O Lord, singularly hast settled me in hope." },
-  gospel: { label: "Gospel", cite: "Matthew 5 · 1–12", title: "The Beatitudes", body: "Blessed are the poor in spirit: for theirs is the kingdom of heaven. Blessed are the meek: for they shall possess the land." },
+  gospel: { label: "Gospel", cite: "Matthew 5 · 1–12", title: "The Beatitudes", intro: "A reading from the holy Gospel according to Matthew.", introReply: "Glory to you, O Lord.", acclamation: { say: "The Gospel of the Lord.", reply: "Praise to you, Lord Jesus Christ." }, body: "Blessed are the poor in spirit: for theirs is the kingdom of heaven. Blessed are the meek: for they shall possess the land." },
   reflect: {
     first: "Where is God calling you to trust him with your daily bread?",
     psalm: "How does resting in God's peace speak to a burden you carry today?",
@@ -83,12 +83,21 @@ export default function ReadingsPage() {
   const reading = data[activeTab]!;
   const isPsalm = activeTab === "psalm";
 
-  // Narrate the whole Mass in order; follow along by switching tabs.
+  // Narrate the whole Mass in order; follow along by switching tabs. Each segment
+  // is proclaimed as it is at Mass — introduction, text, closing acclamation —
+  // so the spoken order matches what's on the page. The people's replies stay on
+  // the page rather than in the narrator's mouth.
   const segments = useMemo<NarrationSegment[]>(() => {
     return order.map((key) => {
       const r = data[key]!;
-      const refrain = key === "psalm" && r.refrain ? `${r.refrain} ` : "";
-      return { id: key, label: r.cite || TAB_LABEL[key], text: `${r.title}. ${refrain}${r.body}` };
+      const text = [
+        `${r.title}.`,
+        r.intro,
+        key === "psalm" ? r.refrain : undefined,
+        r.body,
+        r.acclamation?.say,
+      ].filter(Boolean).join(" ");
+      return { id: key, label: r.cite || TAB_LABEL[key], text };
     });
   }, [data, order]);
 
@@ -100,12 +109,17 @@ export default function ReadingsPage() {
   });
   useRegisterNarration(narration, "Listen to the Readings", false, "section-daily-mass");
 
-  // Word-highlight bookkeeping: the spoken segment reads "<title>. <refrain> <body>",
-  // so the body's words start after the title (and refrain, on psalms).
+  // Word-highlight bookkeeping: the spoken segment reads
+  // "<title>. <intro> <refrain> <body> <acclamation>", so each block starts where
+  // the blocks above it end. Keep these in step with `segments` above.
   const speaking = narration.status !== "idle";
   const titleWords = countWords(reading.title);
+  const introWords = reading.intro ? countWords(reading.intro) : 0;
   const refrainWords = isPsalm && reading.refrain ? countWords(reading.refrain) : 0;
-  const bodyOffset = titleWords + refrainWords;
+  const introOffset = titleWords;
+  const refrainOffset = introOffset + introWords;
+  const bodyOffset = refrainOffset + refrainWords;
+  const acclamationOffset = bodyOffset + countWords(reading.body);
 
   return (
     <div className="pw-readings" style={{ display: "flex", gap: 0, alignItems: "flex-start", minHeight: "100%", overflowX: "hidden" }}>
@@ -213,6 +227,26 @@ export default function ReadingsPage() {
             {reading.title}
           </h1>
 
+          {/* Reader's introduction — "A reading from …". The psalm has none: it is
+              the people's response to the first reading, not a reading itself. */}
+          {reading.intro && (
+            <div style={{
+              fontFamily: "var(--font-body)",
+              fontStyle: "italic",
+              fontSize: 16,
+              color: "var(--stone-400)",
+              lineHeight: 1.7,
+              margin: "0 0 24px",
+            }}>
+              <SpokenText as="span" text={reading.intro} active={speaking} wordIndex={narration.wordIndex} wordOffset={introOffset} />
+              {reading.introReply && (
+                <span style={{ color: "var(--gold-deep)", fontStyle: "normal", fontWeight: 600 }}>
+                  {" "}— {reading.introReply}
+                </span>
+              )}
+            </div>
+          )}
+
           {/* Psalm refrain block */}
           {isPsalm && reading.refrain && (
             <div style={{
@@ -236,7 +270,7 @@ export default function ReadingsPage() {
               }}>
                 Refrain
               </div>
-              <SpokenText as="span" text={reading.refrain} active={speaking} wordIndex={narration.wordIndex} wordOffset={titleWords} />
+              <SpokenText as="span" text={reading.refrain} active={speaking} wordIndex={narration.wordIndex} wordOffset={refrainOffset} />
             </div>
           )}
 
@@ -258,21 +292,23 @@ export default function ReadingsPage() {
             }}
           />
 
-          <Fleuron width={200} style={{ marginBottom: 32 }} />
+          <Fleuron width={200} style={{ marginBottom: reading.acclamation ? 32 : 0 }} />
 
-          {/* Acclamation footer */}
-          <div style={{
-            fontFamily: "var(--font-body)",
-            fontStyle: "italic",
-            fontSize: 16,
-            color: "var(--stone-400)",
-            lineHeight: 1.7,
-          }}>
-            {activeTab === "gospel"
-              ? <>The Gospel of the Lord. <span style={{ color: "var(--gold-deep)", fontStyle: "normal", fontWeight: 600 }}>— Praise to you, Lord Jesus Christ.</span></>
-              : <>The Word of the Lord. <span style={{ color: "var(--gold-deep)", fontStyle: "normal", fontWeight: 600 }}>— Thanks be to God.</span></>
-            }
-          </div>
+          {/* Closing acclamation — again, none after the psalm. */}
+          {reading.acclamation && (
+            <div style={{
+              fontFamily: "var(--font-body)",
+              fontStyle: "italic",
+              fontSize: 16,
+              color: "var(--stone-400)",
+              lineHeight: 1.7,
+            }}>
+              <SpokenText as="span" text={reading.acclamation.say} active={speaking} wordIndex={narration.wordIndex} wordOffset={acclamationOffset} />
+              <span style={{ color: "var(--gold-deep)", fontStyle: "normal", fontWeight: 600 }}>
+                {" "}— {reading.acclamation.reply}
+              </span>
+            </div>
+          )}
 
         </div>
       </div>
