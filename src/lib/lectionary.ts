@@ -31,8 +31,11 @@ export interface Acclamation {
 const WORD_OF_THE_LORD: Acclamation = { say: "The word of the Lord.", reply: "Thanks be to God." };
 const GOSPEL_OF_THE_LORD: Acclamation = { say: "The Gospel of the Lord.", reply: "Praise to you, Lord Jesus Christ." };
 
-/** The people's answer to the Gospel greeting, said before the Gospel is read. */
+/** The people's answer to the Gospel introduction, said before the Gospel is read. */
 export const GOSPEL_REPLY = "Glory to you, O Lord.";
+
+/** The Gospel alone opens with a greeting, said by the Deacon or Priest at the ambo. */
+const GOSPEL_GREETING: Acclamation = { say: "The Lord be with you.", reply: "And with your spirit." };
 
 const GOSPELS = new Set(["Matthew", "Mark", "Luke", "John"]);
 
@@ -119,8 +122,10 @@ export function readingAcclamation(section: Section): Acclamation | null {
 
 /** The framing fields to spread onto a reading. Empty for the Responsorial Psalm. */
 export interface Frame {
+  /** "The Lord be with you." / "And with your spirit." — the Gospel only. */
+  greeting?: Acclamation;
   intro?: string;
-  /** The people's answer to the introduction — the Gospel greeting only. */
+  /** The people's answer to the introduction — the Gospel only. */
   introReply?: string;
   acclamation?: Acclamation;
 }
@@ -133,9 +138,11 @@ export interface Frame {
 export function frameFor(cite: string, section: Section): Frame {
   const intro = readingIntro(cite, section);
   const acclamation = readingAcclamation(section);
+  const isGospel = section === "gospel";
   return {
+    ...(isGospel ? { greeting: GOSPEL_GREETING } : {}),
     ...(intro ? { intro } : {}),
-    ...(intro && section === "gospel" ? { introReply: GOSPEL_REPLY } : {}),
+    ...(intro && isGospel ? { introReply: GOSPEL_REPLY } : {}),
     ...(acclamation ? { acclamation } : {}),
   };
 }

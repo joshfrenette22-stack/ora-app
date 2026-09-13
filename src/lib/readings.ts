@@ -13,6 +13,8 @@ export interface Reading {
   cite: string;
   title: string;
   body: string;
+  /** "The Lord be with you." / "And with your spirit." — opens the Gospel only. */
+  greeting?: Acclamation;
   /** Reader's introduction, e.g. "A reading from the Book of Genesis." Absent on the psalm. */
   intro?: string;
   /** The people's answer to the introduction — the Gospel greeting only. */
