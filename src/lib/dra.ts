@@ -41,7 +41,10 @@ const BOOK_MAP: Record<string, string> = {
   is: "Isaiah", isa: "Isaiah",
   jer: "Jeremiah",
   lam: "Lamentations",
-  // Baruch is absent from both public-domain DRA sources — Bar citations fall back.
+  // Baruch is absent from both public-domain DRA sources, so its text falls back
+  // to the scraped reading — but it still has to resolve here for the Lectionary
+  // introduction ("A reading from the Book of the Prophet Baruch").
+  bar: "Baruch",
   ez: "Ezekiel", ezek: "Ezekiel",
   dn: "Daniel", dan: "Daniel",
   hos: "Hosea",
@@ -84,9 +87,16 @@ const BOOK_MAP: Record<string, string> = {
   rv: "Revelation", rev: "Revelation",
 };
 
+const normalise = (s: string) => s.toLowerCase().replace(/[.\s]/g, "");
+
+// Citations don't always use the USCCB abbreviation — the representative fallback
+// readings name books in full ("Isaiah 55 · 1–3") — so accept the full names too.
+const FULL_NAMES: Record<string, string> = {};
+for (const name of Object.values(BOOK_MAP)) FULL_NAMES[normalise(name)] = name;
+
 function resolveBook(token: string): string | null {
-  const key = token.toLowerCase().replace(/[.\s]/g, "");
-  return BOOK_MAP[key] ?? null;
+  const key = normalise(token);
+  return BOOK_MAP[key] ?? FULL_NAMES[key] ?? null;
 }
 
 /** Resolve a USCCB book abbreviation to a full book name (shared with the ESV layer). */

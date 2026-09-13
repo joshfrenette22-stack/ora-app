@@ -12,6 +12,7 @@
 // Output shape: { [bookName]: { [chapter]: { [verse]: "text" } } }
 
 import { writeFileSync } from "node:fs";
+import { applyCorrections } from "./dra-corrections.mjs";
 
 const ZEFANIA = "https://raw.githubusercontent.com/seven1m/open-bibles/master/eng-dra.zefania.xml";
 const WLDEH = "https://raw.githubusercontent.com/wldeh/bible-api/main/bibles/en-dra";
@@ -86,6 +87,12 @@ for (const [id, name] of Object.entries(WLDEH_BOOKS)) {
   out[name] = chapters;
   console.log(`${name}: ${Object.keys(chapters).length} chapters`);
 }
+
+// Both sources are OCR of the same printed edition; repair the verses we've
+// verified by hand (see dra-corrections.mjs) before writing.
+const fixes = applyCorrections(out);
+console.log(`corrections: ${fixes.applied} applied, ${fixes.skipped} already correct`);
+for (const p of fixes.problems) console.warn(`  ! ${p}`);
 
 writeFileSync(new URL("../src/data/dra.json", import.meta.url), JSON.stringify(out));
 const books = Object.keys(out).length;

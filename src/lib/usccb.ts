@@ -17,6 +17,7 @@ import { parse } from "node-html-parser";
 import { readingsForDate, type DailyReadings, type Reading } from "./readings";
 import { renderPassage, parseRefs } from "./dra";
 import { renderEsv, ESV_ATTRIBUTION } from "./esv";
+import { frameFor } from "./lectionary";
 
 const UA =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
@@ -109,7 +110,14 @@ export function parseUsccbHtml(html: string, date: string): DailyReadings | null
     const body = htmlToText(bodyEl.innerHTML);
     if (!body) continue;
 
-    const reading: Reading = { label: TITLES[section], cite, title: TITLES[section], body };
+    // …plus the Order of Mass frame ("A reading from …" / "The word of the Lord.").
+    const reading: Reading = {
+      label: TITLES[section],
+      cite,
+      title: TITLES[section],
+      body,
+      ...frameFor(cite, section),
+    };
 
     // Capture the psalm refrain sentence + verse number from the "R. (21a) ..."
     // marker; the refrain is re-rendered in the chosen translation later.
