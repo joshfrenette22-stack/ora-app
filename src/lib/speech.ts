@@ -53,6 +53,12 @@ export function speak(text: string, opts: SpeakOptions = {}): boolean {
   if (!isSpeechSupported() || !text.trim()) return false;
   const synth = window.speechSynthesis;
   synth.cancel(); // clear anything queued/stuck
+  // `cancel()` does NOT clear the paused flag: once pause() has been called, a
+  // paused synth silently swallows every new utterance — it queues but never
+  // starts, so `onstart` never fires and the caller waits forever. Un-pause
+  // before speaking, and again after, since Chrome can re-enter paused when a
+  // fresh utterance is queued.
+  if (synth.paused) synth.resume();
   const u = new SpeechSynthesisUtterance(text);
   const voice = pickVoice();
   if (voice) u.voice = voice;
@@ -69,7 +75,13 @@ export function speak(text: string, opts: SpeakOptions = {}): boolean {
     };
   }
   synth.speak(u);
+  if (synth.paused) synth.resume();
   return true;
+}
+
+/** True when the synth is mid-utterance and merely paused (so it can be resumed). */
+export function isSpeechPaused(): boolean {
+  return isSpeechSupported() && window.speechSynthesis.paused;
 }
 
 export function stopSpeaking(): void {
