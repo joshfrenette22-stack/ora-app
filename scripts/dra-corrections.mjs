@@ -13,9 +13,12 @@
 //   node scripts/dra-corrections.mjs
 // build-dra.mjs applies the same table whenever it regenerates the file.
 //
-// NOTE: this table is not exhaustive. A corpus scan (rare tokens one edit away
-// from a very common one) flags roughly 200 further OCR suspects that have not
-// been verified against a printed edition yet; only confirmed errors belong here.
+// NOTE: this table is not exhaustive, and can't be made so automatically. A
+// corpus scan (rare tokens one edit away from a very common one) flags roughly
+// 200 further OCR suspects that have not been verified against a printed edition
+// yet, and it is blind by construction to substitutions that happen to land on a
+// real word ("hurl" for "hurt"), which only a read-through catches. Only errors
+// confirmed against the printed text belong here.
 
 /** [book, chapter, verse, wrong, right] — `wrong` must occur exactly once in the verse. */
 export const CORRECTIONS = [
@@ -79,6 +82,11 @@ export const CORRECTIONS = [
   ["Mark", 3, 31, "his mother and his bretheren came", "his mother and his brethren came"],
   ["Luke", 5, 12, "when he was ina certain city", "when he was in a certain city"],
   ["Acts", 9, 2, "if he found any men and wemen", "if he found any men and women"],
+
+  // Substitutions that land on a real English word, so the rare-token scan below
+  // can't see them — these turn up only by reading. This one was live in the
+  // Sunday readings for Ordinary Time Week 24.
+  ["Sirach", 28, 2, "if he hath hurl thee", "if he hath hurt thee"],
 ];
 
 /**
