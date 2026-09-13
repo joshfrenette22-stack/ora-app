@@ -9,8 +9,10 @@ import { logPrayer } from "@/lib/prayers";
 import { addJourneySeconds } from "@/lib/journey";
 import {
   ensureVoices,
+  isSpeechPaused,
   isSpeechSupported,
   pauseSpeaking,
+  resumeSpeaking,
   speak,
   stopSpeaking,
 } from "@/lib/speech";
@@ -205,32 +207,83 @@ export function useNarration({
     void logPrayer({ prayer_type: "prayer", segments_count: counted ? 0 : 1, duration_seconds: secs }).catch(() => {});
   }, []);
 
-  // Remember the current position so closing the app doesn't lose her place.
-  useEffect(() => {
-    if (!storageKeyRef.current) return;
-    try { localStorage.setItem(`pw-pos:${storageKeyRef.current}`, String(index)); } catch { /* ignore */ }
-  }, [index]);
+  // ── Remembering her place ─────────────────────────────────────────────────
+  // The position is written only in response to real playback events (starting a
+  // segment, pausing, backgrounding, leaving). It is deliberately NOT written
+  // from an effect on `index`: that fired on mount with the initial index of 0
+  // and overwrote the stored position before the restore below could read it,
+  // which is why returning to the app always started from the beginning.
+  //
+  // Segment index alone is too coarse for a long reading, so the offset within
+  // the segment is stored too and re-applied on the cloud engine, which has a
+  // real <audio> element to seek. The device voice can't seek, so it restarts the
+  // segment — the closest it can get.
+  const pendingSeekRef = useRef(0); // seconds to seek to when the next segment starts
+  const lastSaveRef = useRef(0); // throttle for the during-playback save
+  const finishedRef = useRef(false); // last run reached the end → next play starts over
 
-  // Restore the saved position once, on mount.
-  const restoredRef = useRef(false);
-  useEffect(() => {
-    if (restoredRef.current || !storageKeyRef.current) return;
-    restoredRef.current = true;
+  /** Playback offset within the current segment, in seconds (cloud engine only). */
+  const currentOffset = useCallback(() => {
+    const a = audioRef.current;
+    if (engineRef.current !== "google" || !a) return 0;
+    return Number.isFinite(a.currentTime) ? a.currentTime : 0;
+  }, []);
+
+  const savePosition = useCallback((i: number, seconds: number) => {
+    const key = storageKeyRef.current;
+    if (!key) return;
+    lastSaveRef.current = Date.now();
     try {
-      const saved = parseInt(localStorage.getItem(`pw-pos:${storageKeyRef.current}`) ?? "", 10);
-      if (Number.isFinite(saved) && saved > 0 && saved < segmentsRef.current.length) {
-        setIndex(saved);
-        changeRef.current?.(saved);
-      }
+      localStorage.setItem(`pw-pos:${key}`, JSON.stringify({ i, t: Math.max(0, Math.round(seconds * 10) / 10) }));
     } catch { /* ignore */ }
   }, []);
+
+  const clearPosition = useCallback(() => {
+    const key = storageKeyRef.current;
+    if (!key) return;
+    try { localStorage.removeItem(`pw-pos:${key}`); } catch { /* ignore */ }
+  }, []);
+
+  // Restore the saved position. Re-attempts while the segment list is still
+  // filling in — pages that fetch their content (the readings) mount with a
+  // short placeholder list, and a position past its end would otherwise be
+  // discarded before the real segments arrive.
+  const restoredRef = useRef(false);
+  const segmentCount = segments.length;
+  useEffect(() => {
+    if (restoredRef.current || !storageKeyRef.current || segmentCount === 0) return;
+    let saved: { i: number; t: number } | null = null;
+    try {
+      const raw = localStorage.getItem(`pw-pos:${storageKeyRef.current}`);
+      if (raw) {
+        // `{i,t}` today; a bare index is what older builds wrote.
+        const parsed: unknown = raw.startsWith("{") ? JSON.parse(raw) : { i: parseInt(raw, 10), t: 0 };
+        const p = parsed as { i?: unknown; t?: unknown };
+        if (typeof p.i === "number" && Number.isFinite(p.i)) {
+          saved = { i: p.i, t: typeof p.t === "number" && Number.isFinite(p.t) ? p.t : 0 };
+        }
+      }
+    } catch { /* ignore */ }
+    if (!saved || saved.i <= 0) { restoredRef.current = true; return; }
+    if (saved.i >= segmentCount) return; // wait for the full list before giving up
+    restoredRef.current = true;
+    pendingSeekRef.current = saved.t;
+    setIndex(saved.i);
+    changeRef.current?.(saved.i);
+  }, [segmentCount]);
 
   // Flush time on background/close, and resume cloud audio when the screen
   // comes back on (iOS pauses the <audio> element when the device locks).
   useEffect(() => {
+    // Leaving the app is the moment her place matters most, so record it
+    // alongside the listened time whenever the page is hidden or torn down.
+    const persist = () => {
+      flushListened();
+      if (statusRef.current !== "idle") savePosition(indexRef.current, currentOffset());
+    };
     const onVis = () => {
       if (document.hidden) {
-        flushListened();
+        persist();
       } else if (statusRef.current === "playing") {
         if (playStartTsRef.current === 0) playStartTsRef.current = Date.now();
         if (engineRef.current === "google") {
@@ -240,13 +293,13 @@ export function useNarration({
       }
     };
     document.addEventListener("visibilitychange", onVis);
-    window.addEventListener("pagehide", flushListened);
+    window.addEventListener("pagehide", persist);
     return () => {
       document.removeEventListener("visibilitychange", onVis);
-      window.removeEventListener("pagehide", flushListened);
-      flushListened();
+      window.removeEventListener("pagehide", persist);
+      persist();
     };
-  }, [flushListened]);
+  }, [flushListened, savePosition, currentOffset]);
 
   // Core segment player — separated so playSegment can await the engine probe.
   const startSegmentRef = useRef<(text: string, onEnd: () => void, onError: () => void) => void>(() => {});
@@ -317,7 +370,7 @@ export function useNarration({
       clearEstimate();
       // Stop any previous playback before starting the new segment.
       stopSpeaking();
-      if (audioRef.current) { audioRef.current.pause(); audioRef.current.onended = null; audioRef.current.onerror = null; audioRef.current.ontimeupdate = null; }
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current.onended = null; audioRef.current.onerror = null; audioRef.current.ontimeupdate = null; audioRef.current.onloadedmetadata = null; }
 
       // Once the probe has settled, start synchronously so the call stays inside
       // the user gesture (iOS requirement). Only the very first play — before the
@@ -370,11 +423,24 @@ export function useNarration({
           setEnvelope(null);
           if (!speak(text, { rate, onStart: () => { setLoading(false); soundingRef.current = true; }, onEnd, onError, onBoundary })) onError();
         };
+        // Picking up where she left off: seek once the clip knows its length.
+        const seekTo = pendingSeekRef.current;
+        pendingSeekRef.current = 0;
+        a.onloadedmetadata = () => {
+          if (seekTo <= 0) return;
+          const dur = Number.isFinite(a.duration) ? a.duration : 0;
+          // Leave a second at the end so resuming never lands on the very edge
+          // and immediately fires `ended`.
+          if (dur > 0 && seekTo < dur - 1) { try { a.currentTime = seekTo; } catch { /* not seekable */ } }
+        };
         a.onplaying = () => { setLoading(false); soundingRef.current = true; };
         a.onended = finish;
         a.onerror = fallback;
         a.ontimeupdate = () => {
           setLoading(false);
+          // Keep her place fresh while she listens, so a crash or a force-quit —
+          // neither of which fires pagehide — still resumes near the right spot.
+          if (Date.now() - lastSaveRef.current > 5000) savePosition(indexRef.current, a.currentTime);
           // Prefer the decoded duration; audio.duration can be Infinity/NaN on iOS.
           const dur = decodedDurRef.current > 0 ? decodedDurRef.current : (Number.isFinite(a.duration) ? a.duration : 0);
           if (dur > 0) {
@@ -421,7 +487,7 @@ export function useNarration({
         onError();
       }
     },
-    [rate, voice, clearEstimate, decodeEnvelope],
+    [rate, voice, clearEstimate, decodeEnvelope, savePosition],
   );
 
   useEffect(() => { startSegmentRef.current = startSegment; }, [startSegment]);
@@ -434,6 +500,7 @@ export function useNarration({
       const list = segmentsRef.current;
       if (i < 0 || i >= list.length) return;
       const gen = ++genRef.current;
+      finishedRef.current = false;
       setIndex(i);
       setFrac(0);
       setWordIndex(-1);
@@ -442,6 +509,8 @@ export function useNarration({
       changeRef.current?.(i);
       setStatus("playing");
       if (playStartTsRef.current === 0) playStartTsRef.current = Date.now();
+      // Record the segment now; the offset within it is refreshed as it plays.
+      savePosition(i, pendingSeekRef.current);
       // Warm the next segment's audio so auto-advance is gapless.
       if (engineRef.current === "google" && i + 1 < list.length) {
         void fetch(ttsUrl(list[i + 1].text, rate, voice)).catch(() => {});
@@ -456,17 +525,18 @@ export function useNarration({
           else {
             setStatus("idle");
             // Reached the end — record the listened time and clear the saved spot.
+            // The index stays put so the page doesn't jump; `finishedRef` tells the
+            // next play to start over rather than replay the closing segment.
+            finishedRef.current = true;
             flushListened();
-            if (storageKeyRef.current) {
-              try { localStorage.removeItem(`pw-pos:${storageKeyRef.current}`); } catch { /* ignore */ }
-            }
+            clearPosition();
             completeRef.current?.();
           }
         },
         () => { if (gen === genRef.current) { setStatus("idle"); setLoading(false); } },
       );
     },
-    [rate, loop, voice, playSegment, flushListened],
+    [rate, loop, voice, playSegment, flushListened, savePosition, clearPosition],
   );
 
   useEffect(() => { playNextRef.current = playIndex; }, [playIndex]);
@@ -483,6 +553,9 @@ export function useNarration({
   // eslint-disable-next-line react-hooks/immutability
   useEffect(() => { statusRef.current = status; }, [status]);
   useEffect(() => { fracRef.current = frac; }, [frac]);
+  // Read by the visibility/pagehide effect above, which persists her place — so,
+  // like statusRef, the compiler can't verify the write-after-read on its own.
+  // eslint-disable-next-line react-hooks/immutability
   useEffect(() => { indexRef.current = index; }, [index]);
   useEffect(() => {
     const first = speedRef.current === null;
@@ -499,16 +572,25 @@ export function useNarration({
 
   const play = useCallback((from?: number) => {
     prayerCountedRef.current = false; // a fresh sitting
-    playIndex(from ?? index);
+    // A finished narration starts over; otherwise pick up at the current segment
+    // (which may have just been restored from a previous visit).
+    const start = from ?? (finishedRef.current ? 0 : index);
+    finishedRef.current = false;
+    playIndex(start);
   }, [playIndex, index]);
 
   const pause = useCallback(() => {
     if (engineRef.current === "google") audioRef.current?.pause();
     else pauseSpeaking();
     soundingRef.current = false;
+    // Pausing mid-load must not strand the controls in the loading state — the
+    // play button is otherwise left disabled with nothing to re-enable it.
+    setLoading(false);
+    clearEstimate();
     flushListened();
+    savePosition(indexRef.current, currentOffset());
     setStatus("paused");
-  }, [flushListened]);
+  }, [flushListened, clearEstimate, savePosition, currentOffset]);
 
   const resume = useCallback(() => {
     if (engineRef.current === "google") {
@@ -518,16 +600,34 @@ export function useNarration({
         if (playStartTsRef.current === 0) playStartTsRef.current = Date.now();
         setStatus("playing");
         // If the element was unloaded while backgrounded, play() rejects —
-        // restart the current segment so it always resumes.
-        a.play().catch(() => playIndex(indexRef.current));
+        // restart the current segment from where it was so it always resumes.
+        a.play().catch(() => {
+          pendingSeekRef.current = a.currentTime || 0;
+          playIndex(indexRef.current);
+        });
         return;
       }
       playIndex(indexRef.current);
       return;
     }
-    // Browser speech: resume() after a pause is unreliable — the utterance is
-    // often dropped (especially after the app is backgrounded on iOS). Re-read
-    // the current segment from its start so it reliably picks back up.
+    // Device voice. `speechSynthesis.pause()` leaves the synth paused even after
+    // `cancel()`, and a paused synth silently swallows new utterances — so
+    // un-pause first. If the original utterance survived the pause we just let it
+    // carry on; otherwise re-read the segment from its start (the device voice
+    // cannot seek).
+    resumeSpeaking();
+    if (isSpeechPaused()) {
+      // resume() didn't take — fall back to re-reading the segment.
+      playIndex(indexRef.current);
+      return;
+    }
+    if (window.speechSynthesis?.speaking) {
+      soundingRef.current = true;
+      if (playStartTsRef.current === 0) playStartTsRef.current = Date.now();
+      setLoading(false);
+      setStatus("playing");
+      return;
+    }
     playIndex(indexRef.current);
   }, [playIndex]);
 
@@ -536,14 +636,37 @@ export function useNarration({
     clearEstimate();
     if (audioRef.current) audioRef.current.pause();
     stopSpeaking();
+    resumeSpeaking(); // leave the synth un-paused, or the next utterance is swallowed
     soundingRef.current = false;
     flushListened();
     prayerCountedRef.current = false;
+    finishedRef.current = false;
+    pendingSeekRef.current = 0;
+    clearPosition(); // stopping is deliberate — start fresh next time
     setStatus("idle");
     setFrac(0);
     setWordIndex(-1);
     setLoading(false);
-  }, [clearEstimate, flushListened]);
+  }, [clearEstimate, flushListened, clearPosition]);
+
+  // Nothing may leave the controls stuck in "Loading…" forever. That state is
+  // normally cleared by the first audio/speech event, but a stalled TTS fetch or
+  // an utterance the engine never starts produces neither. Give up after a while,
+  // halt the stalled attempt so the UI and the audio agree, and leave it paused
+  // so pressing play tries again from the same spot.
+  useEffect(() => {
+    if (!loading) return;
+    const t = setTimeout(() => {
+      if (soundingRef.current) { setLoading(false); return; } // it did start after all
+      if (audioRef.current) audioRef.current.pause();
+      stopSpeaking();
+      resumeSpeaking();
+      clearEstimate();
+      setLoading(false);
+      if (statusRef.current === "playing") setStatus("paused");
+    }, 20000);
+    return () => clearTimeout(t);
+  }, [loading, clearEstimate]);
 
   // Animated level (0–1) for the device/Siri voice, which gives no audio stream
   // to analyse. The cloud voice instead renders its decoded waveform (`peaks`).
@@ -578,15 +701,19 @@ export function useNarration({
       const clamped = Math.max(0, Math.min(segmentsRef.current.length - 1, i));
       if (status === "idle") {
         genRef.current++;
+        finishedRef.current = false;
+        pendingSeekRef.current = 0;
         setIndex(clamped);
         setFrac(0);
         setWordIndex(-1);
         changeRef.current?.(clamped);
+        savePosition(clamped, 0); // a deliberate move — remember it
       } else {
+        pendingSeekRef.current = 0; // skipping starts the new segment at its top
         playIndex(clamped);
       }
     },
-    [status, playIndex],
+    [status, playIndex, savePosition],
   );
 
   const next = useCallback(() => seek(index + 1), [seek, index]);
@@ -597,9 +724,12 @@ export function useNarration({
     clearEstimate();
     if (audioRef.current) audioRef.current.pause();
     stopSpeaking();
+    resumeSpeaking(); // leave the synth un-paused for the next utterance
     soundingRef.current = false;
     flushListened();
     prayerCountedRef.current = false;
+    finishedRef.current = false;
+    pendingSeekRef.current = 0;
     setStatus("idle");
     const clamped = Math.max(0, Math.min(segmentsRef.current.length - 1, i));
     setIndex(clamped);
@@ -1134,15 +1264,20 @@ export function ListenButton({
   if (!narration.supported) return null;
 
   const handleClick = () => {
+    // `play()` with no argument picks up at the current segment — which may have
+    // been restored from a previous visit — instead of always restarting at 0.
     if (active) narration.toggle();
-    else narration.play(0);
+    else narration.play();
   };
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <button
         onClick={handleClick}
-        disabled={loading}
+        // Never disabled: pressing it while loading cancels the pending segment.
+        // A disabled control with nothing to re-enable it is how playback got
+        // stuck after a pause.
+        aria-busy={loading}
         style={{
           display: "inline-flex",
           alignItems: "center",
