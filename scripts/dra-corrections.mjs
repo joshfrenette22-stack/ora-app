@@ -35,7 +35,7 @@ export const CORRECTIONS = [
   ["1 Samuel", 14, 12, "into the hands of I srael", "into the hands of Israel"],
   ["2 Chronicles", 25, 9, "the soldiers of Israeli and the man of God", "the soldiers of Israel? And the man of God"],
   ["Genesis", 28, 4, "the blessings of Abrabam", "the blessings of Abraham"],
-  ["Genesis", 41, 54, "he named the second Epharaim", "he named the second Ephraim"],
+  ["Genesis", 41, 52, "he named the second Epharaim", "he named the second Ephraim"],
   ["Genesis", 48, 17, "from Ephraims head", "from Ephraim's head"],
   ["Exodus", 29, 28, "fall to Aarons share", "fall to Aaron's share"],
   ["1 Samuel", 9, 3, "the asses of Cis, Sauls father", "the asses of Cis, Saul's father"],
@@ -43,7 +43,7 @@ export const CORRECTIONS = [
   ["2 Maccabees", 11, 8, "there appeared at Jerusatem", "there appeared at Jerusalem"],
   ["1 Chronicles", 12, 13, "Jerenias the tenth", "Jeremias the tenth"],
   ["Ezekiel", 1, 3, "the priest the son of Bud", "the priest the son of Buzi"],
-  ["Joshua", 18, 19, "the stone of Been the son of Ruben", "the stone of Boen the son of Ruben"],
+  ["Joshua", 18, 18, "the stone of Been the son of Ruben", "the stone of Boen the son of Ruben"],
 
   // ── Ordinary words ─────────────────────────────────────────────────────────
   ["Genesis", 20, 4, "that is ignorant and justl", "that is ignorant and just?"],
@@ -83,6 +83,17 @@ export const CORRECTIONS = [
   ["Luke", 5, 12, "when he was ina certain city", "when he was in a certain city"],
   ["Acts", 9, 2, "if he found any men and wemen", "if he found any men and women"],
 
+  // ── Verses restored by build-dra.mjs's placeholder repair ──────────────────
+  // wldeh is OCR of the same edition and has its own slips. The Isaiah 5:4 entry
+  // restores a sentence that both sources dropped; it is the only entry here that
+  // adds text rather than fixing a misread word.
+  ["Isaiah", 5, 2, "it broutht forth wild grapes", "it brought forth wild grapes"],
+  ["Isaiah", 5, 4, "that I have not done to it?", "that I have not done to it? Was it that I looked that it should bring forth grapes, and it hath brought forth wild grapes?"],
+  ["Isaiah", 5, 5, "shew you wnat I will do", "shew you what I will do"],
+  ["Isaiah", 25, 9, "be joyfull in his salvation", "be joyful in his salvation"],
+  ["John", 15, 6, "and case him into the fire, and be burneth", "and cast him into the fire, and he burneth"],
+  ["Romans", 9, 8, "of God; buy they, that are", "of God; but they, that are"],
+
   // Substitutions that land on a real English word, so the rare-token scan below
   // can't see them — these turn up only by reading. This one was live in the
   // Sunday readings for Ordinary Time Week 24.
@@ -104,6 +115,11 @@ export function applyCorrections(bible) {
     const text = bible[book]?.[String(chapter)]?.[String(verse)];
     if (typeof text !== "string") {
       problems.push(`${ref} — verse not found`);
+      continue;
+    }
+    // An entry that adds to the verse still matches `wrong` once applied; skip it.
+    if (right.includes(wrong) && text.includes(right)) {
+      skipped++;
       continue;
     }
     const hits = text.split(wrong).length - 1;

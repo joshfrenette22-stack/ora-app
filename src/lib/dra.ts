@@ -2,13 +2,19 @@
 //
 // Given a USCCB-style citation (e.g. "Lk 13:10-17", "Ps 68:2 and 4, 6-7ab")
 // we resolve the book, expand the verse ranges, and return the DRA text. If the
-// book is absent from this edition (it lacks Sirach and 1 Maccabees) or the
-// citation can't be resolved, we return null and the caller keeps the original.
+// book is absent from this edition (it lacks Sirach and 1 Maccabees), the
+// citation can't be resolved, or it runs through a verse the source file lost,
+// we return null and the caller keeps the original.
 
 import draData from "@/data/dra.json";
 
 type Bible = Record<string, Record<string, Record<string, string>>>;
 const DRA = draData as Bible;
+
+// The upstream file stands this text in for verses it lost. scripts/build-dra.mjs
+// restores the chapters it can, but a few still carry it (Genesis 49, Numbers 7:34,
+// Psalm 149). Never show it to a reader.
+const PLACEHOLDER = "dummy verses inserted by amos";
 
 // Normalised USCCB/NAB abbreviation → Douay–Rheims book name used in the data.
 const BOOK_MAP: Record<string, string> = {
@@ -171,6 +177,7 @@ export function renderPassage(cite: string): Rendered | null {
   const lines: string[] = [];
   for (const { chapter, verse } of parsed.refs) {
     const text = DRA[parsed.book]?.[String(chapter)]?.[String(verse)];
+    if (text === PLACEHOLDER) return null;
     if (text) lines.push(text);
   }
   if (!lines.length) return null;
@@ -179,5 +186,6 @@ export function renderPassage(cite: string): Rendered | null {
 
 /** Render a single verse (used for the psalm refrain). */
 export function renderVerse(book: string, chapter: number, verse: number): string | null {
-  return DRA[book]?.[String(chapter)]?.[String(verse)] ?? null;
+  const text = DRA[book]?.[String(chapter)]?.[String(verse)];
+  return text && text !== PLACEHOLDER ? text : null;
 }
