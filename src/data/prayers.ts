@@ -4,6 +4,7 @@
 
 import { ROSARY_PRAYERS, DEVOTIONS } from "./content";
 import { auxiliumEverydayText } from "./auxilium";
+import { divineMercyChapletText } from "./divineMercy";
 import type { IllustrationKey } from "@/lib/illustrations";
 
 export interface Prayer {
@@ -85,8 +86,8 @@ export const PRAYER_CATALOG: Prayer[] = [
   {
     id: "divine-mercy",
     title: "Divine Mercy Chaplet",
-    sub: "At three o'clock",
-    text: devotionText("mercy"),
+    sub: "The full chaplet · at three o'clock",
+    text: divineMercyChapletText(),
     category: "Devotion",
     lucide: "heart",
     illustration: "devotion-divine-mercy",

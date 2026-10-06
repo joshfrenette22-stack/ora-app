@@ -18,6 +18,7 @@ const SECTIONS: { label: string; sub: string; href: string; lucide?: string; cro
   { label: "Saint of the Day", sub: "Life, patronage & feast", href: "/saints", lucide: "flame", terms: "saints feast" },
   { label: "Liturgical Calendar", sub: "Feasts & seasons", href: "/calendar", lucide: "calendar", terms: "month feast season" },
   { label: "Devotions", sub: "Chaplets & prayers", href: "/devotions", lucide: "bell", terms: "angelus divine mercy michael memorare" },
+  { label: "Chaplet of Divine Mercy", sub: "Guided or interactive", href: "/divine-mercy", cross: true, terms: "chaplet faustina mercy three o'clock" },
   { label: "Chaplet of the Holy Face", sub: "Guided or interactive", href: "/holy-face", cross: true, terms: "chaplet reparation" },
   { label: "Auxilium Christianorum", sub: "Help of Christians · daily", href: "/auxilium", lucide: "shield", terms: "protection spiritual warfare" },
   { label: "The Practice of the Love of Jesus Christ", sub: "St. Alphonsus · audiobook", href: "/practice-love", lucide: "book-open", terms: "liguori audiobook book" },

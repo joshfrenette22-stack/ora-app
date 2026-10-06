@@ -15,9 +15,9 @@ type DevotionKey = keyof typeof DEVOTIONS;
 type Block = (typeof DEVOTIONS)[DevotionKey]["blocks"][number];
 
 // Order + an icon per devotion (Angelus leads — it is the most-prayed).
+// Divine Mercy is not listed here: the full chaplet lives on its own page.
 const ORDER: { key: DevotionKey; lucide: string }[] = [
   { key: "angelus", lucide: "bell" },
-  { key: "mercy", lucide: "heart" },
   { key: "michael", lucide: "shield" },
   { key: "memorare", lucide: "flower" },
 ];
@@ -148,6 +148,7 @@ export default function DevotionsPage() {
         <DevotionRow key={key} dkey={key} lucide={lucide} open={open === key} onToggle={() => setOpen(open === key ? null : key)} />
       ))}
 
+      <DevotionLink href="/divine-mercy" lucide="heart" kicker="Chaplet · At Three O'Clock" title="Chaplet of Divine Mercy" />
       <DevotionLink href="/holy-face" lucide="cross" kicker="Chaplet · Guided or Interactive" title="Chaplet of the Holy Face" />
       <DevotionLink href="/auxilium" lucide="shield" kicker="Help of Christians · Daily" title="Auxilium Christianorum" />
       <DevotionLink href="/practice-love" lucide="book-open" kicker="Audiobook · St. Alphonsus Liguori" title="The Practice of the Love of Jesus Christ" />

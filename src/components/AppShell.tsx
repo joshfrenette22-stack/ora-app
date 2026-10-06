@@ -29,6 +29,7 @@ const NAV_MORE = [
 // the content bar pointing at their parent.
 const PARENT: Record<string, string> = {
   "/holy-face": "/devotions",
+  "/divine-mercy": "/devotions",
   "/auxilium": "/devotions",
   "/practice-love": "/devotions",
   "/devotions": "/",
@@ -37,7 +38,7 @@ const PARENT: Record<string, string> = {
 };
 
 function navActive(pathname: string): string {
-  if (pathname === "/holy-face" || pathname === "/auxilium" || pathname === "/practice-love") return "/devotions";
+  if (pathname === "/holy-face" || pathname === "/divine-mercy" || pathname === "/auxilium" || pathname === "/practice-love") return "/devotions";
   return pathname;
 }
 
@@ -69,6 +70,7 @@ const TITLES: Record<string, [string, string | null]> = {
   "/hours": ["Liturgy of the Hours", "The Divine Office"],
   "/rosary": ["The Holy Rosary", null],
   "/holy-face": ["Chaplet of the Holy Face", null],
+  "/divine-mercy": ["Chaplet of Divine Mercy", null],
   "/saints": ["Saint of the Day", "June IX"],
   "/calendar": ["Liturgical Calendar", "Anno Domini MMXXVI"],
   "/playlist": ["My Playlist", "Build your prayer sequence"],
@@ -289,7 +291,7 @@ function BottomNav({ active, onChange }: { active: string; onChange: (id: string
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const immersive = pathname === "/rosary" || pathname === "/holy-face";
+  const immersive = pathname === "/rosary" || pathname === "/holy-face" || pathname === "/divine-mercy";
   const titleEntry = TITLES[pathname] || ["Prayer Warrior", null];
   const active = navActive(pathname);
   const [searchOpen, setSearchOpen] = useState(false);
